@@ -1,0 +1,436 @@
+@import "tailwindcss";
+
+/* ─────────────────────────────────────────────────────────
+   Clinical Precision — Design System Tokens
+   ───────────────────────────────────────────────────────── */
+
+:root {
+  /* Surface / Background */
+  --background: #f6fafd;
+  --foreground: #171c1e;
+  --surface: #f6fafd;
+  --surface-dim: #d6dbdd;
+  --surface-bright: #f6fafd;
+  --surface-container-lowest: #ffffff;
+  --surface-container-low: #f0f4f7;
+  --surface-container: #eaeef1;
+  --surface-container-high: #e5e9eb;
+  --surface-container-highest: #dfe3e6;
+  --surface-variant: #dfe3e6;
+
+  /* On-Surface */
+  --on-surface: #171c1e;
+  --on-surface-variant: #3e484d;
+  --inverse-surface: #2c3133;
+  --inverse-on-surface: #edf1f4;
+
+  /* Outline */
+  --outline: #6e797e;
+  --outline-variant: #bdc8ce;
+
+  /* Primary — Medical Blue-Teal */
+  --primary: #00647c;
+  --primary-container: #007f9d;
+  --on-primary: #ffffff;
+  --on-primary-container: #fafdff;
+  --inverse-primary: #6cd3f7;
+  --surface-tint: #006780;
+
+  /* Primary Fixed */
+  --primary-fixed: #b7eaff;
+  --primary-fixed-dim: #6cd3f7;
+  --on-primary-fixed: #001f28;
+  --on-primary-fixed-variant: #004e61;
+
+  /* Secondary — Slate */
+  --secondary: #515f74;
+  --on-secondary: #ffffff;
+  --secondary-container: #d5e3fc;
+  --on-secondary-container: #57657a;
+
+  /* Secondary Fixed */
+  --secondary-fixed: #d5e3fc;
+  --secondary-fixed-dim: #b9c7df;
+  --on-secondary-fixed: #0d1c2e;
+  --on-secondary-fixed-variant: #3a485b;
+
+  /* Tertiary — Warm Amber */
+  --tertiary: #894e00;
+  --on-tertiary: #ffffff;
+  --tertiary-container: #a86516;
+  --on-tertiary-container: #fffbff;
+
+  /* Tertiary Fixed */
+  --tertiary-fixed: #ffdcbf;
+  --tertiary-fixed-dim: #ffb873;
+  --on-tertiary-fixed: #2d1600;
+  --on-tertiary-fixed-variant: #6a3b00;
+
+  /* Semantic — Error */
+  --error: #ba1a1a;
+  --on-error: #ffffff;
+  --error-container: #ffdad6;
+  --on-error-container: #93000a;
+
+  /* Semantic — Contextual (derived) */
+  --success: #146c43;
+  --success-container: #d1f0db;
+  --warning: #894e00;
+  --warning-container: #ffdcbf;
+  --info: #00647c;
+  --info-container: #b7eaff;
+
+  /* Interaction */
+  --ring: rgba(0, 100, 124, 0.22);
+
+  /* Chart Palette */
+  --chart-1: #00647c;
+  --chart-2: #007f9d;
+  --chart-3: #146c43;
+  --chart-4: #894e00;
+  --chart-5: #a86516;
+
+  /* Layout */
+  --sidebar-width: 260px;
+}
+
+/* ─── Tailwind v4 Theme Bridge ──────────────────────────── */
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-surface: var(--surface);
+  --color-card: var(--surface-container-lowest);
+  --color-muted: var(--surface-container-low);
+  --color-border: var(--outline-variant);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--on-primary);
+  --color-secondary: var(--secondary);
+  --color-destructive: var(--error);
+  --font-sans: "Manrope", "Inter", "Segoe UI", Arial, sans-serif;
+}
+
+/* ─── Reset ─────────────────────────────────────────────── */
+* {
+  box-sizing: border-box;
+}
+
+html {
+  min-height: 100%;
+  background: var(--background);
+}
+
+body {
+  min-height: 100%;
+  margin: 0;
+  background: var(--background);
+  color: var(--foreground);
+  font-family: "Manrope", "Inter", "Segoe UI", Arial, sans-serif;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ─── Typography ────────────────────────────────────────── */
+h1,
+h2,
+h3 {
+  font-family: "Manrope", "Inter", "Segoe UI", Arial, sans-serif;
+  letter-spacing: -0.01em;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+/* ─── Design System Utilities ───────────────────────────── */
+.clinical-card {
+  border: 1px solid var(--outline-variant);
+  background: var(--surface-container-lowest);
+  box-shadow: none;
+  transition: box-shadow 200ms ease;
+}
+
+.clinical-card:hover {
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.05), 0 8px 24px rgba(15, 23, 42, 0.03);
+}
+
+.table-numeric {
+  font-variant-numeric: tabular-nums;
+}
+
+::selection {
+  background: var(--primary-fixed);
+  color: var(--on-primary-fixed);
+}
+
+:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+/* ─── Login Layout ──────────────────────────────────────── */
+.login-main {
+  min-height: 100vh;
+}
+
+.login-grid {
+  display: grid;
+  min-height: 100vh;
+}
+
+.login-left {
+  position: relative;
+  display: flex;
+  min-height: 100vh;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 24px;
+}
+
+.login-home-link {
+  position: absolute;
+  top: 24px;
+  left: 24px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 36px;
+  padding: 0 12px;
+  border: 1px solid var(--outline-variant);
+  border-radius: 0.5rem;
+  color: var(--primary);
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+  transition:
+    border-color 160ms ease,
+    background-color 160ms ease,
+    color 160ms ease;
+}
+
+.login-home-link:hover {
+  border-color: var(--outline);
+  background: var(--surface-container-low);
+  color: var(--on-primary-fixed-variant);
+}
+
+.login-panel {
+  width: min(100%, 470px);
+}
+
+.login-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 28px;
+}
+
+.login-brand-icon {
+  display: flex;
+  width: 32px;
+  height: 32px;
+  align-items: center;
+  justify-content: center;
+}
+
+.login-brand-text {
+  margin: 0;
+  font-family: "Manrope", sans-serif;
+  font-size: 25px;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.login-heading-block {
+  margin-bottom: 28px;
+}
+
+.login-heading {
+  margin: 0;
+  font-family: "Manrope", sans-serif;
+  font-size: 34px;
+  font-weight: 700;
+  line-height: 40px;
+  letter-spacing: -0.02em;
+}
+
+.login-subheading {
+  margin: 8px 0 0;
+  font-size: 16px;
+  line-height: 24px;
+  color: var(--on-surface-variant);
+}
+
+.login-form {
+  display: grid;
+  gap: 16px;
+}
+
+.login-alert {
+  min-height: 76px;
+  border-radius: 0.5rem;
+  padding: 12px 16px;
+}
+
+.login-alert-title {
+  margin: 0;
+  font-size: 16px;
+  line-height: 20px;
+}
+
+.login-alert-copy {
+  margin: 4px 0 0;
+  font-size: 14px;
+  line-height: 20px;
+}
+
+.login-label {
+  font-size: 15px;
+}
+
+.login-input {
+  height: 52px;
+  font-size: 16px;
+}
+
+.login-password-input {
+  letter-spacing: 0.18em;
+}
+
+.login-actions-row {
+  font-size: 15px;
+}
+
+.login-demo-hint {
+  margin: -4px 0 0;
+  color: var(--on-surface-variant);
+  font-size: 13px;
+  line-height: 18px;
+}
+
+.login-demo-hint span {
+  color: var(--on-surface);
+  font-weight: 600;
+}
+
+.login-checkbox {
+  width: 20px;
+  height: 20px;
+}
+
+.login-submit {
+  height: 52px;
+  font-size: 16px;
+  box-shadow: 0 12px 26px rgba(0, 100, 124, 0.18);
+}
+
+.login-visual {
+  position: relative;
+  display: none;
+  overflow: hidden;
+}
+
+.login-visual-inner {
+  position: relative;
+  z-index: 10;
+  display: flex;
+  height: 100%;
+  align-items: center;
+  justify-content: center;
+  padding: 0 56px;
+}
+
+.login-info-card {
+  width: min(100%, 470px);
+  border-radius: 0.75rem;
+  padding: 28px;
+  box-shadow: 0 24px 58px rgba(15, 23, 42, 0.14);
+}
+
+.login-info-icon {
+  display: flex;
+  width: 52px;
+  height: 52px;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 32px;
+  border-radius: 0.75rem;
+  box-shadow: 0 10px 24px rgba(0, 100, 124, 0.18);
+}
+
+.login-info-heading {
+  margin: 0;
+  font-family: "Manrope", sans-serif;
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 32px;
+  letter-spacing: -0.01em;
+}
+
+.login-info-copy {
+  max-width: 420px;
+  margin: 12px 0 0;
+  font-size: 17px;
+  line-height: 26px;
+  color: var(--on-surface-variant);
+}
+
+.login-bars {
+  display: grid;
+  gap: 8px;
+  margin-top: 36px;
+}
+
+.login-bar,
+.login-bar-fill {
+  height: 8px;
+  border-radius: 9999px;
+}
+
+.login-bar-fill-primary {
+  width: 76%;
+}
+
+.login-bar-fill-secondary {
+  width: 50%;
+}
+
+.login-integrity {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 20px;
+  font-size: 15px;
+}
+
+@media (min-width: 1024px) {
+  .login-main {
+    height: 100svh;
+    overflow: hidden;
+  }
+
+  .login-grid {
+    min-height: 0;
+    height: 100svh;
+    grid-template-columns: 1.04fr 0.9fr;
+  }
+
+  .login-left {
+    min-height: 0;
+    height: 100svh;
+    padding: 32px 64px;
+  }
+
+  .login-home-link {
+    top: 32px;
+    left: 64px;
+  }
+
+  .login-visual {
+    display: block;
+    height: 100svh;
+  }
+}
