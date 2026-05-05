@@ -109,9 +109,8 @@ export function LoginForm() {
               value={email}
               onChange={(event) => setEmail(event.target.value)}
               required
-              className={`login-input rounded-lg border bg-white pl-14 pr-4 text-[#171c1e] shadow-none placeholder:text-[#8a969c] focus-visible:ring-2 focus-visible:ring-[#00647c]/15 ${
-                error ? "border-[#e00012] focus-visible:border-[#e00012]" : "border-[#bdc8ce] focus-visible:border-[#00647c]"
-              }`}
+              className={`login-input rounded-lg border bg-white pl-14 pr-4 text-[#171c1e] shadow-none placeholder:text-[#8a969c] focus-visible:ring-2 focus-visible:ring-[#00647c]/15 ${error ? "border-[#e00012] focus-visible:border-[#e00012]" : "border-[#bdc8ce] focus-visible:border-[#00647c]"
+                }`}
               placeholder="admin@healtech.local"
             />
           </div>
@@ -129,9 +128,8 @@ export function LoginForm() {
               value={password}
               onChange={(event) => setPassword(event.target.value)}
               required
-              className={`login-input login-password-input rounded-lg border bg-white pl-14 pr-14 text-[#171c1e] shadow-none placeholder:text-[#8a969c] focus-visible:ring-2 focus-visible:ring-[#00647c]/15 ${
-                error ? "border-[#e00012] focus-visible:border-[#e00012]" : "border-[#bdc8ce] focus-visible:border-[#00647c]"
-              }`}
+              className={`login-input login-password-input rounded-lg border bg-white pl-14 pr-14 text-[#171c1e] shadow-none placeholder:text-[#8a969c] focus-visible:ring-2 focus-visible:ring-[#00647c]/15 ${error ? "border-[#e00012] focus-visible:border-[#e00012]" : "border-[#bdc8ce] focus-visible:border-[#00647c]"
+                }`}
             />
             <button
               type="button"

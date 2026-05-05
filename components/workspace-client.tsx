@@ -268,10 +268,10 @@ function AdminDashboardExperience({
     <div className="space-y-8">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h1 className="text-[30px] font-semibold leading-10 tracking-normal text-[var(--on-surface)]">Overview</h1>
-          <p className="text-[17px] leading-7 text-[var(--on-surface-variant)]">Real-time metrics for clinic operations.</p>
+          <h1 className="text-[30px] font-semibold leading-10 tracking-normal text-[#080d10]">Overview</h1>
+          <p className="text-[17px] leading-7 text-[#3d4950]">Real-time metrics for clinic operations.</p>
         </div>
-        <p className="mt-4 flex items-center gap-2 text-[14px] text-[var(--on-surface)]">
+        <p className="mt-4 flex items-center gap-2 text-[14px] text-[#202a30]">
           <RefreshCcw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
           Last updated: Just now
         </p>
@@ -279,14 +279,14 @@ function AdminDashboardExperience({
 
       <section className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
         {stats.map((stat) => (
-          <div key={stat.label} className={`min-h-[168px] rounded-[0.75rem] border bg-white p-5 ${stat.tone === "red" ? "border-[var(--error-container)]" : "border-[var(--outline-variant)]"}`}>
+          <div key={stat.label} className={`min-h-[168px] rounded-lg border bg-white p-5 ${stat.tone === "red" ? "border-[#ffc3bd]" : "border-[#b9c8d0]"}`}>
             <div className={`flex h-10 w-10 items-center justify-center rounded-full ${adminToneClasses(stat.tone)}`}>
               <stat.icon className="h-5 w-5" />
             </div>
-            <p className="mt-4 text-[14px] font-medium tracking-[0.08em] text-[var(--on-surface)]">{stat.label}</p>
+            <p className="mt-4 text-[14px] font-medium tracking-[0.08em] text-[#202a30]">{stat.label}</p>
             <div className="mt-2 flex items-end gap-3">
-              <p className={`table-numeric text-[40px] font-bold leading-[44px] tracking-normal ${stat.tone === "red" ? "text-[var(--error)]" : "text-[var(--on-surface)]"}`}>{stat.value}</p>
-              {"helper" in stat ? <p className="pb-1 text-[14px] font-semibold text-[var(--primary)]">↗{stat.helper}</p> : null}
+              <p className={`table-numeric text-[40px] font-bold leading-[44px] tracking-normal ${stat.tone === "red" ? "text-[#c10010]" : "text-[#080d10]"}`}>{stat.value}</p>
+              {"helper" in stat ? <p className="pb-1 text-[14px] font-semibold text-[#00647c]">↗{stat.helper}</p> : null}
             </div>
           </div>
         ))}
@@ -298,16 +298,16 @@ function AdminDashboardExperience({
       </section>
 
       <section className="grid gap-8 xl:grid-cols-[1fr_386px]">
-        <div className="rounded-[0.75rem] border border-[var(--outline-variant)] bg-white p-5">
-          <div className="flex items-center justify-between border-b border-[var(--outline-variant)] pb-4">
-            <h2 className="text-[27px] font-semibold tracking-normal text-[var(--on-surface)]">Recent Activity</h2>
-            <Link href="/admin/audit-logs" className="text-[17px] font-medium text-[var(--primary)]">View All</Link>
+        <div className="rounded-xl border border-[#b9c8d0] bg-white p-5">
+          <div className="flex items-center justify-between border-b border-[#d9e1e4] pb-4">
+            <h2 className="text-[27px] font-semibold tracking-normal text-[#080d10]">Recent Activity</h2>
+            <Link href="/admin/audit-logs" className="text-[17px] font-medium text-[#00647c]">View All</Link>
           </div>
           <AdminActivityRow icon={UserPlus} title="New Employee Added" text="Dr. Sarah Jenkins was added to General Medicine." time="10 mins ago" />
           <AdminActivityRow icon={Calendar} title="Leave Request Submitted" text="Nurse Mark O. requested 3 days of annual leave." time="45 mins ago" amber />
         </div>
-        <div className="rounded-[0.75rem] border border-[var(--outline-variant)] bg-white p-5">
-          <h2 className="border-b border-[var(--outline-variant)] pb-4 text-[27px] font-semibold tracking-normal text-[var(--on-surface)]">Quick Actions</h2>
+        <div className="rounded-xl border border-[#b9c8d0] bg-white p-5">
+          <h2 className="border-b border-[#d9e1e4] pb-4 text-[27px] font-semibold tracking-normal text-[#080d10]">Quick Actions</h2>
           <div className="mt-5 space-y-3">
             <AdminActionButton href="/admin/employees/new" icon={UserPlus} label="Add Employee" primary />
             <AdminActionButton href="/admin/departments" icon={Building2} label="Create Department" />
@@ -317,8 +317,8 @@ function AdminDashboardExperience({
       </section>
 
       <div className="pt-2">
-        <h2 className="text-[22px] font-semibold tracking-normal text-[var(--on-surface)]">Operational Workspace</h2>
-        <p className="mt-1 text-[15px] text-[var(--on-surface-variant)]">Live records and workflow forms remain connected below.</p>
+        <h2 className="text-[22px] font-semibold tracking-normal text-[#080d10]">Operational Workspace</h2>
+        <p className="mt-1 text-[15px] text-[#3d4950]">Live records and workflow forms remain connected below.</p>
       </div>
     </div>
   );
@@ -326,25 +326,25 @@ function AdminDashboardExperience({
 
 function AdminChartCard({ title, subtitle, type }: { title: string; subtitle?: string; type: "line" | "bars" }) {
   return (
-    <div className="h-[384px] rounded-[0.75rem] border border-[var(--outline-variant)] bg-white p-5">
+    <div className="h-[384px] rounded-xl border border-[#b9c8d0] bg-white p-5">
       <div className="flex justify-between">
-        <h2 className="text-[27px] font-semibold tracking-normal text-[var(--on-surface)]">
-          {title} {subtitle ? <span className="text-[15px] font-normal text-[var(--on-surface-variant)]">{subtitle}</span> : null}
+        <h2 className="text-[27px] font-semibold tracking-normal text-[#080d10]">
+          {title} {subtitle ? <span className="text-[15px] font-normal text-[#3d4950]">{subtitle}</span> : null}
         </h2>
-        <MoreVertical className="h-6 w-6 text-[var(--on-surface-variant)]" />
+        <MoreVertical className="h-6 w-6 text-[#202a30]" />
       </div>
       {type === "line" ? (
-        <div className="mt-7 grid h-[270px] grid-cols-[34px_1fr] text-[14px] text-[var(--on-surface-variant)]">
+        <div className="mt-7 grid h-[270px] grid-cols-[34px_1fr] text-[14px] text-[#4a555b]">
           <div className="flex flex-col justify-between pb-7 pt-0">
             <span>150</span>
             <span>100</span>
             <span>50</span>
             <span>0</span>
           </div>
-          <div className="relative border-l border-[var(--surface-container-high)] bg-[linear-gradient(to_bottom,transparent_0,transparent_11%,var(--surface-container-high)_11%,transparent_12%,transparent_40%,var(--surface-container-high)_40%,transparent_41%,transparent_69%,var(--surface-container-high)_69%,transparent_70%)]">
+          <div className="relative border-l border-[#dde5e9] bg-[linear-gradient(to_bottom,transparent_0,transparent_11%,#edf1f4_11%,transparent_12%,transparent_40%,#edf1f4_40%,transparent_41%,transparent_69%,#edf1f4_69%,transparent_70%)]">
             <svg viewBox="0 0 520 236" className="h-[236px] w-full">
-              <path d="M6 214 C58 186 118 226 160 144 S244 158 286 94 S363 126 413 88 S486 58 516 116" fill="none" stroke="var(--primary)" strokeWidth="3" />
-              <path d="M6 214 C58 186 118 226 160 144 S244 158 286 94 S363 126 413 88 S486 58 516 116 L516 236 L6 236 Z" fill="var(--primary)" opacity=".14" />
+              <path d="M6 214 C58 186 118 226 160 144 S244 158 286 94 S363 126 413 88 S486 58 516 116" fill="none" stroke="#00647c" strokeWidth="3" />
+              <path d="M6 214 C58 186 118 226 160 144 S244 158 286 94 S363 126 413 88 S486 58 516 116 L516 236 L6 236 Z" fill="#00647c" opacity=".14" />
             </svg>
             <div className="absolute bottom-0 left-0 right-0 flex justify-between px-1 text-[14px]">
               <span>1st</span>
@@ -357,18 +357,18 @@ function AdminChartCard({ title, subtitle, type }: { title: string; subtitle?: s
       ) : (
         <div className="mt-16 flex h-[205px] items-end justify-center gap-5">
           {[
-            ["Gen", 200, 0.78, "var(--primary-container)"],
-            ["Den", 200, 0.60, "var(--secondary)"],
-            ["Derma", 200, 0.40, "var(--primary-container)"],
-            ["Peds", 200, 0.70, "var(--secondary)"],
-            ["Int", 200, 0.64, "var(--primary-container)"],
+            ["Gen", 200, 0.78, "#006f87"],
+            ["Den", 200, 0.60, "#52627a"],
+            ["Derma", 200, 0.40, "#006f87"],
+            ["Peds", 200, 0.70, "#52627a"],
+            ["Int", 200, 0.64, "#006f87"],
           ].map(([label, total, ratio, color]) => (
             <div key={String(label)} className="flex w-[88px] flex-col items-center gap-2">
-              <div className="relative h-[200px] w-full overflow-hidden rounded-t-sm bg-[var(--surface-container-high)]">
-                <div className="absolute inset-x-0 top-0 h-[40px] bg-[var(--surface-container-highest)]" />
+              <div className="relative h-[200px] w-full overflow-hidden rounded-t-sm bg-[#e7eef9]">
+                <div className="absolute inset-x-0 top-0 h-[40px] bg-[#c8dde3]" />
                 <div className="absolute inset-x-0 bottom-0" style={{ height: Number(total) * Number(ratio), backgroundColor: String(color) }} />
               </div>
-              <span className="text-[14px] text-[var(--on-surface)]">{label}</span>
+              <span className="text-[14px] text-[#202a30]">{label}</span>
             </div>
           ))}
         </div>
@@ -380,13 +380,13 @@ function AdminChartCard({ title, subtitle, type }: { title: string; subtitle?: s
 function AdminActivityRow({ icon: Icon, title, text, time, amber }: { icon: typeof UserPlus; title: string; text: string; time: string; amber?: boolean }) {
   return (
     <div className="flex gap-5 py-5">
-      <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${amber ? "bg-[var(--tertiary-fixed)] text-[var(--tertiary-container)]" : "bg-[var(--surface-container-high)] text-[var(--on-surface-variant)]"}`}>
+      <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${amber ? "bg-[#fff0e3] text-[#a86516]" : "bg-[#e8edf0] text-[#56636a]"}`}>
         <Icon className="h-5 w-5" />
       </span>
       <div>
-        <p className="text-[18px] font-semibold text-[var(--on-surface)]">{title}</p>
-        <p className="text-[16px] text-[var(--on-surface-variant)]">{text}</p>
-        <p className="mt-1 text-[14px] text-[var(--on-surface)]">{time}</p>
+        <p className="text-[18px] font-semibold text-[#080d10]">{title}</p>
+        <p className="text-[16px] text-[#3d4950]">{text}</p>
+        <p className="mt-1 text-[14px] text-[#202a30]">{time}</p>
       </div>
     </div>
   );
@@ -394,8 +394,8 @@ function AdminActivityRow({ icon: Icon, title, text, time, amber }: { icon: type
 
 function AdminActionButton({ href, icon: Icon, label, primary, amber }: { href: string; icon: typeof UserPlus; label: string; primary?: boolean; amber?: boolean }) {
   return (
-    <Link href={href} className={`flex h-[52px] items-center gap-4 rounded-[0.5rem] border px-6 text-[19px] font-semibold ${primary ? "border-[var(--primary-container)] bg-[var(--primary-container)] text-white" : "border-[var(--outline-variant)] bg-[var(--surface-container-low)] text-[var(--on-surface)]"}`}>
-      <Icon className={`h-6 w-6 ${amber ? "text-[var(--tertiary)]" : ""}`} />
+    <Link href={href} className={`flex h-[52px] items-center gap-4 rounded-lg border px-6 text-[19px] font-semibold ${primary ? "border-[#00758d] bg-[#00758d] text-white" : "border-[#c7d2da] bg-[#f2f7fb] text-[#0a1014]"}`}>
+      <Icon className={`h-6 w-6 ${amber ? "text-[#a84f00]" : ""}`} />
       {label}
     </Link>
   );
@@ -410,11 +410,11 @@ function counterValue(counters: Record<string, unknown> | null, keys: string[], 
 }
 
 function adminToneClasses(tone: "cyan" | "blue" | "amber" | "red" | "slate") {
-  if (tone === "amber") return "bg-[var(--tertiary-fixed)] text-[var(--tertiary-container)]";
-  if (tone === "red") return "bg-[var(--error-container)] text-[var(--error)]";
-  if (tone === "blue") return "bg-[var(--secondary-container)] text-[var(--secondary)]";
-  if (tone === "slate") return "bg-[var(--surface-container-high)] text-[var(--on-surface-variant)]";
-  return "bg-[var(--primary-fixed)]/30 text-[var(--primary)]";
+  if (tone === "amber") return "bg-[#ffe0c5] text-[#a86516]";
+  if (tone === "red") return "bg-[#ffd9d4] text-[#d00000]";
+  if (tone === "blue") return "bg-[#d9e8ff] text-[#425b85]";
+  if (tone === "slate") return "bg-[#e5eaed] text-[#56636a]";
+  return "bg-[#cfeff7] text-[#00647c]";
 }
 
 function DashboardIntelligence({ config, counters }: { config: WorkspaceConfig; counters: Record<string, unknown> }) {
@@ -427,7 +427,7 @@ function DashboardIntelligence({ config, counters }: { config: WorkspaceConfig; 
           <CardDescription>Simple, low-noise visual summary for today&apos;s clinical workload.</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex h-44 items-end gap-2 rounded-[0.75rem] border border-[var(--outline-variant)] bg-[var(--surface-container-lowest)] p-4">
+          <div className="flex h-44 items-end gap-2 rounded-xl border border-border bg-[#fbfcff] p-4">
             {[38, 54, 46, 72, 63, 86, 78, 94, 68, 82, 91, 76].map((height, index) => (
               <div key={index} className="flex flex-1 flex-col items-center gap-2">
                 <span className="w-full rounded-t-md bg-primary/80" style={{ height }} />
@@ -808,7 +808,7 @@ function Notice({ tone, text }: { tone: "success" | "warning" | "danger"; text: 
       : "border-[var(--error-container)] bg-[var(--error-container)] text-[var(--error)]";
 
   return (
-    <p className={`flex items-start gap-2 rounded-[0.5rem] border px-3 py-2 text-sm ${classes}`}>
+    <p className={`flex items-start gap-2 rounded-lg border px-3 py-2 text-sm ${classes}`}>
       <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
       {text}
     </p>

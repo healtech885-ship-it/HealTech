@@ -1,100 +1,42 @@
 @import "tailwindcss";
 
-/* ─────────────────────────────────────────────────────────
-   Clinical Precision — Design System Tokens
-   ───────────────────────────────────────────────────────── */
-
 :root {
-  /* Surface / Background */
-  --background: #f6fafd;
-  --foreground: #171c1e;
-  --surface: #f6fafd;
-  --surface-dim: #d6dbdd;
-  --surface-bright: #f6fafd;
+  --background: #f9f9ff;
+  --foreground: #191c22;
+  --surface: #f9f9ff;
   --surface-container-lowest: #ffffff;
-  --surface-container-low: #f0f4f7;
-  --surface-container: #eaeef1;
-  --surface-container-high: #e5e9eb;
-  --surface-container-highest: #dfe3e6;
-  --surface-variant: #dfe3e6;
-
-  /* On-Surface */
-  --on-surface: #171c1e;
-  --on-surface-variant: #3e484d;
-  --inverse-surface: #2c3133;
-  --inverse-on-surface: #edf1f4;
-
-  /* Outline */
-  --outline: #6e797e;
-  --outline-variant: #bdc8ce;
-
-  /* Primary — Medical Blue-Teal */
-  --primary: #00647c;
-  --primary-container: #007f9d;
+  --surface-container-low: #f2f3fc;
+  --surface-container: #ecedf6;
+  --surface-container-high: #e6e8f1;
+  --surface-variant: #e1e2eb;
+  --on-surface: #191c22;
+  --on-surface-variant: #414753;
+  --outline: #727784;
+  --outline-variant: #c1c6d5;
+  --primary: #004e9f;
+  --primary-container: #0066cc;
   --on-primary: #ffffff;
-  --on-primary-container: #fafdff;
-  --inverse-primary: #6cd3f7;
-  --surface-tint: #006780;
-
-  /* Primary Fixed */
-  --primary-fixed: #b7eaff;
-  --primary-fixed-dim: #6cd3f7;
-  --on-primary-fixed: #001f28;
-  --on-primary-fixed-variant: #004e61;
-
-  /* Secondary — Slate */
-  --secondary: #515f74;
-  --on-secondary: #ffffff;
-  --secondary-container: #d5e3fc;
-  --on-secondary-container: #57657a;
-
-  /* Secondary Fixed */
-  --secondary-fixed: #d5e3fc;
-  --secondary-fixed-dim: #b9c7df;
-  --on-secondary-fixed: #0d1c2e;
-  --on-secondary-fixed-variant: #3a485b;
-
-  /* Tertiary — Warm Amber */
-  --tertiary: #894e00;
-  --on-tertiary: #ffffff;
-  --tertiary-container: #a86516;
-  --on-tertiary-container: #fffbff;
-
-  /* Tertiary Fixed */
-  --tertiary-fixed: #ffdcbf;
-  --tertiary-fixed-dim: #ffb873;
-  --on-tertiary-fixed: #2d1600;
-  --on-tertiary-fixed-variant: #6a3b00;
-
-  /* Semantic — Error */
+  --secondary: #505f76;
+  --secondary-container: #d0e1fb;
+  --tertiary: #883700;
+  --tertiary-container: #ffdbcb;
   --error: #ba1a1a;
-  --on-error: #ffffff;
   --error-container: #ffdad6;
-  --on-error-container: #93000a;
-
-  /* Semantic — Contextual (derived) */
   --success: #146c43;
-  --success-container: #d1f0db;
-  --warning: #894e00;
-  --warning-container: #ffdcbf;
-  --info: #00647c;
-  --info-container: #b7eaff;
-
-  /* Interaction */
-  --ring: rgba(0, 100, 124, 0.22);
-
-  /* Chart Palette */
-  --chart-1: #00647c;
-  --chart-2: #007f9d;
+  --success-container: #d8f3df;
+  --warning: #8a5a00;
+  --warning-container: #ffefc2;
+  --info: #005cba;
+  --info-container: #dfe8ff;
+  --ring: rgba(0, 92, 186, 0.22);
+  --chart-1: #004e9f;
+  --chart-2: #008a9b;
   --chart-3: #146c43;
-  --chart-4: #894e00;
-  --chart-5: #a86516;
-
-  /* Layout */
+  --chart-4: #8a5a00;
+  --chart-5: #883700;
   --sidebar-width: 260px;
 }
 
-/* ─── Tailwind v4 Theme Bridge ──────────────────────────── */
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -106,10 +48,9 @@
   --color-primary-foreground: var(--on-primary);
   --color-secondary: var(--secondary);
   --color-destructive: var(--error);
-  --font-sans: "Manrope", "Inter", "Segoe UI", Arial, sans-serif;
+  --font-sans: "Inter", "Segoe UI", Arial, sans-serif;
 }
 
-/* ─── Reset ─────────────────────────────────────────────── */
 * {
   box-sizing: border-box;
 }
@@ -124,18 +65,15 @@ body {
   margin: 0;
   background: var(--background);
   color: var(--foreground);
-  font-family: "Manrope", "Inter", "Segoe UI", Arial, sans-serif;
+  font-family: "Inter", "Segoe UI", Arial, sans-serif;
   overflow-x: hidden;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
 }
 
-/* ─── Typography ────────────────────────────────────────── */
 h1,
 h2,
 h3 {
   font-family: "Manrope", "Inter", "Segoe UI", Arial, sans-serif;
-  letter-spacing: -0.01em;
+  letter-spacing: 0;
 }
 
 button,
@@ -145,16 +83,10 @@ textarea {
   font: inherit;
 }
 
-/* ─── Design System Utilities ───────────────────────────── */
 .clinical-card {
   border: 1px solid var(--outline-variant);
   background: var(--surface-container-lowest);
-  box-shadow: none;
-  transition: box-shadow 200ms ease;
-}
-
-.clinical-card:hover {
-  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.05), 0 8px 24px rgba(15, 23, 42, 0.03);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05), 0 4px 6px rgba(0, 0, 0, 0.02);
 }
 
 .table-numeric {
@@ -162,16 +94,15 @@ textarea {
 }
 
 ::selection {
-  background: var(--primary-fixed);
-  color: var(--on-primary-fixed);
+  background: var(--info-container);
+  color: var(--primary);
 }
 
 :focus-visible {
-  outline: 2px solid var(--primary);
+  outline: 3px solid var(--ring);
   outline-offset: 2px;
 }
 
-/* ─── Login Layout ──────────────────────────────────────── */
 .login-main {
   min-height: 100vh;
 }
@@ -199,9 +130,9 @@ textarea {
   gap: 8px;
   min-height: 36px;
   padding: 0 12px;
-  border: 1px solid var(--outline-variant);
-  border-radius: 0.5rem;
-  color: var(--primary);
+  border: 1px solid #d6e0e5;
+  border-radius: 8px;
+  color: #00647c;
   font-size: 14px;
   font-weight: 600;
   text-decoration: none;
@@ -212,9 +143,9 @@ textarea {
 }
 
 .login-home-link:hover {
-  border-color: var(--outline);
-  background: var(--surface-container-low);
-  color: var(--on-primary-fixed-variant);
+  border-color: #9fb3bd;
+  background: #f3f8fa;
+  color: #004e61;
 }
 
 .login-panel {
@@ -238,7 +169,6 @@ textarea {
 
 .login-brand-text {
   margin: 0;
-  font-family: "Manrope", sans-serif;
   font-size: 25px;
   font-weight: 600;
   line-height: 1;
@@ -250,18 +180,15 @@ textarea {
 
 .login-heading {
   margin: 0;
-  font-family: "Manrope", sans-serif;
   font-size: 34px;
   font-weight: 700;
   line-height: 40px;
-  letter-spacing: -0.02em;
 }
 
 .login-subheading {
   margin: 8px 0 0;
   font-size: 16px;
   line-height: 24px;
-  color: var(--on-surface-variant);
 }
 
 .login-form {
@@ -271,7 +198,7 @@ textarea {
 
 .login-alert {
   min-height: 76px;
-  border-radius: 0.5rem;
+  border-radius: 8px;
   padding: 12px 16px;
 }
 
@@ -306,13 +233,13 @@ textarea {
 
 .login-demo-hint {
   margin: -4px 0 0;
-  color: var(--on-surface-variant);
+  color: #526168;
   font-size: 13px;
   line-height: 18px;
 }
 
 .login-demo-hint span {
-  color: var(--on-surface);
+  color: #142127;
   font-weight: 600;
 }
 
@@ -345,7 +272,7 @@ textarea {
 
 .login-info-card {
   width: min(100%, 470px);
-  border-radius: 0.75rem;
+  border-radius: 12px;
   padding: 28px;
   box-shadow: 0 24px 58px rgba(15, 23, 42, 0.14);
 }
@@ -357,17 +284,15 @@ textarea {
   align-items: center;
   justify-content: center;
   margin-bottom: 32px;
-  border-radius: 0.75rem;
+  border-radius: 12px;
   box-shadow: 0 10px 24px rgba(0, 100, 124, 0.18);
 }
 
 .login-info-heading {
   margin: 0;
-  font-family: "Manrope", sans-serif;
   font-size: 24px;
   font-weight: 700;
   line-height: 32px;
-  letter-spacing: -0.01em;
 }
 
 .login-info-copy {
@@ -375,7 +300,6 @@ textarea {
   margin: 12px 0 0;
   font-size: 17px;
   line-height: 26px;
-  color: var(--on-surface-variant);
 }
 
 .login-bars {
@@ -387,7 +311,7 @@ textarea {
 .login-bar,
 .login-bar-fill {
   height: 8px;
-  border-radius: 9999px;
+  border-radius: 999px;
 }
 
 .login-bar-fill-primary {

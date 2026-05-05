@@ -25,9 +25,9 @@ export function DataTable({ rows }: { rows: ModuleRecord[] }) {
   const table = useReactTable({ data: rows, columns, getCoreRowModel: getCoreRowModel() });
 
   return (
-    <div className="max-h-[560px] max-w-full overflow-auto rounded-[0.5rem] border border-[var(--outline-variant)] overscroll-contain">
+    <div className="max-h-[560px] max-w-full overflow-auto rounded-lg border border-border overscroll-contain">
       <table className="min-w-full border-collapse text-left text-sm">
-        <thead className="sticky top-0 z-[1] bg-[var(--surface-container-high)] text-[12px] font-semibold uppercase tracking-[0.02em] text-[var(--on-surface-variant)]">
+        <thead className="sticky top-0 z-[1] bg-[#f1f5f9] text-xs font-semibold uppercase tracking-[0.02em] text-[var(--on-surface-variant)]">
           {table.getHeaderGroups().map((headerGroup) => (
             <tr key={headerGroup.id}>
               {headerGroup.headers.map((header) => (
@@ -38,9 +38,9 @@ export function DataTable({ rows }: { rows: ModuleRecord[] }) {
             </tr>
           ))}
         </thead>
-        <tbody className="divide-y divide-[var(--outline-variant)] bg-white">
-          {table.getRowModel().rows.map((row, index) => (
-            <tr key={row.id} className={`transition hover:bg-[var(--surface-container-low)] ${index % 2 === 1 ? "bg-[var(--surface)]/40" : ""}`}>
+        <tbody className="divide-y divide-border bg-white">
+          {table.getRowModel().rows.map((row) => (
+            <tr key={row.id} className="transition hover:bg-[#f8fafc]">
               {row.getVisibleCells().map((cell) => (
                 <td key={cell.id} className="max-w-[220px] break-words px-4 py-3 text-[var(--on-surface)]">
                   {flexRender(cell.column.columnDef.cell, cell.getContext())}

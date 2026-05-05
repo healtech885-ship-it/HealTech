@@ -3,14 +3,14 @@ import type * as React from "react";
 import { cn } from "@/lib/utils";
 
 const buttonVariants = cva(
-  "inline-flex h-10 items-center justify-center gap-2 rounded-[0.5rem] px-4 text-sm font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20 disabled:pointer-events-none disabled:opacity-50",
+  "inline-flex h-10 items-center justify-center gap-2 rounded-lg px-4 text-sm font-semibold transition-colors focus:outline-none focus:ring-3 focus:ring-blue-200 disabled:pointer-events-none disabled:opacity-50",
   {
     variants: {
       variant: {
-        primary: "bg-[var(--primary)] text-[var(--on-primary)] hover:bg-[var(--on-primary-fixed-variant)]",
-        secondary: "border border-[var(--outline-variant)] bg-white text-[var(--on-surface)] hover:bg-[var(--surface-container-low)]",
-        ghost: "text-[var(--on-surface-variant)] hover:bg-[var(--surface-container-low)]",
-        destructive: "bg-[var(--error)] text-[var(--on-error)] hover:bg-[var(--on-error-container)]",
+        primary: "bg-primary text-primary-foreground hover:bg-[#003f82]",
+        secondary: "border border-border bg-white text-[var(--on-surface)] hover:bg-muted",
+        ghost: "text-[var(--on-surface-variant)] hover:bg-muted",
+        destructive: "bg-destructive text-white hover:bg-[#93000a]",
       },
       size: {
         sm: "h-8 px-3 text-xs",

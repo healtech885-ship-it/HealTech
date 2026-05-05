@@ -2,10 +2,10 @@ import { cn } from "@/lib/utils";
 import type { StatusTone } from "@/types/app.types";
 
 const toneClasses: Record<StatusTone, string> = {
-  neutral: "bg-[var(--surface-container-low)] text-[var(--on-surface-variant)] border-[var(--outline-variant)]",
-  info: "bg-[var(--primary-fixed)]/10 text-[var(--primary)] border-[var(--primary-fixed-dim)]/30",
+  neutral: "bg-muted text-[var(--on-surface-variant)] border-border",
+  info: "bg-[var(--secondary-container)] text-[#26374c] border-[#b7c8e1]",
   success: "bg-[var(--success-container)] text-[var(--success)] border-[#a7dfb7]",
-  warning: "bg-[var(--warning-container)] text-[var(--tertiary)] border-[var(--tertiary-fixed-dim)]/40",
+  warning: "bg-[var(--warning-container)] text-[var(--warning)] border-[#e6ca83]",
   danger: "bg-[var(--error-container)] text-[var(--error)] border-[#f2aaa4]",
 };
 
