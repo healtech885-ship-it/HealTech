@@ -15,8 +15,8 @@ const manrope = Manrope({
 });
 
 export const metadata: Metadata = {
-  title: "HealTech Clinic Management",
-  description: "Role-based clinic ERP built with Next.js and Supabase",
+  title: "HealTech",
+  description: "A modern clinic management system for role-based healthcare operations.",
 };
 
 export default function RootLayout({

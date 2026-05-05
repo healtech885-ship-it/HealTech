@@ -1,0 +1,22 @@
+-- Manual RLS verification helpers.
+-- Run after `supabase db reset`, replacing the UUID placeholders with seeded users.
+-- Each block should be run in a transaction and rolled back.
+
+-- Example:
+-- begin;
+-- set local role authenticated;
+-- select set_config('request.jwt.claim.sub', '<patient-profile-uuid>', true);
+-- select * from patients where profile_id <> auth.uid(); -- expect 0 rows
+-- rollback;
+
+-- Recommended cases:
+-- 1. Patient cannot select another patient's row from patients.
+-- 2. Patient can update only their own allowed contact fields on patients.
+-- 3. Doctor cannot update a visit assigned to another doctor.
+-- 4. Reception cannot insert/update diagnoses or lab_results.
+-- 5. Lab cannot update prescriptions or prescription_items.
+-- 6. Pharmacy cannot update lab_results or diagnoses.
+-- 7. Inactive profiles return null from get_current_role() and cannot read sensitive tables.
+-- 8. Authenticated clients cannot execute workflow RPCs such as add_diagnosis_tx or dispense_prescription_item_tx.
+-- 9. Admin can read audit_logs; non-admin users cannot.
+-- 10. Anonymous users cannot insert appointments.

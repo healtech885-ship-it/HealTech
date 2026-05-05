@@ -57,7 +57,7 @@ export default function LandingPage() {
         <div className="mx-auto flex h-[70px] max-w-[1440px] items-center justify-between px-6 lg:px-7">
           <div className="flex items-center gap-8">
             <Link href="/" className="text-[32px] font-bold leading-none text-[#005c72]">
-              ClinicFlow
+              HealTech
             </Link>
             <nav className="hidden items-center gap-7 text-[15px] font-medium text-[#0f171a] md:flex">
               <a href="#solutions" className="hover:text-[#00647c]">Solutions</a>
@@ -151,14 +151,14 @@ export default function LandingPage() {
       <footer id="pricing" className="border-t border-[#bdc8ce] bg-white py-10">
         <div className="mx-auto flex max-w-[1440px] flex-col gap-6 px-6 lg:flex-row lg:items-end lg:justify-between lg:px-7">
           <div>
-            <p className="text-[21px] font-semibold text-[#050b0e]">ClinicFlow</p>
-            <p className="mt-3 text-[12px] text-[#2f3b40]">© 2024 ClinicFlow Management Systems. Surgical Precision in Healthcare.</p>
+            <p className="text-[21px] font-semibold text-[#050b0e]">HealTech</p>
+            <p className="mt-3 text-[12px] text-[#2f3b40]">© 2026 HealTech. Clinic operations software.</p>
           </div>
           <div className="flex flex-wrap gap-6 text-[12px] text-[#2f3b40]">
-            <a href="#" className="hover:text-[#00647c]">Privacy Policy</a>
-            <a href="#" className="hover:text-[#00647c]">Terms of Service</a>
-            <a href="#" className="hover:text-[#00647c]">Security Compliance</a>
-            <a href="#" className="hover:text-[#00647c]">API Documentation</a>
+            <span>Privacy Policy</span>
+            <span>Terms of Service</span>
+            <span>Security Compliance</span>
+            <span>API Documentation</span>
           </div>
         </div>
       </footer>

@@ -24,7 +24,7 @@ export default function LoginPage() {
               <div className="login-brand-icon text-[#00647c]">
                 <ShieldCheck className="h-7 w-7 stroke-[2.4]" />
               </div>
-              <p className="login-brand-text text-[#080d10]">MedCore Clinic</p>
+              <p className="login-brand-text text-[#080d10]">HealTech</p>
             </div>
 
             <div className="login-heading-block">
@@ -64,7 +64,7 @@ export default function LoginPage() {
               </div>
               <h2 className="login-info-heading text-[#080d10]">Secure Patient Records</h2>
               <p className="login-info-copy text-[#313b40]">
-                Role-based access control for maximum compliance. MedCore ensures all operational data remains encrypted and isolated per practitioner.
+                Role-based access control for maximum compliance. HealTech ensures all operational data remains encrypted and isolated per practitioner.
               </p>
               <div className="login-bars">
                 <div className="login-bar bg-[#d9e1e4]">

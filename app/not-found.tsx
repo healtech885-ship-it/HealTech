@@ -25,7 +25,7 @@ export default function NotFound() {
         </Link>
         <div className="mt-[60px] border-t border-[#d9e1e4] pt-11">
           <Link href="/" className="text-[17px] font-medium text-[#00758d] transition hover:text-[#004e61]">
-            ClinicFlow
+            HealTech
           </Link>
         </div>
       </section>

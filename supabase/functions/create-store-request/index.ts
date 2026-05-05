@@ -1,10 +1,14 @@
 import { audit, createRoleHandler, requireFields } from "../_shared/handler.ts";
 
-Deno.serve(createRoleHandler(["admin", "reception", "doctor", "lab", "pharmacy"], async ({ body, userId, supabase }) => {
+Deno.serve(createRoleHandler(["admin", "reception", "doctor", "lab", "pharmacy"], async ({ body, userId, role, supabase }) => {
   requireFields(body, ["store_item_id", "quantity"]);
+  const requestedBy = typeof body.requested_by === "string" ? body.requested_by : userId;
+  if (role !== "admin" && requestedBy !== userId) {
+    throw new Error("Cannot create store requests for another employee");
+  }
 
   const { data, error } = await supabase.from("store_requests").insert({
-    requested_by: body.requested_by ?? userId,
+    requested_by: requestedBy,
     store_item_id: body.store_item_id,
     quantity: body.quantity,
     reason: body.reason ?? null,

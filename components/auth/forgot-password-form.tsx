@@ -44,7 +44,7 @@ export function ForgotPasswordForm() {
           <Input
             id="email"
             type="email"
-            placeholder="name@clinicflow.com"
+            placeholder="name@healtech.com"
             value={email}
             onChange={(event) => setEmail(event.target.value)}
             required

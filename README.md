@@ -1,6 +1,6 @@
-# HealTech Clinic Management
+# HealTech
 
-Full-stack clinic ERP starter built with Next.js, TypeScript, Tailwind CSS, shadcn-style components, and Supabase migrations.
+HealTech is a multi-role clinic management / clinic ERP system built with Next.js, TypeScript, Tailwind CSS, shadcn-style components, and Supabase migrations.
 
 ## Run Locally
 

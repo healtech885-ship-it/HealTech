@@ -13,15 +13,20 @@ export default function UnauthorizedPage() {
         <p className="mx-auto mt-4 max-w-[500px] text-[22px] leading-[31px] text-[#2f3a40]">
           Your account does not have permission to view this workspace. Contact an administrator if you need access.
         </p>
-        <Link href="/login">
-          <Button className="mt-10 h-11 w-[200px] rounded-lg bg-[#00758d] px-8 text-[17px] font-semibold text-white shadow-none transition hover:bg-[#00647c]">
-            <Home className="h-5 w-5" />
+        <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
+          <Link href="/dashboard">
+            <Button className="h-11 w-[200px] rounded-lg bg-[#00758d] px-8 text-[17px] font-semibold text-white shadow-none transition hover:bg-[#00647c]">
+              <Home className="h-5 w-5" />
+              My Dashboard
+            </Button>
+          </Link>
+          <Link href="/login" className="text-[16px] font-semibold text-[#00758d] transition hover:text-[#004e61]">
             Return to Login
-          </Button>
-        </Link>
+          </Link>
+        </div>
         <div className="mt-[60px] border-t border-[#d9e1e4] pt-11">
           <Link href="/" className="text-[17px] font-medium text-[#00758d] transition hover:text-[#004e61]">
-            ClinicFlow
+            HealTech
           </Link>
         </div>
       </section>

@@ -19,6 +19,7 @@ import {
   UserRound,
   Users,
 } from "lucide-react";
+import { ROLE_DASHBOARD_ROUTES } from "@/lib/auth/roles";
 import type { UserRole } from "@/types/app.types";
 
 export type NavItem = {
@@ -27,14 +28,7 @@ export type NavItem = {
   icon: React.ComponentType<{ className?: string }>;
 };
 
-export const roleHome: Record<UserRole, string> = {
-  admin: "/admin/dashboard",
-  reception: "/reception/dashboard",
-  doctor: "/doctor/dashboard",
-  lab: "/lab/dashboard",
-  pharmacy: "/pharmacy/dashboard",
-  patient: "/patient/dashboard",
-};
+export const roleHome = ROLE_DASHBOARD_ROUTES;
 
 export const roleLabels: Record<UserRole, string> = {
   admin: "Administration",

@@ -16,18 +16,16 @@ export default function InvitePage() {
           <div className="absolute bottom-[68px] left-[31px] text-white">
             <div className="flex items-center gap-4">
               <BriefcaseMedical className="h-10 w-10 stroke-[2.4]" />
-              <p className="text-[31px] font-semibold tracking-[-0.02em]">MedCore Clinic</p>
+              <p className="text-[31px] font-semibold tracking-[-0.02em]">HealTech</p>
             </div>
-            <p className="mt-4 text-[22px] leading-7">Surgical Precision in Healthcare.</p>
+            <p className="mt-4 text-[22px] leading-7">Clinic operations software.</p>
           </div>
         </aside>
 
         <section className="flex items-center justify-center px-8 py-10">
           <div className="w-full max-w-[464px]">
             <h1 className="text-[40px] font-bold leading-[48px] tracking-[-0.04em] text-[#080d10]">
-              Welcome to MedCore
-              <br />
-              Clinic
+              Welcome to HealTech
             </h1>
             <p className="mt-3 max-w-[420px] text-[17px] leading-6 text-[#242e33]">
               Please complete your account setup to access the clinical portal.
@@ -40,7 +38,7 @@ export default function InvitePage() {
                 </div>
                 <div>
                   <p className="text-[17px] font-medium leading-6 tracking-[0.04em] text-[#172025]">Invited Email</p>
-                  <p className="text-[20px] leading-7 text-[#080d10]">dr.smith@medcore.clinic</p>
+                  <p className="text-[20px] leading-7 text-[#080d10]">dr.smith@healtech.local</p>
                 </div>
               </div>
               <div className="my-6 h-px bg-[#aebbc2]" />
@@ -73,7 +71,7 @@ export default function InvitePage() {
             </div>
 
             <div className="mt-8 border-t border-[#d9e1e4] pt-5 text-center text-[15px] leading-5 text-[#64717a]">
-              Secure connection. MedCore Clinic Management System.
+              Secure connection. HealTech account setup.
             </div>
           </div>
         </section>

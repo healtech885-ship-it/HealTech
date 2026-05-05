@@ -199,8 +199,8 @@ function DoctorSidebar({ activePath, compactBrand }: { activePath: string; compa
       <div className={cn("px-8", compactBrand ? "py-8" : "py-5")}>
         {compactBrand ? (
           <div className="flex items-center gap-4">
-            <div className="flex h-[50px] w-[50px] items-center justify-center rounded-full bg-[#0085a0] text-xl text-white">C</div>
-            <p className="text-[24px] font-semibold">ClinicFlow</p>
+            <div className="flex h-[50px] w-[50px] items-center justify-center rounded-full bg-[#0085a0] text-xl text-white">H</div>
+            <p className="text-[24px] font-semibold">HealTech</p>
           </div>
         ) : (
           <DoctorIdentity />
@@ -265,7 +265,7 @@ function DoctorTopbar({ wideSearch }: { wideSearch?: boolean }) {
     <header className="sticky top-0 z-20 h-[80px] border-b border-[#d9e2ea] bg-white">
       <div className="flex h-full items-center gap-8 px-8">
         <Link href="/doctor/dashboard" className="text-[28px] font-bold text-[#00758d]">
-          ClinicFlow
+          HealTech
         </Link>
         <div className={cn("relative", wideSearch ? "w-[560px]" : "w-[405px]")}>
           <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[#758aa3]" />

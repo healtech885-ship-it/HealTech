@@ -6,9 +6,9 @@ import { AlertCircle, ArrowRight, Eye, EyeOff, Loader2, LockKeyhole, Mail } from
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { getDashboardRouteForRole } from "@/lib/auth/roles";
 import { createClient } from "@/lib/supabase/client";
-import { roleHome } from "@/lib/constants/navigation";
-import type { UserRole, UserStatus } from "@/types/app.types";
+import type { UserStatus } from "@/types/app.types";
 
 const demoCredentials = [
   { label: "Admin", email: "admin@healtech.local", password: "Password123!" },
@@ -67,7 +67,7 @@ export function LoginForm() {
       .select("role,status")
       .eq("id", signInData.user.id)
       .single();
-    const profile = profileData as { role: UserRole; status: UserStatus } | null;
+    const profile = profileData as { role: unknown; status: UserStatus } | null;
 
     setLoading(false);
 
@@ -81,7 +81,13 @@ export function LoginForm() {
       return;
     }
 
-    window.location.href = roleHome[profile.role as UserRole];
+    const dashboardRoute = getDashboardRouteForRole(profile.role);
+    if (!dashboardRoute) {
+      setError("Profile role is missing or invalid.");
+      return;
+    }
+
+    window.location.href = dashboardRoute;
   }
 
   return (

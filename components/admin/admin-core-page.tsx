@@ -334,7 +334,7 @@ function AdminSidebar({ active, bottomConsultation = false }: { active: string; 
 function AdminTopbar({ brand, search, searchPlaceholder }: { brand?: boolean; search?: boolean; searchPlaceholder: string }) {
   return (
     <header className="sticky top-0 z-10 flex h-20 items-center border-b border-[#d9e3ea] bg-white px-8 shadow-[0_2px_8px_rgba(15,23,42,0.04)]">
-      {brand ? <p className="mr-8 text-[26px] font-bold tracking-[-0.03em] text-[#080d10]">MedCore Clinic</p> : null}
+      {brand ? <p className="mr-8 text-[26px] font-bold tracking-[-0.03em] text-[#080d10]">HealTech</p> : null}
       {search ? (
         <div className="relative w-[398px]">
           <Search className="absolute left-5 top-1/2 h-5 w-5 -translate-y-1/2 text-[#8293a8]" />
@@ -379,7 +379,7 @@ function OperationsShell({ children, landingHeader = false, active = "Inventory"
 function MarketingHeader() {
   return (
     <header className="flex h-[86px] items-center border-b border-[#d7e1e7] bg-white px-[30px]">
-      <Link href="/" className="text-[26px] font-bold tracking-[-0.03em] text-[#0089a8]">ClinicFlow</Link>
+      <Link href="/" className="text-[26px] font-bold tracking-[-0.03em] text-[#0089a8]">HealTech</Link>
       <nav className="mx-auto flex gap-8 text-[18px] font-medium text-[#263a54]">
         <Link href="/">Solutions</Link>
         <Link href="/">Roles</Link>
@@ -397,7 +397,7 @@ function MarketingHeader() {
 function MarketingFooter() {
   return (
     <footer className="flex h-[116px] items-center justify-between border-t border-[#d7e1e7] bg-white px-[30px] text-[14px] text-[#51647c]">
-      <p>© 2024 ClinicFlow Management Systems. Surgical Precision in Healthcare.</p>
+      <p>© 2026 HealTech. Clinic operations software.</p>
       <div className="flex gap-6 underline">
         <Link href="/">Privacy Policy</Link>
         <Link href="/">Terms of Service</Link>
@@ -1261,7 +1261,7 @@ function SummaryRow({ label, value }: { label: string; value: string }) {
 function InlineClinicFooter() {
   return (
     <footer className="flex h-[116px] items-center justify-between border-t border-[#d7e1e7] bg-white px-[30px] text-[14px] text-[#51647c]">
-      <p><b className="mr-2 text-[18px] text-[#0a1014]">ClinicFlow</b> © 2024 ClinicFlow Management Systems. Surgical Precision in Healthcare.</p>
+      <p><b className="mr-2 text-[18px] text-[#0a1014]">HealTech</b> © 2026 HealTech. Clinic operations software.</p>
       <div className="flex gap-6 underline">
         <Link href="/">Privacy Policy</Link>
         <Link href="/">Terms of Service</Link>
@@ -1737,7 +1737,7 @@ function EmployeeFormView() {
       </FormSection>
       <FormSection title="Account Access" icon={UserCog}>
         <div className="flex h-[76px] items-center justify-between rounded-lg border border-[#b9c8d0] bg-[#f7fbfe] px-5">
-          <div><p className="text-[15px] font-medium">System Access</p><p className="text-[12px]">Allow this user to log into the MedCore platform.</p></div>
+          <div><p className="text-[15px] font-medium">System Access</p><p className="text-[12px]">Allow this user to log into the HealTech platform.</p></div>
           <span className="relative h-6 w-11 rounded-full bg-[#00758d]"><span className="absolute right-0.5 top-0.5 h-5 w-5 rounded-full bg-white" /></span>
         </div>
         <label className="mt-6 flex items-start gap-4">
@@ -1762,7 +1762,7 @@ function DepartmentsView() {
     <div className="px-[60px] py-[62px]">
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-[15px]">MedCore Clinic <span className="mx-2">›</span> Departments</p>
+          <p className="text-[15px]">HealTech <span className="mx-2">›</span> Departments</p>
           <h1 className="mt-3 text-[40px] font-bold leading-[48px] tracking-[-0.04em]">Departments</h1>
         </div>
         <button className="flex h-11 items-center gap-2 rounded-lg bg-[#00758d] px-6 text-[18px] font-semibold text-white"><Plus className="h-5 w-5" />Create Department</button>

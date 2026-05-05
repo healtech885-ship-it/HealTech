@@ -145,7 +145,7 @@ function Sidebar({ screen }: { screen: PatientScreen }) {
   return (
     <aside className="fixed left-0 top-0 flex h-screen w-[320px] flex-col border-r border-[#d8e2eb] bg-[#f7fbff]">
       <div className="px-10 py-9">
-        <Link href="/patient/dashboard" className="text-[26px] font-bold text-[#0088a8]">ClinicConnect</Link>
+        <Link href="/patient/dashboard" className="text-[26px] font-bold text-[#0088a8]">HealTech</Link>
         <div className="mt-8 flex items-center gap-4">
           <img src={patientPhoto} alt="" className="h-[58px] w-[58px] rounded-full border border-[#c9d7e0] object-cover" />
           <div>
@@ -175,7 +175,7 @@ function Sidebar({ screen }: { screen: PatientScreen }) {
       </nav>
 
       <div className="mt-auto border-t border-[#d8e2eb] px-10 py-7">
-        <Link href="#" className="mb-8 flex items-center gap-4 text-[17px] text-[#263b57]"><HelpCircle className="h-5 w-5" />Help Center</Link>
+        <span className="mb-8 flex items-center gap-4 text-[17px] text-[#263b57]"><HelpCircle className="h-5 w-5" />Help Center</span>
         <Link href="/login" className="flex items-center gap-4 text-[17px] text-[#263b57]"><LogOut className="h-5 w-5" />Logout</Link>
       </div>
     </aside>
@@ -186,7 +186,7 @@ function Topbar({ screen }: { screen: PatientScreen }) {
   const placeholder = screen === "lab-result-details" ? "Search..." : screen === "profile" ? "Search records..." : screen === "medicines" ? "Search..." : "Search records...";
   return (
     <header className="flex h-[88px] items-center justify-between border-b border-[#d8e2eb] bg-white px-10">
-      <Link href="/patient/dashboard" className="text-[26px] font-bold text-[#0088a8]">ClinicConnect</Link>
+      <Link href="/patient/dashboard" className="text-[26px] font-bold text-[#0088a8]">HealTech</Link>
       <div className="flex items-center gap-7">
         <label className="relative hidden md:block">
           <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[#7890aa]" />

@@ -242,7 +242,7 @@ function AdminShell({
             >
               <Menu className="h-5 w-5" />
             </button>
-            <p className="hidden shrink-0 text-[25px] font-bold tracking-normal text-[#080d10] sm:block">MedCore Clinic</p>
+            <p className="hidden shrink-0 text-[25px] font-bold tracking-normal text-[#080d10] sm:block">HealTech</p>
             <div className="relative hidden min-w-0 flex-1 md:block lg:max-w-[398px]">
               <Search className="absolute left-5 top-1/2 h-5 w-5 -translate-y-1/2 text-[#8293a8]" />
               <input

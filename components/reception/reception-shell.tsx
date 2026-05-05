@@ -80,7 +80,7 @@ export function ReceptionSidebar({ active }: { active: string }) {
 export function ReceptionTopbar({ searchPlaceholder, children }: { searchPlaceholder: string; children?: React.ReactNode }) {
   return (
     <header className="sticky top-0 z-10 flex h-16 items-center border-b border-[#d9e3ea] bg-white px-6 shadow-[0_2px_8px_rgba(15,23,42,0.04)]">
-      <p className="mr-6 text-lg font-bold tracking-tight text-[#080d10]">MedCore Clinic</p>
+      <p className="mr-6 text-lg font-bold tracking-tight text-[#080d10]">HealTech</p>
       <div className="relative w-[340px]">
         <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8293a8]" />
         <input className="h-10 w-full rounded-full border-0 bg-[#f5f9fc] pl-11 pr-4 text-sm outline-none placeholder:text-[#8293a8]" placeholder={searchPlaceholder} />
