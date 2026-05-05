@@ -116,7 +116,13 @@ export function WorkspaceClient({ config }: { config: WorkspaceConfig }) {
   }
 
   useEffect(() => {
-    void loadData();
+    let active = true;
+    void Promise.resolve().then(() => {
+      if (active) void loadData();
+    });
+    return () => {
+      active = false;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [config.table, config.select]);
 

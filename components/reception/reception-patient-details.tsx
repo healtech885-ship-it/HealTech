@@ -1,6 +1,5 @@
-/* eslint-disable @next/next/no-img-element */
 import Link from "next/link";
-import { Edit3, Info, MoreVertical, Plus, Shield } from "lucide-react";
+import { Edit3, Info, MoreVertical, Plus } from "lucide-react";
 import { AvatarCircle } from "./reception-shell";
 
 const visits = [

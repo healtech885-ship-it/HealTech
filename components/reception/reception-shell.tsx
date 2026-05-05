@@ -2,7 +2,7 @@
 import Link from "next/link";
 import {
   Activity, AlertTriangle, Bell, Calendar, ChevronRight, CircleHelp,
-  Clock3, ClipboardCheck, Grid2X2, Home, LogOut, MoreVertical, Plus,
+  Clock3, ClipboardCheck, Grid2X2, LogOut, MoreVertical, Plus,
   Search, Settings, User, UserPlus, Users,
 } from "lucide-react";
 

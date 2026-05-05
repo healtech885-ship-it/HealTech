@@ -1,4 +1,3 @@
-/* eslint-disable @next/next/no-img-element */
 import Link from "next/link";
 import { ChevronLeft, ChevronRight, Eye, Calendar, Search, UserPlus, SlidersHorizontal } from "lucide-react";
 import { AvatarCircle } from "./reception-shell";

@@ -1,7 +1,6 @@
-/* eslint-disable @next/next/no-img-element */
 import Link from "next/link";
 import {
-  AlertTriangle, Calendar, CheckCircle2, Clock3, MoreVertical, Plus,
+  AlertTriangle, Calendar, CheckCircle2, MoreVertical, Plus,
   Search, TrendingUp, UserPlus, Users, Activity, Zap,
 } from "lucide-react";
 import { AvatarCircle } from "./reception-shell";

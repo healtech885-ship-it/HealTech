@@ -32,3 +32,28 @@ npm run typecheck
 npm run lint
 npm run build
 ```
+
+## Vercel
+
+The project is ready to import into Vercel as a Next.js app. Vercel should use the settings from `vercel.json`:
+
+- Install Command: `npm install`
+- Build Command: `npm run build`
+- Development Command: `npm run dev`
+- Node.js: `22.x`
+
+Add these Environment Variables in Vercel before connecting to a live Supabase project:
+
+```bash
+NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_ANON_KEY=
+```
+
+`SUPABASE_SERVICE_ROLE_KEY` is only needed for trusted server environments and Supabase Edge Functions. Do not expose it as a `NEXT_PUBLIC_` variable.
+
+After deploying, add the Vercel domain to Supabase Auth redirect URLs, including:
+
+```text
+https://your-vercel-domain.vercel.app/auth/callback
+https://your-vercel-domain.vercel.app/reset-password
+```
