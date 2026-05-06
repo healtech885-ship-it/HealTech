@@ -33,6 +33,12 @@ type DepartmentSummary = {
   name: string;
 };
 
+type DepartmentOption = {
+  id: string;
+  name: string;
+  status: string;
+};
+
 type PatientRecord = {
   id: string;
   profile_id: string | null;
@@ -85,6 +91,20 @@ type AppointmentRequestRecord = {
   updated_at: string;
   requested_department: DepartmentSummary | null;
   reviewer: DoctorSummary | null;
+};
+
+type AppointmentRequestFormState = {
+  requested_department_id: string;
+  preferred_date: string;
+  reason: string;
+};
+
+type AppointmentRequestInsert = {
+  patient_id: string;
+  requested_department_id: string | null;
+  preferred_date: string;
+  reason: string;
+  status: "pending";
 };
 
 type LabResultRecord = {
@@ -210,6 +230,10 @@ type PatientPortalClient = {
   from(table: "appointment_requests"): {
     select(columns: string): SupabaseQuery<AppointmentRequestRecord>;
     select(columns: string, options: CountOptions): SupabaseCountQuery;
+    insert(payload: AppointmentRequestInsert): PromiseLike<QueryResult<AppointmentRequestRecord>>;
+  };
+  from(table: "departments"): {
+    select(columns: string): SupabaseQuery<DepartmentOption>;
   };
   from(table: "lab_results"): {
     select(columns: string): SupabaseQuery<LabResultRecord>;
@@ -688,6 +712,12 @@ function PatientMedicinesPage({ supabase, patient }: { supabase: PatientPortalCl
 
 function PatientAppointmentRequestsPage({ supabase, patient }: { supabase: PatientPortalClient; patient: PatientRecord }) {
   const [state, setState] = useState<QueryState<AppointmentRequestRecord[]>>({ loading: true, data: [], error: null });
+  const [departmentsState, setDepartmentsState] = useState<QueryState<DepartmentOption[]>>({ loading: true, data: [], error: null });
+  const [form, setForm] = useState<AppointmentRequestFormState>({ requested_department_id: "", preferred_date: "", reason: "" });
+  const [saving, setSaving] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
     let active = true;
@@ -707,11 +737,126 @@ function PatientAppointmentRequestsPage({ supabase, patient }: { supabase: Patie
     return () => {
       active = false;
     };
-  }, [patient.id, supabase]);
+  }, [patient.id, refreshKey, supabase]);
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadDepartments() {
+      setDepartmentsState({ loading: true, data: [], error: null });
+      const result = await supabase.from("departments").select("id,name,status").eq("status", "active").order("name", { ascending: true });
+      if (!active) return;
+      if (result.error) {
+        setDepartmentsState({ loading: false, data: [], error: result.error.message });
+        return;
+      }
+      setDepartmentsState({ loading: false, data: result.data ?? [], error: null });
+    }
+
+    void loadDepartments();
+    return () => {
+      active = false;
+    };
+  }, [supabase]);
+
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setFormError(null);
+    setSuccessMessage(null);
+
+    const validationError = validateAppointmentRequestForm(form);
+    if (validationError) {
+      setFormError(validationError);
+      return;
+    }
+
+    setSaving(true);
+    const result = await supabase.from("appointment_requests").insert({
+      patient_id: patient.id,
+      requested_department_id: form.requested_department_id || null,
+      preferred_date: form.preferred_date,
+      reason: form.reason.trim(),
+      status: "pending",
+    });
+    setSaving(false);
+
+    if (result.error) {
+      setFormError(result.error.message);
+      return;
+    }
+
+    setForm({ requested_department_id: "", preferred_date: "", reason: "" });
+    setSuccessMessage("Appointment request submitted. Reception will review it.");
+    setRefreshKey((current) => current + 1);
+  }
 
   return (
     <PageFrame>
       <PageHeader title="Appointment Requests" description="Requests submitted for your patient record." />
+      <DataCard title="Request Appointment">
+        <form onSubmit={handleSubmit} className="grid gap-5">
+          <div className="grid gap-4 lg:grid-cols-2">
+            <label className="grid gap-2 text-sm font-medium text-[#41546b]">
+              Department
+              <select
+                value={form.requested_department_id}
+                onChange={(event) => setForm((current) => ({ ...current, requested_department_id: event.target.value }))}
+                className="h-11 rounded-lg border border-[#cbd8e2] bg-[#f4f8fb] px-3 text-sm text-[#17212f] outline-none focus:border-[#00758d]"
+                disabled={saving || departmentsState.loading}
+              >
+                <option value="">No department preference</option>
+                {departmentsState.data.map((department) => (
+                  <option key={department.id} value={department.id}>
+                    {department.name}
+                  </option>
+                ))}
+              </select>
+              {departmentsState.loading ? <span className="text-xs text-[#607084]">Loading departments...</span> : null}
+              {departmentsState.error ? <span className="text-xs text-[#b42318]">Departments could not be loaded: {departmentsState.error}</span> : null}
+              {!departmentsState.loading && !departmentsState.error && departmentsState.data.length === 0 ? (
+                <span className="text-xs text-[#607084]">No active departments are available to select.</span>
+              ) : null}
+            </label>
+
+            <label className="grid gap-2 text-sm font-medium text-[#41546b]">
+              Preferred Date
+              <input
+                type="date"
+                value={form.preferred_date}
+                min={todayDateInputValue()}
+                onChange={(event) => setForm((current) => ({ ...current, preferred_date: event.target.value }))}
+                className="h-11 rounded-lg border border-[#cbd8e2] bg-[#f4f8fb] px-3 text-sm text-[#17212f] outline-none focus:border-[#00758d]"
+                disabled={saving}
+              />
+            </label>
+          </div>
+
+          <label className="grid gap-2 text-sm font-medium text-[#41546b]">
+            Reason
+            <textarea
+              value={form.reason}
+              onChange={(event) => setForm((current) => ({ ...current, reason: event.target.value }))}
+              className="min-h-28 rounded-lg border border-[#cbd8e2] bg-[#f4f8fb] px-3 py-2 text-sm text-[#17212f] outline-none focus:border-[#00758d]"
+              placeholder="Briefly describe the reason for your appointment request"
+              disabled={saving}
+            />
+          </label>
+
+          {formError ? <ErrorState message={formError} /> : null}
+          {successMessage ? <div className="rounded-lg border border-[#a8dfb7] bg-[#effaf2] p-4 text-sm text-[#087a35]">{successMessage}</div> : null}
+
+          <div className="flex justify-end">
+            <button
+              type="submit"
+              disabled={saving}
+              className="inline-flex h-11 items-center gap-2 rounded-lg bg-[#00758d] px-5 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+              {saving ? "Submitting" : "Submit Request"}
+            </button>
+          </div>
+        </form>
+      </DataCard>
       <DataCard title="Requests">
         {state.loading ? <LoadingState label="Loading appointment requests" /> : null}
         {state.error ? <ErrorState message={state.error} /> : null}
@@ -1015,14 +1160,19 @@ function AppointmentRequestList({ requests }: { requests: AppointmentRequestReco
       {requests.map((request) => (
         <div key={request.id} className="grid gap-4 py-4 lg:grid-cols-[1.2fr_1fr_1fr_auto]">
           <div>
-            <p className="font-semibold">{request.requested_department?.name ?? "General appointment"}</p>
+            <p className="font-semibold">{request.requested_department?.name ?? request.requested_department_id ?? "No department preference"}</p>
             <p className="mt-1 text-sm text-[#607084]">{request.reason ?? "No reason recorded"}</p>
           </div>
           <InfoBlock label="Preferred Date" value={request.preferred_date ? formatDate(request.preferred_date) : "No preferred date"} />
-          <InfoBlock label="Admin Comment" value={request.admin_comment ?? "No comment"} />
+          <InfoBlock
+            label="Review"
+            value={request.admin_comment ?? "No admin comment"}
+            helper={request.reviewed_at ? `Reviewed ${formatDateTime(request.reviewed_at)}` : "Not reviewed yet"}
+          />
           <div>
             <Badge tone={badgeTone(request.status)}>{formatLabel(request.status)}</Badge>
-            <p className="mt-2 text-sm text-[#607084]">{formatDateTime(request.created_at)}</p>
+            <p className="mt-2 text-sm text-[#607084]">Created {formatDateTime(request.created_at)}</p>
+            <p className="mt-1 text-sm text-[#607084]">Updated {formatDateTime(request.updated_at)}</p>
           </div>
         </div>
       ))}
@@ -1227,6 +1377,19 @@ function formatResultValue(result: LabResultRecord) {
 
 function remainingPrescriptionQuantity(item: PrescriptionItemRecord) {
   return Math.max(item.requested_quantity - item.dispensed_quantity, 0);
+}
+
+function validateAppointmentRequestForm(form: AppointmentRequestFormState) {
+  if (!form.preferred_date) return "Preferred date is required.";
+  if (form.preferred_date < todayDateInputValue()) return "Preferred date cannot be in the past.";
+  if (!form.reason.trim()) return "Reason is required.";
+  return null;
+}
+
+function todayDateInputValue() {
+  const today = new Date();
+  const offset = today.getTimezoneOffset() * 60_000;
+  return new Date(today.getTime() - offset).toISOString().slice(0, 10);
 }
 
 function patientIdentifier(patient: PatientRecord | null) {
