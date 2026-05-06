@@ -27,7 +27,7 @@ export type WorkspaceAction =
   | { kind: "update"; table: string; idField: string; success: string }
   | { kind: "function"; name: string; success: string };
 
-export type WorkspaceMode = "list" | "create" | "details" | "edit" | "settings" | "store-request-details" | "patient-details" | "appointment-request-details";
+export type WorkspaceMode = "list" | "create" | "details" | "edit" | "settings" | "store-request-details" | "patient-details" | "appointment-request-details" | "create-visit";
 
 export type WorkspaceConfig = {
   title: string;
@@ -162,7 +162,7 @@ export function getWorkspaceConfig(role: UserRole, segments?: string[]): Workspa
     "reception/patients": { ...defaultByRole.reception, title: "Patient Search and Registration", table: "patients", select: patientSelect(), detailSelect: patientSelect(), rowLink: { hrefBase: "/reception/patients", idField: "id", label: "Open" }, hiddenColumns: ["id", "profile_id", "department_id", "department", "departments", "dorm_info", "emergency_phone", "nationality", "blood_type", "address"], columnLabels: patientColumnLabels(), actionLabel: "Register Patient", action: { kind: "function", name: "create-patient", success: "Patient registered" }, fields: patientFields(), dashboard: false },
     "reception/patients/new": { ...defaultByRole.reception, title: "New Patient", table: "patients", select: patientSelect(), detailSelect: patientSelect(), hiddenColumns: ["id", "profile_id", "department_id", "department", "departments", "dorm_info", "emergency_phone", "nationality", "blood_type", "address"], columnLabels: patientColumnLabels(), actionLabel: "Register Patient", action: { kind: "function", name: "create-patient", success: "Patient registered" }, fields: patientFields(), dashboard: false },
     "reception/visits": { ...defaultByRole.reception, title: "Queued Visits", table: "visits", select: defaultByRole.reception.select, filters: [{ column: "status", operator: "eq", value: "queued" }], actionLabel: "Create Visit", action: { kind: "function", name: "create-visit", success: "Visit created" }, fields: visitFields(), dashboard: false },
-    "reception/visits/new": { ...defaultByRole.reception, title: "New Visit", table: "visits", select: defaultByRole.reception.select, actionLabel: "Create Visit", action: { kind: "function", name: "create-visit", success: "Visit created" }, fields: visitFields(), dashboard: false },
+    "reception/visits/new": { ...defaultByRole.reception, title: "Create Visit", description: "Create a queued visit for a registered patient and assign it to a doctor.", table: "visits", select: defaultByRole.reception.select, mode: "create-visit", actionLabel: "Create Visit", action: { kind: "function", name: "create-visit", success: "Visit created" }, fields: visitFields(), dashboard: false },
     "reception/appointment-requests": { ...defaultByRole.reception, title: "Appointment Requests", table: "appointment_requests", select: appointmentRequestSelect(), detailSelect: appointmentRequestSelect(), orderBy: "created_at", rowLink: { hrefBase: "/reception/appointment-requests", idField: "id", label: "Open" }, hiddenColumns: ["id", "patient_id", "requested_department_id", "reviewed_by"], columnLabels: appointmentRequestColumnLabels(), actionLabel: "Appointment requests are reviewed from details", action: { kind: "none" }, fields: [], dashboard: false, readonly: true },
 
     "doctor/visits": defaultByRole.doctor,

@@ -2,7 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   AlertCircle,
   AlertTriangle,
@@ -87,6 +87,7 @@ type SupabaseLike = {
 export function WorkspaceClient({ config }: { config: WorkspaceConfig }) {
   const supabase = useMemo(() => createClient(), []);
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [rows, setRows] = useState<ModuleRecord[]>([]);
   const [record, setRecord] = useState<Record<string, unknown> | null>(null);
   const [patientVisitRows, setPatientVisitRows] = useState<ModuleRecord[]>([]);
@@ -108,6 +109,7 @@ export function WorkspaceClient({ config }: { config: WorkspaceConfig }) {
     defaultValues: Object.fromEntries(config.fields.map((field) => [field.name, field.type === "checkbox" ? false : ""])),
   });
   const watchedValues = useWatch({ control: form.control });
+  const queryPrefillKey = searchParams.toString();
 
   async function loadData() {
     setLoading(true);
@@ -188,6 +190,15 @@ export function WorkspaceClient({ config }: { config: WorkspaceConfig }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [config.table, config.select, config.mode, config.recordId]);
 
+  useEffect(() => {
+    if (config.mode !== "create-visit") return;
+    const fieldNames = new Set(config.fields.map((field) => field.name));
+    const params = new URLSearchParams(queryPrefillKey);
+    for (const [name, value] of visitPrefillValues(params, fieldNames)) {
+      form.setValue(name, value, { shouldDirty: false, shouldValidate: true });
+    }
+  }, [config.fields, config.mode, form, queryPrefillKey]);
+
   async function onSubmit(values: FormValues) {
     if (config.action.kind === "none") return;
     setSaving(true);
@@ -246,6 +257,11 @@ export function WorkspaceClient({ config }: { config: WorkspaceConfig }) {
       router.refresh();
       return;
     }
+    if (config.mode === "create-visit" && config.action.kind === "function" && config.action.name === "create-visit") {
+      router.push("/reception/visits");
+      router.refresh();
+      return;
+    }
     await loadData();
   }
 
@@ -278,6 +294,22 @@ export function WorkspaceClient({ config }: { config: WorkspaceConfig }) {
 
   if (config.mode === "appointment-request-details") {
     return <AppointmentRequestDetailsView loading={loading} record={record} error={error} onReload={loadData} />;
+  }
+
+  if (config.mode === "create-visit") {
+    return (
+      <CreateVisitView
+        loading={loading}
+        config={config}
+        form={form}
+        watchedValues={watchedValues}
+        references={references}
+        saving={saving}
+        error={error}
+        message={message}
+        onSubmit={onSubmit}
+      />
+    );
   }
 
   if (isEmployeeRecordMode && config.mode === "details") {
@@ -396,6 +428,91 @@ export function WorkspaceClient({ config }: { config: WorkspaceConfig }) {
             </CardContent>
           </Card>
         </div>
+      </section>
+    </div>
+  );
+}
+
+function CreateVisitView({
+  loading,
+  config,
+  form,
+  watchedValues,
+  references,
+  saving,
+  error,
+  message,
+  onSubmit,
+}: {
+  loading: boolean;
+  config: WorkspaceConfig;
+  form: ReturnType<typeof useForm<FormValues>>;
+  watchedValues: FormValues;
+  references: Partial<Record<ReferenceKey, ReferenceOption[]>>;
+  saving: boolean;
+  error: string | null;
+  message: string | null;
+  onSubmit: (values: FormValues) => Promise<void>;
+}) {
+  return (
+    <div className="min-w-0 space-y-6">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <Link href="/reception/visits" className="inline-flex items-center gap-2 text-sm font-semibold text-primary hover:underline">
+            <ArrowLeft className="h-4 w-4" />
+            Queued visits
+          </Link>
+          <h1 className="mt-2 text-[30px] font-semibold leading-10 tracking-normal text-[#080d10]">{config.title}</h1>
+          <p className="text-[17px] leading-7 text-[#3d4950]">{config.description}</p>
+        </div>
+      </div>
+
+      <section className="grid min-w-0 gap-6 xl:grid-cols-[minmax(0,640px)_minmax(260px,1fr)]">
+        <Card className="min-w-0 overflow-hidden">
+          <CardHeader>
+            <CardTitle>Create Visit</CardTitle>
+            <CardDescription>New visits enter the queued visits list for doctor processing.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {loading ? (
+              <LoadingState />
+            ) : (
+              <form className="space-y-4" onSubmit={form.handleSubmit(onSubmit)}>
+                {config.fields.map((field) => (
+                  <FieldControl
+                    key={field.name}
+                    field={field}
+                    register={form.register}
+                    setValue={form.setValue}
+                    value={watchedValues?.[field.name]}
+                    error={form.formState.errors[field.name]?.message?.toString()}
+                    references={references}
+                  />
+                ))}
+                {error ? <Notice tone="danger" text={error} /> : null}
+                {message ? <Notice tone="success" text={message} /> : null}
+                <Button type="submit" className="w-full sm:w-auto" disabled={saving}>
+                  {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                  {config.actionLabel}
+                </Button>
+              </form>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card className="min-w-0 overflow-hidden">
+          <CardHeader>
+            <CardTitle>Queue Status</CardTitle>
+            <CardDescription>After creation, the visit appears in Reception&apos;s queued visits page.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3 text-sm">
+            <ReadOnlyLine label="Visit status" value="queued" />
+            <ReadOnlyLine label="Required fields" value="Patient and doctor" />
+            <Link href="/reception/visits" className="inline-flex h-10 items-center justify-center rounded-lg border border-border bg-white px-4 text-sm font-semibold text-primary hover:bg-muted">
+              View queued visits
+            </Link>
+          </CardContent>
+        </Card>
       </section>
     </div>
   );
@@ -679,7 +796,7 @@ function PatientDetailsView({
             {patient.mrn !== "Not set" ? `MRN ${patient.mrn}` : "No MRN"} {patient.studentId !== "Not set" ? `/ Student ID ${patient.studentId}` : ""}
           </p>
         </div>
-        <Link href="/reception/visits/new" className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground transition-colors hover:bg-[#003f82] focus:outline-none focus:ring-3 focus:ring-blue-200">
+        <Link href={createVisitHref({ patientId: patient.id })} className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground transition-colors hover:bg-[#003f82] focus:outline-none focus:ring-3 focus:ring-blue-200">
           <ClipboardPlus className="h-4 w-4" />
           Create visit
         </Link>
@@ -884,6 +1001,12 @@ function AppointmentRequestDetailsView({
 
             {request.status === "approved" ? (
               <>
+                <Link
+                  href={createVisitHref({ patientId: request.patientId, chiefComplaint: request.reason, priority: "normal" })}
+                  className="inline-flex h-10 w-full items-center justify-center rounded-lg border border-border bg-white px-4 text-sm font-semibold text-primary hover:bg-muted"
+                >
+                  Open Create Visit form
+                </Link>
                 <div className="space-y-2">
                   <Label htmlFor="appointment_doctor">Doctor *</Label>
                   <select
@@ -1607,6 +1730,42 @@ function prepareActionPayload(config: WorkspaceConfig, payload: Record<string, u
     throw new Error("Student ID or MRN is required");
   }
   return payload;
+}
+
+function visitPrefillValues(params: URLSearchParams, fieldNames: Set<string>) {
+  const out: Array<[string, string]> = [];
+  const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  const allowedPriority = new Set(["low", "normal", "high", "urgent"]);
+
+  for (const name of ["patient_id", "doctor_id"]) {
+    const value = params.get(name)?.trim();
+    if (value && fieldNames.has(name) && uuidPattern.test(value)) out.push([name, value]);
+  }
+
+  const chiefComplaint = params.get("chief_complaint")?.trim();
+  if (chiefComplaint && fieldNames.has("chief_complaint")) out.push(["chief_complaint", chiefComplaint]);
+
+  const priority = params.get("priority")?.trim();
+  if (priority && fieldNames.has("priority") && allowedPriority.has(priority)) out.push(["priority", priority]);
+
+  return out;
+}
+
+function createVisitHref({
+  patientId,
+  chiefComplaint,
+  priority,
+}: {
+  patientId?: string;
+  chiefComplaint?: string;
+  priority?: string;
+}) {
+  const params = new URLSearchParams();
+  if (patientId && patientId !== "Not set") params.set("patient_id", patientId);
+  if (chiefComplaint && chiefComplaint !== "Not set") params.set("chief_complaint", chiefComplaint);
+  if (priority) params.set("priority", priority);
+  const query = params.toString();
+  return `/reception/visits/new${query ? `?${query}` : ""}`;
 }
 
 function extractCreateEmployeeSuccess(value: unknown): CreateEmployeeSuccess | null {
