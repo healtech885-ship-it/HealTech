@@ -614,16 +614,18 @@ function DoctorLabResults({ profile }: { profile: AppProfile }) {
 
 function DoctorMedicineOrders({ profile }: { profile: AppProfile }) {
   const supabase = useMemo(() => createClient(), []);
-  const [state, setState] = useState<QueryState<RelatedOrder[]>>({ loading: true, data: [], error: null });
+  const [state, setState] = useState<QueryState<PrescriptionRecord[]>>({ loading: true, data: [], error: null });
 
   useEffect(() => {
     let active = true;
 
-    async function loadOrders() {
+    async function loadPrescriptions() {
       setState((current) => ({ ...current, loading: true, error: null }));
-      const { data, error } = await supabase
-        .from("medicine_orders")
-        .select("id,visit_id,patient_id,doctor_id,status,doctor_notes,created_at,completed_at,patients(id,full_name,mrn,student_id),visits(id,visit_code,chief_complaint,status,priority)")
+      const { data, error } = await (supabase as unknown as CanonicalPrescriptionsClient)
+        .from("prescriptions")
+        .select(
+          "id,visit_id,patient_id,doctor_id,status,doctor_notes,created_at,updated_at,completed_at,patients(id,full_name,mrn,student_id),visits(id,visit_code,chief_complaint,status,priority),prescription_items(id,prescription_id,medicine_id,requested_quantity,dispensed_quantity,dosage_instructions,status,dispensed_at,created_at,medicines(id,name,category,description,status))",
+        )
         .eq("doctor_id", profile.id)
         .order("created_at", { ascending: false });
 
@@ -632,16 +634,26 @@ function DoctorMedicineOrders({ profile }: { profile: AppProfile }) {
         setState({ loading: false, data: [], error: error.message });
         return;
       }
-      setState({ loading: false, data: ((data ?? []) as unknown) as RelatedOrder[], error: null });
+      setState({ loading: false, data: ((data ?? []) as unknown) as PrescriptionRecord[], error: null });
     }
 
-    void loadOrders();
+    void loadPrescriptions();
     return () => {
       active = false;
     };
   }, [profile.id, supabase]);
 
-  return <OrderPage title="Medicine Orders" description="Medicine orders created under your doctor profile." state={state} kind="medicine" />;
+  return (
+    <section className="px-5 py-7 lg:px-8">
+      <PageHeading title="Prescriptions" description="Prescriptions created for visits assigned to your doctor profile." />
+      <DataPanel className="mt-6" title="Prescription List">
+        {state.loading ? <LoadingState label="Loading prescriptions" /> : null}
+        {state.error ? <ErrorState message={state.error} /> : null}
+        {!state.loading && !state.error && state.data.length === 0 ? <EmptyState title="No prescriptions" description="No prescriptions are visible for your doctor profile." /> : null}
+        {!state.loading && !state.error && state.data.length > 0 ? <PrescriptionList prescriptions={state.data} /> : null}
+      </DataPanel>
+    </section>
+  );
 }
 
 type RelatedOrder = {
@@ -676,11 +688,60 @@ type LabResultItem = {
   lab_tests: { name: string; code: string | null; unit: string | null; normal_range: string | null } | null;
 };
 
+type PrescriptionStatus = "ordered" | "partially_dispensed" | "dispensed" | "cancelled";
+type PrescriptionItemStatus = "pending" | "dispensed" | "unavailable" | "cancelled";
+
+type PrescriptionMedicine = {
+  id: string;
+  name: string;
+  category: string | null;
+  description: string | null;
+  status: string;
+};
+
+type PrescriptionItemRecord = {
+  id: string;
+  prescription_id: string;
+  medicine_id: string;
+  requested_quantity: number;
+  dispensed_quantity: number;
+  dosage_instructions: string | null;
+  status: PrescriptionItemStatus;
+  dispensed_at: string | null;
+  created_at: string;
+  medicines: PrescriptionMedicine | null;
+};
+
+type PrescriptionRecord = {
+  id: string;
+  visit_id: string;
+  patient_id: string;
+  doctor_id: string;
+  status: PrescriptionStatus;
+  doctor_notes: string | null;
+  created_at: string;
+  updated_at: string;
+  completed_at: string | null;
+  patients: Pick<PatientRow, "id" | "full_name" | "mrn" | "student_id"> | null;
+  visits: Pick<DoctorVisit, "id" | "visit_code" | "chief_complaint" | "status" | "priority"> | null;
+  prescription_items: PrescriptionItemRecord[];
+};
+
 type CanonicalLabResultsClient = {
   from(table: "lab_results"): {
     select(columns: string): {
       eq(column: "doctor_id", value: string): {
         order(column: "updated_at", options: { ascending: boolean }): Promise<{ data: unknown[] | null; error: { message: string } | null }>;
+      };
+    };
+  };
+};
+
+type CanonicalPrescriptionsClient = {
+  from(table: "prescriptions"): {
+    select(columns: string): {
+      eq(column: "doctor_id", value: string): {
+        order(column: "created_at", options: { ascending: boolean }): Promise<{ data: unknown[] | null; error: { message: string } | null }>;
       };
     };
   };
@@ -717,6 +778,84 @@ function InlineNotice({ tone, message }: { tone: "success" | "danger"; message: 
   return (
     <div className={cn("mb-4 rounded-lg border p-3 text-sm", tone === "success" ? "border-[#a7dfb7] bg-[#f1fbf4] text-[#0b7a3b]" : "border-[#f0b7b2] bg-[#fff6f5] text-[#9f1f17]")}>
       {message}
+    </div>
+  );
+}
+
+function PrescriptionList({ prescriptions }: { prescriptions: PrescriptionRecord[] }) {
+  return (
+    <div className="space-y-4">
+      {prescriptions.map((prescription) => (
+        <article key={prescription.id} className="rounded-lg border border-[#d4e0e8] bg-white p-4">
+          <div className="grid gap-4 lg:grid-cols-[1fr_1fr_0.7fr_0.8fr_auto] lg:items-start">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wide text-[#607084]">Visit</p>
+              <p className="mt-1 font-semibold">{prescription.visits?.visit_code ?? "Visit"}</p>
+              <p className="mt-1 text-sm text-[#607084]">{prescription.patients?.full_name ?? "Patient unavailable"}</p>
+              <p className="text-xs text-[#7a8ca1]">{patientIdentifier(prescription.patients)}</p>
+            </div>
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wide text-[#607084]">Chief Complaint</p>
+              <p className="mt-1 text-sm text-[#41546b]">{prescription.visits?.chief_complaint ?? "No complaint recorded"}</p>
+            </div>
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wide text-[#607084]">Status</p>
+              <div className="mt-2">
+                <StatusBadge value={prescription.status} />
+              </div>
+            </div>
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wide text-[#607084]">Created</p>
+              <p className="mt-1 text-sm text-[#41546b]">{formatDateTime(prescription.created_at)}</p>
+            </div>
+            <Link href={`/doctor/visits/${prescription.visit_id}`} className="inline-flex h-9 items-center justify-center rounded-lg bg-[#006d86] px-3 text-sm font-semibold text-white">
+              Open Visit
+            </Link>
+          </div>
+
+          {prescription.doctor_notes ? (
+            <div className="mt-4 rounded-lg border border-[#e1e9ef] bg-[#f8fbfd] p-3">
+              <p className="text-xs font-semibold uppercase tracking-wide text-[#607084]">Doctor Notes</p>
+              <p className="mt-1 whitespace-pre-wrap text-sm text-[#41546b]">{prescription.doctor_notes}</p>
+            </div>
+          ) : null}
+
+          <div className="mt-4">
+            <p className="text-xs font-semibold uppercase tracking-wide text-[#607084]">Medicines</p>
+            {prescription.prescription_items.length > 0 ? (
+              <div className="mt-3 overflow-x-auto">
+                <table className="min-w-full divide-y divide-[#e1e9ef] text-left text-sm">
+                  <thead className="bg-[#f4f8fb] text-xs uppercase tracking-wide text-[#607084]">
+                    <tr>
+                      <th className="px-3 py-3 font-semibold">Medicine</th>
+                      <th className="px-3 py-3 font-semibold">Requested</th>
+                      <th className="px-3 py-3 font-semibold">Dispensed</th>
+                      <th className="px-3 py-3 font-semibold">Dosage Instructions</th>
+                      <th className="px-3 py-3 font-semibold">Item Status</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-[#e1e9ef]">
+                    {prescription.prescription_items.map((item) => (
+                      <tr key={item.id}>
+                        <td className="px-3 py-3">
+                          <p className="font-medium">{item.medicines?.name ?? "Medicine unavailable"}</p>
+                          <p className="text-xs text-[#607084]">{item.medicines?.category ?? "No category"}</p>
+                        </td>
+                        <td className="px-3 py-3 text-[#41546b]">{item.requested_quantity}</td>
+                        <td className="px-3 py-3 text-[#41546b]">{item.dispensed_quantity}</td>
+                        <td className="min-w-[220px] px-3 py-3 text-[#41546b]">{item.dosage_instructions ?? "Not recorded"}</td>
+                        <td className="px-3 py-3"><StatusBadge value={item.status} /></td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <p className="mt-2 rounded-lg border border-dashed border-[#cbd8e2] bg-[#f8fbfd] p-3 text-sm text-[#607084]">No medicines are attached to this prescription.</p>
+            )}
+          </div>
+        </article>
+      ))}
     </div>
   );
 }
@@ -952,7 +1091,7 @@ function InfoBlock({ label, value, wide }: { label: string; value?: string | nul
   );
 }
 
-function patientIdentifier(patient: PatientRow | null) {
+function patientIdentifier(patient: Pick<PatientRow, "mrn" | "student_id"> | null) {
   if (!patient) return "Not available";
   if (patient.mrn && patient.student_id) return `${patient.mrn} / ${patient.student_id}`;
   return patient.mrn ?? patient.student_id ?? "Not set";
