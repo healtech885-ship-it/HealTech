@@ -1161,19 +1161,20 @@ function DispenseModal({
 function MedicineTable({ medicines, stock }: { medicines: MedicineRecord[]; stock: Record<string, MedicineStockSummary> }) {
   return (
     <div className="overflow-hidden rounded-lg border border-[#d4e0e8]">
-      <div className="grid grid-cols-[1.5fr_1fr_1.8fr_0.9fr_0.9fr_0.9fr_1fr] bg-[#eef4f8] px-4 py-3 text-xs font-semibold uppercase tracking-wide text-[#607084]">
+      <div className="grid grid-cols-[1.4fr_0.9fr_1.5fr_0.8fr_0.8fr_0.9fr_0.8fr_0.8fr] bg-[#eef4f8] px-4 py-3 text-xs font-semibold uppercase tracking-wide text-[#607084]">
         <span>Name</span>
         <span>Category</span>
         <span>Description</span>
         <span>Status</span>
         <span>Total Qty</span>
         <span>Batches</span>
+        <span>Created</span>
         <span>Updated</span>
       </div>
       {medicines.map((medicine) => {
         const summary = stock[medicine.id] ?? { totalQuantity: 0, inStockBatches: 0, expiredBatches: 0 };
         return (
-          <div key={medicine.id} className="grid min-h-20 grid-cols-[1.5fr_1fr_1.8fr_0.9fr_0.9fr_0.9fr_1fr] items-center border-t border-[#e5edf3] px-4 py-3 text-sm">
+          <div key={medicine.id} className="grid min-h-20 grid-cols-[1.4fr_0.9fr_1.5fr_0.8fr_0.8fr_0.9fr_0.8fr_0.8fr] items-center border-t border-[#e5edf3] px-4 py-3 text-sm">
             <span>
               <span className="font-semibold">{medicine.name}</span>
               <br />
@@ -1184,6 +1185,7 @@ function MedicineTable({ medicines, stock }: { medicines: MedicineRecord[]; stoc
             <span><Badge tone={badgeTone(medicine.status)}>{formatLabel(medicine.status)}</Badge></span>
             <span>{summary.totalQuantity}</span>
             <span>{summary.inStockBatches} in stock{summary.expiredBatches ? `, ${summary.expiredBatches} expired` : ""}</span>
+            <span>{formatDate(medicine.created_at)}</span>
             <span>{formatDate(medicine.updated_at)}</span>
           </div>
         );
@@ -1195,30 +1197,34 @@ function MedicineTable({ medicines, stock }: { medicines: MedicineRecord[]; stoc
 function BatchTable({ batches }: { batches: BatchRecord[] }) {
   return (
     <div className="overflow-hidden rounded-lg border border-[#d4e0e8]">
-      <div className="grid grid-cols-[1.3fr_0.9fr_1fr_1fr_0.8fr_0.8fr_0.9fr_0.9fr] bg-[#eef4f8] px-4 py-3 text-xs font-semibold uppercase tracking-wide text-[#607084]">
+      <div className="grid grid-cols-[1.2fr_0.8fr_1fr_0.9fr_0.9fr_0.6fr_0.8fr_0.8fr_0.8fr_0.8fr] bg-[#eef4f8] px-4 py-3 text-xs font-semibold uppercase tracking-wide text-[#607084]">
         <span>Medicine</span>
         <span>Category</span>
+        <span>Manufacturer</span>
         <span>Batch</span>
         <span>Receipt</span>
         <span>Qty</span>
         <span>Unit Price</span>
         <span>Expiry</span>
         <span>Status</span>
+        <span>Created</span>
       </div>
       {batches.map((batch) => (
-        <div key={batch.id} className="grid min-h-20 grid-cols-[1.3fr_0.9fr_1fr_1fr_0.8fr_0.8fr_0.9fr_0.9fr] items-center border-t border-[#e5edf3] px-4 py-3 text-sm">
+        <div key={batch.id} className="grid min-h-20 grid-cols-[1.2fr_0.8fr_1fr_0.9fr_0.9fr_0.6fr_0.8fr_0.8fr_0.8fr_0.8fr] items-center border-t border-[#e5edf3] px-4 py-3 text-sm">
           <span>
             <span className="font-semibold">{batch.medicines?.name ?? batch.medicine_id ?? "Unlinked medicine"}</span>
             <br />
-            <span className="text-xs text-[#607084]">{batch.manufacturer ?? "No manufacturer"}</span>
+            <span className="text-xs text-[#607084]">{batch.id}</span>
           </span>
           <span>{batch.medicines?.category ?? "Uncategorized"}</span>
+          <span>{batch.manufacturer ?? "No manufacturer"}</span>
           <span>{batch.batch_number ?? "No batch number"}</span>
           <span>{batch.receipt_number ?? "No receipt"}</span>
           <span>{batch.quantity}</span>
           <span>{batch.unit_price == null ? "Not set" : formatCurrency(batch.unit_price)}</span>
           <span>{batch.expiry_date ? formatDate(batch.expiry_date) : "No expiry"}</span>
           <span><Badge tone={badgeTone(batch.status)}>{formatLabel(batch.status)}</Badge></span>
+          <span>{formatDate(batch.created_at)}</span>
         </div>
       ))}
     </div>
