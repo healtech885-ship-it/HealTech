@@ -27,7 +27,7 @@ export type WorkspaceAction =
   | { kind: "update"; table: string; idField: string; success: string }
   | { kind: "function"; name: string; success: string };
 
-export type WorkspaceMode = "list" | "create" | "details" | "edit" | "settings" | "store-request-details";
+export type WorkspaceMode = "list" | "create" | "details" | "edit" | "settings" | "store-request-details" | "patient-details";
 
 export type WorkspaceConfig = {
   title: string;
@@ -139,6 +139,7 @@ export function getWorkspaceConfig(role: UserRole, segments?: string[]): Workspa
   const employeeId = role === "admin" && segments?.[0] === "employees" && segments[1] !== "new" && segments[1] !== "edit" ? segments[1] : undefined;
   const editEmployeeId = role === "admin" && segments?.[0] === "employees" && segments[1] === "edit" ? segments[2] : undefined;
   const storeRequestId = role === "admin" && segments?.[0] === "store" && segments[1] === "requests" ? segments[2] : undefined;
+  const receptionPatientId = role === "reception" && segments?.[0] === "patients" && segments[1] !== "new" ? segments[1] : undefined;
 
   if (first === "dashboard") return base;
 
@@ -157,8 +158,8 @@ export function getWorkspaceConfig(role: UserRole, segments?: string[]): Workspa
     "admin/audit-logs": { ...base, title: "Audit Logs", table: "audit_logs", select: "id,actor_id,action,entity_type,entity_id,metadata,created_at", actionLabel: "Audit logs are read-only", action: { kind: "none" }, fields: [], dashboard: false, readonly: true },
     "admin/settings": { ...base, title: "Clinic Settings", table: "clinic_settings", select: "key,value,updated_by,updated_at,profiles(full_name,email)", mode: "settings", actionLabel: "Save Settings", action: { kind: "function", name: "update-clinic-settings", success: "Clinic settings saved" }, fields: clinicSettingsFields(), filters: [{ column: "key", operator: "eq", value: "general" }], dashboard: false },
 
-    "reception/patients": { ...defaultByRole.reception, title: "Patient Search and Registration", table: "patients", select: "id,full_name,student_id,mrn,gender,birth_date,phone,status,created_at", actionLabel: "Register Patient", action: { kind: "function", name: "create-patient", success: "Patient registered" }, fields: patientFields(), dashboard: false },
-    "reception/patients/new": { ...defaultByRole.reception, title: "New Patient", table: "patients", select: "id,full_name,student_id,mrn,gender,birth_date,phone,status,created_at", actionLabel: "Register Patient", action: { kind: "function", name: "create-patient", success: "Patient registered" }, fields: patientFields(), dashboard: false },
+    "reception/patients": { ...defaultByRole.reception, title: "Patient Search and Registration", table: "patients", select: patientSelect(), detailSelect: patientSelect(), rowLink: { hrefBase: "/reception/patients", idField: "id", label: "Open" }, hiddenColumns: ["id", "profile_id", "department_id", "department", "departments", "dorm_info", "emergency_phone", "nationality", "blood_type", "address"], columnLabels: patientColumnLabels(), actionLabel: "Register Patient", action: { kind: "function", name: "create-patient", success: "Patient registered" }, fields: patientFields(), dashboard: false },
+    "reception/patients/new": { ...defaultByRole.reception, title: "New Patient", table: "patients", select: patientSelect(), detailSelect: patientSelect(), hiddenColumns: ["id", "profile_id", "department_id", "department", "departments", "dorm_info", "emergency_phone", "nationality", "blood_type", "address"], columnLabels: patientColumnLabels(), actionLabel: "Register Patient", action: { kind: "function", name: "create-patient", success: "Patient registered" }, fields: patientFields(), dashboard: false },
     "reception/visits": { ...defaultByRole.reception, title: "Queued Visits", table: "visits", select: defaultByRole.reception.select, filters: [{ column: "status", operator: "eq", value: "queued" }], actionLabel: "Create Visit", action: { kind: "function", name: "create-visit", success: "Visit created" }, fields: visitFields(), dashboard: false },
     "reception/visits/new": { ...defaultByRole.reception, title: "New Visit", table: "visits", select: defaultByRole.reception.select, actionLabel: "Create Visit", action: { kind: "function", name: "create-visit", success: "Visit created" }, fields: visitFields(), dashboard: false },
 
@@ -234,10 +235,24 @@ export function getWorkspaceConfig(role: UserRole, segments?: string[]): Workspa
     };
   }
 
+  if (receptionPatientId) {
+    return {
+      ...overrides["reception/patients"],
+      title: "Patient Details",
+      mode: "patient-details",
+      recordId: receptionPatientId,
+      recordIdField: "id",
+      actionLabel: "Patient details are read-only",
+      action: { kind: "none" },
+      fields: [],
+      readonly: true,
+      dashboard: false,
+    };
+  }
+
   const exact = overrides[`${role}/${path}`];
   if (exact) return exact;
   if (role === "admin" && path.startsWith("leave-requests/")) return { ...overrides["admin/leave-requests"], title: "Leave Request Details" };
-  if (role === "reception" && path.startsWith("patients/")) return { ...overrides["reception/patients"], title: "Patient Details" };
   if (role === "doctor" && path.startsWith("visits/")) return { ...defaultByRole.doctor, title: "Visit Details", dashboard: false };
   if (role === "lab" && path.startsWith("orders/")) return { ...defaultByRole.lab, title: "Lab Order Details", dashboard: false };
   if (role === "pharmacy" && path.startsWith("orders/")) return { ...defaultByRole.pharmacy, title: "Dispense Medicines", dashboard: false };
@@ -281,6 +296,23 @@ function receptionVisitColumnLabels() {
     status: "Status",
     priority: "Priority",
     chief_complaint: "Chief complaint",
+    created_at: "Created at",
+  };
+}
+
+function patientSelect() {
+  return "id,profile_id,department_id,full_name,student_id,mrn,gender,birth_date,phone,emergency_phone,blood_type,address,dorm_info,nationality,status,created_at,departments(name)";
+}
+
+function patientColumnLabels() {
+  return {
+    full_name: "Full name",
+    mrn: "MRN",
+    student_id: "Student ID",
+    gender: "Gender",
+    birth_date: "Birth date",
+    phone: "Phone",
+    status: "Status",
     created_at: "Created at",
   };
 }

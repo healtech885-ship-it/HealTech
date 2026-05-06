@@ -89,6 +89,7 @@ export function WorkspaceClient({ config }: { config: WorkspaceConfig }) {
   const router = useRouter();
   const [rows, setRows] = useState<ModuleRecord[]>([]);
   const [record, setRecord] = useState<Record<string, unknown> | null>(null);
+  const [patientVisitRows, setPatientVisitRows] = useState<ModuleRecord[]>([]);
   const [referenceRows, setReferenceRows] = useState<ModuleRecord[]>([]);
   const [references, setReferences] = useState<Partial<Record<ReferenceKey, ReferenceOption[]>>>({});
   const [counters, setCounters] = useState<Record<string, unknown> | null>(null);
@@ -113,7 +114,7 @@ export function WorkspaceClient({ config }: { config: WorkspaceConfig }) {
     setError(null);
 
     const client = supabase as unknown as SupabaseLike;
-    const recordMode = Boolean(config.recordId && (config.mode === "details" || config.mode === "edit" || config.mode === "store-request-details"));
+    const recordMode = Boolean(config.recordId && (config.mode === "details" || config.mode === "edit" || config.mode === "store-request-details" || config.mode === "patient-details"));
     const settingsMode = config.mode === "settings";
     let query = client.from(config.table).select(recordMode ? config.detailSelect ?? config.select : config.select).limit(recordMode ? 1 : 50);
     if (recordMode && config.recordId) {
@@ -140,7 +141,7 @@ export function WorkspaceClient({ config }: { config: WorkspaceConfig }) {
       Promise.all(referencePromises),
     ]);
 
-    if (tableError) setError(tableError.message);
+    let loadError = tableError?.message ?? null;
     let rawRows = asArray(data);
     if (config.table === "store_items") {
       rawRows = await enrichStoreItemsWithStock(client, rawRows);
@@ -148,9 +149,22 @@ export function WorkspaceClient({ config }: { config: WorkspaceConfig }) {
     if (config.table === "store_requests") {
       rawRows = await enrichStoreRequestsWithStock(client, rawRows);
     }
+    let nextPatientVisitRows: ModuleRecord[] = [];
+    if (config.mode === "patient-details" && config.recordId) {
+      const { data: visitData, error: visitsError } = await client
+        .from("visits")
+        .select("id,visit_code,doctor_id,status,priority,chief_complaint,created_at,doctor:profiles!visits_doctor_id_fkey(full_name,email)")
+        .eq("patient_id", config.recordId)
+        .order("created_at", { ascending: false })
+        .limit(10);
+      if (visitsError && !loadError) loadError = visitsError.message;
+      nextPatientVisitRows = asArray(visitData).map((visit) => flattenPatientVisitHistory(visit as Record<string, unknown>));
+    }
     const rawRecord = recordMode || settingsMode ? rawRows[0] as Record<string, unknown> | undefined : undefined;
+    setError(loadError);
     setRecord(rawRecord ?? null);
     setRows(normalizeRows(rawRows, config));
+    setPatientVisitRows(nextPatientVisitRows);
     setReferenceRows(normalizeRows(asArray(refs)));
     setReferences(Object.fromEntries(referenceResults));
     if (recordMode && config.mode === "edit" && rawRecord) {
@@ -256,6 +270,10 @@ export function WorkspaceClient({ config }: { config: WorkspaceConfig }) {
 
   if (config.mode === "store-request-details") {
     return <StoreRequestDetailsView loading={loading} record={record} error={error} onReload={loadData} />;
+  }
+
+  if (config.mode === "patient-details") {
+    return <PatientDetailsView loading={loading} record={record} error={error} visits={patientVisitRows} />;
   }
 
   if (isEmployeeRecordMode && config.mode === "details") {
@@ -606,6 +624,101 @@ function StoreRequestDetailsView({
           </CardContent>
         </Card>
       </section>
+    </div>
+  );
+}
+
+function PatientDetailsView({
+  loading,
+  record,
+  error,
+  visits,
+}: {
+  loading: boolean;
+  record: Record<string, unknown> | null;
+  error: string | null;
+  visits: ModuleRecord[];
+}) {
+  if (loading) return <LoadingState />;
+  if (error && !record) return <Notice tone="danger" text={error} />;
+  if (!record) return <Notice tone="warning" text="Patient not found." />;
+
+  const patient = patientSummary(record);
+  const details = [
+    ["Patient ID", patient.id],
+    ["Full name", patient.fullName],
+    ["MRN", patient.mrn],
+    ["Student ID", patient.studentId],
+    ["Gender", patient.gender],
+    ["Birth date", patient.birthDate],
+    ["Phone", patient.phone],
+    ["Emergency phone", patient.emergencyPhone],
+    ["Blood type", patient.bloodType],
+    ["Address", patient.address],
+    ["Department", patient.department],
+    ["Dorm info", patient.dormInfo],
+    ["Nationality", patient.nationality],
+    ["Status", patient.status],
+    ["Created", patient.createdAt],
+  ];
+
+  return (
+    <div className="min-w-0 space-y-6">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <Link href="/reception/patients" className="inline-flex items-center gap-2 text-sm font-semibold text-primary hover:underline">
+            <ArrowLeft className="h-4 w-4" />
+            Patient search
+          </Link>
+          <h1 className="mt-2 text-[30px] font-semibold leading-10 tracking-normal text-[#080d10]">{patient.fullName}</h1>
+          <p className="text-[17px] leading-7 text-[#3d4950]">
+            {patient.mrn !== "Not set" ? `MRN ${patient.mrn}` : "No MRN"} {patient.studentId !== "Not set" ? `/ Student ID ${patient.studentId}` : ""}
+          </p>
+        </div>
+        <Link href="/reception/visits/new" className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground transition-colors hover:bg-[#003f82] focus:outline-none focus:ring-3 focus:ring-blue-200">
+          <ClipboardPlus className="h-4 w-4" />
+          Create visit
+        </Link>
+      </div>
+
+      <Card className="min-w-0 overflow-hidden">
+        <CardHeader>
+          <CardTitle>Patient Details</CardTitle>
+          <CardDescription>Core registration, contact, and student information for reception workflow.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {error ? <Notice tone="danger" text={error} /> : null}
+          <dl className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            {details.map(([label, value]) => (
+              <div key={label} className="rounded-lg border border-border bg-white p-4">
+                <dt className="text-xs font-semibold uppercase tracking-[0.02em] text-[var(--on-surface-variant)]">{label}</dt>
+                <dd className="mt-2 break-words text-sm font-semibold text-[var(--on-surface)]">{formatDetailValue(value)}</dd>
+              </div>
+            ))}
+          </dl>
+        </CardContent>
+      </Card>
+
+      <Card className="min-w-0 overflow-hidden">
+        <CardHeader>
+          <CardTitle>Recent Visits</CardTitle>
+          <CardDescription>Latest visits recorded for this patient.</CardDescription>
+        </CardHeader>
+        <CardContent className="min-w-0">
+          <DataTable
+            rows={visits.length ? visits : [{ state: "No visits found for this patient" }]}
+            hiddenColumns={["id", "doctor_id"]}
+            columnLabels={{
+              visit_code: "Visit code",
+              doctor_name: "Doctor name",
+              status: "Status",
+              priority: "Priority",
+              chief_complaint: "Chief complaint",
+              created_at: "Created at",
+            }}
+          />
+        </CardContent>
+      </Card>
     </div>
   );
 }
@@ -1390,6 +1503,7 @@ function normalizeRows(rows: unknown[], config?: WorkspaceConfig): ModuleRecord[
   return rows.map((row) => {
     const record = row as Record<string, unknown>;
     if (config?.table === "employees") return flattenEmployee(record);
+    if (config?.table === "patients" && config.rowLink?.hrefBase === "/reception/patients") return flattenReceptionPatient(record);
     if (config?.table === "visits" && config.columnLabels?.patient_name) return flattenReceptionVisit(record);
     if (config?.table === "store_items") return flattenStoreItem(record);
     if (config?.table === "store_item_batches") return flattenStoreItemBatch(record);
@@ -1448,6 +1562,45 @@ function flattenReceptionVisit(row: Record<string, unknown>) {
     created_at: row.created_at,
     id: row.id,
     patient_id: row.patient_id,
+    doctor_id: row.doctor_id,
+  };
+}
+
+function flattenReceptionPatient(row: Record<string, unknown>) {
+  const department = relationObject(row.departments);
+
+  return {
+    full_name: row.full_name ?? "Not set",
+    mrn: row.mrn ?? "Not set",
+    student_id: row.student_id ?? "Not set",
+    gender: row.gender ?? "Not set",
+    birth_date: row.birth_date ?? "Not set",
+    phone: row.phone ?? "Not set",
+    status: row.status ?? "Not set",
+    created_at: row.created_at,
+    id: row.id,
+    profile_id: row.profile_id,
+    department_id: row.department_id,
+    department: department.name ?? "Not set",
+    dorm_info: row.dorm_info ?? "Not set",
+    emergency_phone: row.emergency_phone ?? "Not set",
+    nationality: row.nationality ?? "Not set",
+    blood_type: row.blood_type ?? "Not set",
+    address: row.address ?? "Not set",
+  };
+}
+
+function flattenPatientVisitHistory(row: Record<string, unknown>) {
+  const doctor = relationObject(row.doctor);
+
+  return {
+    visit_code: row.visit_code ?? "Not set",
+    doctor_name: doctor.full_name ?? "Not set",
+    status: row.status ?? "Not set",
+    priority: row.priority ?? "Not set",
+    chief_complaint: row.chief_complaint ?? "Not set",
+    created_at: row.created_at,
+    id: row.id,
     doctor_id: row.doctor_id,
   };
 }
@@ -1550,6 +1703,28 @@ function storeRequestSummary(row: Record<string, unknown>) {
     adminComment: String(row.admin_comment ?? "Not set"),
     createdAt: formatDateTime(row.created_at),
     availableStock: Number(row.available_stock ?? 0),
+  };
+}
+
+function patientSummary(row: Record<string, unknown>) {
+  const department = relationObject(row.departments);
+
+  return {
+    id: String(row.id ?? ""),
+    fullName: String(row.full_name ?? "Not set"),
+    mrn: String(row.mrn ?? "Not set"),
+    studentId: String(row.student_id ?? "Not set"),
+    gender: String(row.gender ?? "Not set"),
+    birthDate: String(row.birth_date ?? "Not set"),
+    phone: String(row.phone ?? "Not set"),
+    emergencyPhone: String(row.emergency_phone ?? "Not set"),
+    bloodType: String(row.blood_type ?? "Not set"),
+    address: String(row.address ?? "Not set"),
+    department: String(department.name ?? "Not set"),
+    dormInfo: String(row.dorm_info ?? "Not set"),
+    nationality: String(row.nationality ?? "Not set"),
+    status: String(row.status ?? "Not set"),
+    createdAt: formatDateTime(row.created_at),
   };
 }
 
