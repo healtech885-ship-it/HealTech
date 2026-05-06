@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import {
   AlertTriangle,
   BadgeCheck,
@@ -109,6 +109,10 @@ type BatchRecord = {
 };
 
 type BatchStockRecord = Pick<BatchRecord, "id" | "medicine_id" | "quantity" | "status" | "expiry_date">;
+type DispenseContext = {
+  prescription: PrescriptionRecord;
+  item: PrescriptionItemRecord;
+};
 
 type QueryState<T> = {
   loading: boolean;
@@ -142,9 +146,11 @@ type CountOptions = { count: "exact"; head: true };
 
 type SupabaseQuery<T> = PromiseLike<QueryResult<T>> & {
   eq(column: string, value: FilterValue): SupabaseQuery<T>;
+  gt(column: string, value: FilterValue): SupabaseQuery<T>;
   in(column: string, values: FilterValue[]): SupabaseQuery<T>;
   lt(column: string, value: FilterValue): SupabaseQuery<T>;
   lte(column: string, value: FilterValue): SupabaseQuery<T>;
+  or(filters: string): SupabaseQuery<T>;
   order(column: string, options: { ascending: boolean }): SupabaseQuery<T>;
   limit(count: number): SupabaseQuery<T>;
 };
@@ -160,6 +166,14 @@ type InsertQuery<T> = {
   select(columns: string): {
     single(): PromiseLike<SingleResult<T>>;
   };
+};
+type DispenseMedicinePayload = {
+  prescription_item_id: string;
+  quantity: number;
+};
+type FunctionResult = {
+  data: unknown;
+  error: QueryError | null;
 };
 
 type CanonicalPharmacyClient = {
@@ -178,6 +192,9 @@ type CanonicalPharmacyClient = {
   from(table: "medicine_batches"): {
     select(columns: string): SupabaseQuery<BatchRecord>;
     select(columns: string, options: CountOptions): SupabaseCountQuery;
+  };
+  functions: {
+    invoke(name: "dispense-medicine", options: { body: DispenseMedicinePayload }): PromiseLike<FunctionResult>;
   };
 };
 
@@ -411,34 +428,67 @@ function PharmacyDashboard() {
 function PharmacyOrders() {
   const supabase = useMemo(() => createClient() as unknown as CanonicalPharmacyClient, []);
   const [state, setState] = useState<QueryState<PrescriptionRecord[]>>({ loading: true, data: [], error: null });
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [dispenseContext, setDispenseContext] = useState<DispenseContext | null>(null);
+
+  const loadOrders = useCallback(
+    async ({ silent = false }: { silent?: boolean } = {}) => {
+      if (!silent) setState((current) => ({ ...current, loading: true, error: null }));
+      const result = await supabase.from("prescriptions").select(prescriptionSelect).order("created_at", { ascending: false });
+      if (result.error) {
+        setState((current) => ({ loading: false, data: silent ? current.data : [], error: result.error?.message ?? "Could not load prescriptions." }));
+        return false;
+      }
+      setState({ loading: false, data: result.data ?? [], error: null });
+      return true;
+    },
+    [supabase],
+  );
 
   useEffect(() => {
     let active = true;
 
-    async function loadOrders() {
-      setState((current) => ({ ...current, loading: true, error: null }));
-      const result = await supabase.from("prescriptions").select(prescriptionSelect).order("created_at", { ascending: false });
-      if (!active) return;
-      if (result.error) {
-        setState({ loading: false, data: [], error: result.error.message });
-        return;
-      }
-      setState({ loading: false, data: result.data ?? [], error: null });
+    async function initialLoad() {
+      const ok = await loadOrders();
+      if (!active || !ok) return;
     }
 
-    void loadOrders();
+    void initialLoad();
     return () => {
       active = false;
     };
-  }, [supabase]);
+  }, [loadOrders]);
+
+  async function handleDispensed(quantity: number) {
+    setDispenseContext(null);
+    await loadOrders({ silent: true });
+    setSuccessMessage(`${quantity} unit(s) dispensed successfully. Prescription status refreshed.`);
+  }
 
   return (
     <section className="space-y-6 px-5 py-6 lg:px-8">
       <PageHeader title="Prescription Orders" description="Canonical prescriptions with patient, visit, doctor, item, and medicine context." />
+      {successMessage ? <SuccessState message={successMessage} /> : null}
       {state.loading ? <LoadingState label="Loading prescriptions" /> : null}
       {state.error ? <ErrorState message={state.error} /> : null}
       {!state.loading && !state.error && state.data.length === 0 ? <EmptyState title="No prescriptions" description="No prescriptions are currently visible to this pharmacy profile." /> : null}
-      {!state.loading && !state.error && state.data.length > 0 ? <PrescriptionList prescriptions={state.data} /> : null}
+      {!state.loading && !state.error && state.data.length > 0 ? (
+        <PrescriptionList
+          prescriptions={state.data}
+          onDispense={(prescription, item) => {
+            setSuccessMessage(null);
+            setDispenseContext({ prescription, item });
+          }}
+        />
+      ) : null}
+      {dispenseContext ? (
+        <DispenseModal
+          context={dispenseContext}
+          supabase={supabase}
+          onClose={() => setDispenseContext(null)}
+          onDispensed={handleDispensed}
+        />
+      ) : null}
     </section>
   );
 }
@@ -668,7 +718,13 @@ function PrescriptionCompactList({ prescriptions }: { prescriptions: Prescriptio
   );
 }
 
-function PrescriptionList({ prescriptions }: { prescriptions: PrescriptionRecord[] }) {
+function PrescriptionList({
+  prescriptions,
+  onDispense,
+}: {
+  prescriptions: PrescriptionRecord[];
+  onDispense: (prescription: PrescriptionRecord, item: PrescriptionItemRecord) => void;
+}) {
   return (
     <div className="space-y-4">
       {prescriptions.map((prescription) => (
@@ -681,18 +737,19 @@ function PrescriptionList({ prescriptions }: { prescriptions: PrescriptionRecord
           </div>
           {prescription.doctor_notes ? <p className="mt-4 rounded-lg bg-[#edf6f8] p-3 text-sm text-[#2d4058]">{prescription.doctor_notes}</p> : null}
           <div className="mt-5 overflow-hidden rounded-lg border border-[#d4e0e8]">
-            <div className="grid grid-cols-[1.4fr_0.7fr_0.7fr_1.5fr_0.7fr] bg-[#eef4f8] px-4 py-3 text-xs font-semibold uppercase tracking-wide text-[#607084]">
+            <div className="grid grid-cols-[1.3fr_0.65fr_0.65fr_1.35fr_0.75fr_0.8fr] bg-[#eef4f8] px-4 py-3 text-xs font-semibold uppercase tracking-wide text-[#607084]">
               <span>Medicine</span>
               <span>Requested</span>
               <span>Dispensed</span>
               <span>Dosage</span>
               <span>Status</span>
+              <span>Action</span>
             </div>
             {prescription.prescription_items.length === 0 ? (
               <div className="px-4 py-5 text-sm text-[#607084]">No prescription items are attached.</div>
             ) : (
               prescription.prescription_items.map((item) => (
-                <div key={item.id} className="grid min-h-16 grid-cols-[1.4fr_0.7fr_0.7fr_1.5fr_0.7fr] items-center border-t border-[#e5edf3] px-4 py-3 text-sm">
+                <div key={item.id} className="grid min-h-16 grid-cols-[1.3fr_0.65fr_0.65fr_1.35fr_0.75fr_0.8fr] items-center border-t border-[#e5edf3] px-4 py-3 text-sm">
                   <span>
                     <span className="font-medium">{item.medicines?.name ?? item.medicine_id}</span>
                     <br />
@@ -702,12 +759,167 @@ function PrescriptionList({ prescriptions }: { prescriptions: PrescriptionRecord
                   <span>{item.dispensed_quantity}</span>
                   <span>{item.dosage_instructions ?? "No dosage instructions"}</span>
                   <span><Badge tone={badgeTone(item.status)}>{formatLabel(item.status)}</Badge></span>
+                  <span>
+                    {canDispenseItem(item) ? (
+                      <button onClick={() => onDispense(prescription, item)} className="rounded-lg bg-[#006d86] px-3 py-2 text-xs font-semibold text-white">
+                        Dispense
+                      </button>
+                    ) : (
+                      <span className="text-xs font-medium text-[#607084]">{item.status === "pending" ? "No remaining" : "Read-only"}</span>
+                    )}
+                  </span>
                 </div>
               ))
             )}
           </div>
         </DataCard>
       ))}
+    </div>
+  );
+}
+
+function DispenseModal({
+  context,
+  supabase,
+  onClose,
+  onDispensed,
+}: {
+  context: DispenseContext;
+  supabase: CanonicalPharmacyClient;
+  onClose: () => void;
+  onDispensed: (quantity: number) => Promise<void>;
+}) {
+  const { prescription, item } = context;
+  const remaining = remainingQuantity(item);
+  const [quantity, setQuantity] = useState(remaining > 0 ? String(remaining) : "");
+  const [stockState, setStockState] = useState<QueryState<BatchStockRecord[]>>({ loading: true, data: [], error: null });
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const availableStock = useMemo(() => stockState.data.reduce((total, batch) => total + batch.quantity, 0), [stockState.data]);
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadStock() {
+      setStockState({ loading: true, data: [], error: null });
+      const result = await supabase
+        .from("medicine_batches")
+        .select(batchStockSelect)
+        .eq("medicine_id", item.medicine_id)
+        .eq("status", "in_stock")
+        .gt("quantity", 0)
+        .or(`expiry_date.is.null,expiry_date.gte.${todayIso()}`)
+        .order("expiry_date", { ascending: true });
+
+      if (!active) return;
+      if (result.error) {
+        setStockState({ loading: false, data: [], error: result.error.message });
+        return;
+      }
+      setStockState({ loading: false, data: (result.data ?? []) as BatchStockRecord[], error: null });
+    }
+
+    void loadStock();
+    return () => {
+      active = false;
+    };
+  }, [item.medicine_id, supabase]);
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setError(null);
+
+    const validation = validateDispenseQuantity(quantity, item);
+    if (validation) {
+      setError(validation);
+      return;
+    }
+
+    const parsedQuantity = Number(quantity);
+    setSubmitting(true);
+    const result = await supabase.functions.invoke("dispense-medicine", {
+      body: {
+        prescription_item_id: item.id,
+        quantity: parsedQuantity,
+      },
+    });
+    setSubmitting(false);
+
+    if (result.error) {
+      setError(`Could not dispense medicine. ${result.error.message}`);
+      return;
+    }
+
+    await onDispensed(parsedQuantity);
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#17212f]/45 p-4">
+      <div className="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-xl bg-white shadow-xl">
+        <div className="flex items-start justify-between border-b border-[#d4e0e8] px-6 py-5">
+          <div>
+            <h2 className="text-xl font-semibold">Dispense Prescription Item</h2>
+            <p className="mt-1 text-sm text-[#607084]">Stock is checked for active, unexpired batches. Final stock reduction is handled by the backend RPC.</p>
+          </div>
+          <button onClick={onClose} disabled={submitting} className="rounded-lg border border-[#cbd8e2] px-3 py-2 text-sm font-semibold text-[#41546b] disabled:opacity-60">
+            Close
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-5 p-6">
+          {error ? <ErrorState message={error} /> : null}
+          {stockState.error ? <ErrorState message={`Could not load stock. ${stockState.error}`} /> : null}
+
+          <div className="grid gap-4 md:grid-cols-3">
+            <InfoBlock label="Patient" value={prescription.patients?.full_name ?? "Unknown patient"} helper={patientIdentifier(prescription.patients)} />
+            <InfoBlock label="Visit" value={prescription.visits?.visit_code ?? prescription.visit_id} helper={prescription.visits?.chief_complaint ?? undefined} />
+            <InfoBlock label="Doctor" value={prescription.doctor?.full_name ?? prescription.doctor_id} helper={prescription.doctor?.email ?? undefined} />
+            <InfoBlock label="Medicine" value={item.medicines?.name ?? item.medicine_id} helper={item.medicines?.category ?? "Uncategorized"} />
+            <InfoBlock label="Requested" value={String(item.requested_quantity)} helper={`${item.dispensed_quantity} already dispensed`} />
+            <InfoBlock label="Remaining" value={String(remaining)} helper={`Item status: ${formatLabel(item.status)}`} />
+          </div>
+
+          <div className="rounded-lg border border-[#d4e0e8] bg-[#f8fbfd] p-4">
+            <p className="text-xs font-semibold uppercase tracking-wide text-[#607084]">Dosage Instructions</p>
+            <p className="mt-2 text-sm text-[#2d4058]">{item.dosage_instructions ?? "No dosage instructions"}</p>
+          </div>
+
+          <div className="rounded-lg border border-[#d4e0e8] p-4">
+            <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+              <div>
+                <p className="text-sm font-semibold">Available Stock</p>
+                <p className="text-sm text-[#607084]">
+                  {stockState.loading ? "Loading stock..." : `${availableStock} unit(s) available across ${stockState.data.length} eligible batch(es).`}
+                </p>
+              </div>
+              {!stockState.loading && availableStock < remaining ? (
+                <Badge tone="warning">Available stock is below remaining quantity</Badge>
+              ) : null}
+            </div>
+          </div>
+
+          <label className="grid max-w-xs gap-2 text-sm font-medium">
+            Quantity to dispense
+            <input
+              value={quantity}
+              onChange={(event) => setQuantity(event.target.value)}
+              inputMode="numeric"
+              className="h-11 rounded-lg border border-[#cbd8e2] px-3 outline-none focus:border-[#00758d]"
+              placeholder="Enter quantity"
+            />
+          </label>
+
+          <div className="flex flex-wrap items-center gap-3 border-t border-[#d4e0e8] pt-5">
+            <button disabled={submitting || stockState.loading} className="inline-flex h-11 items-center gap-2 rounded-lg bg-[#006d86] px-5 text-sm font-semibold text-white disabled:opacity-60">
+              {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Pill className="h-4 w-4" />}
+              Confirm Dispense
+            </button>
+            <button type="button" onClick={onClose} disabled={submitting} className="h-11 rounded-lg border border-[#cbd8e2] px-5 text-sm font-semibold text-[#41546b] disabled:opacity-60">
+              Cancel
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 }
@@ -914,6 +1126,27 @@ function buildStockSummary(batches: BatchStockRecord[]) {
     summary[batch.medicine_id] = current;
     return summary;
   }, {});
+}
+
+function remainingQuantity(item: PrescriptionItemRecord) {
+  return Math.max(item.requested_quantity - item.dispensed_quantity, 0);
+}
+
+function canDispenseItem(item: PrescriptionItemRecord) {
+  return item.status === "pending" && remainingQuantity(item) > 0;
+}
+
+function validateDispenseQuantity(value: string, item: PrescriptionItemRecord) {
+  const remaining = remainingQuantity(item);
+  const trimmed = value.trim();
+  const quantity = Number(trimmed);
+
+  if (item.status !== "pending") return "This prescription item is not pending and cannot be dispensed.";
+  if (remaining <= 0) return "This prescription item has no remaining quantity to dispense.";
+  if (!trimmed) return "Quantity is required.";
+  if (!Number.isInteger(quantity) || quantity <= 0) return "Quantity must be a positive whole number.";
+  if (quantity > remaining) return `Quantity cannot exceed the remaining quantity of ${remaining}.`;
+  return null;
 }
 
 function batchPageMeta(mode: "low-stock" | "out-of-stock" | "expired") {
