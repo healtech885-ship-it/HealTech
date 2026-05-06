@@ -1,189 +1,324 @@
 "use client";
 
-/* eslint-disable @next/next/no-img-element */
-
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useMemo, useState, type ReactNode } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 import {
   AlertTriangle,
-  Archive,
-  Ban,
+  BadgeCheck,
   Bell,
-  CalendarX,
   CheckCircle2,
-  ChevronDown,
-  ChevronLeft,
-  ChevronRight,
-  CircleAlert,
   ClipboardList,
-  Download,
-  Edit3,
-  Filter,
-  FlaskConical,
-  Grid2X2,
-  HelpCircle,
-  Info as InfoIcon,
+  FileClock,
+  Inbox,
+  Loader2,
   LogOut,
   PackagePlus,
   Pill,
-  Plus,
-  Printer,
   Search,
   Settings,
-  ShieldPlus,
-  TrendingDown,
-  X,
 } from "lucide-react";
+import { Badge, badgeTone } from "@/components/ui/badge";
+import { navigationByRole } from "@/lib/constants/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
+import type { AppProfile } from "@/types/app.types";
 
 type PharmacyShellProps = {
+  profile: AppProfile;
   segments?: string[];
 };
 
-const inventory = [
-  { name: "Amoxicillin Clavulanate", brand: "Augmentin", form: "Tablet • 625mg", category: "Antibiotics", available: 450, total: 500, status: "In Stock", expiry: "Oct 2025" },
-  { name: "Ibuprofen", brand: "Advil", form: "Syrup • 100mg/5ml", category: "Analgesics", available: 12, total: 150, status: "Low Stock", expiry: "Jan 2024" },
-  { name: "Loratadine", brand: "Claritin", form: "Tablet • 10mg", category: "Antihistamines", available: 0, total: 200, status: "Out of Stock", expiry: "-" },
-  { name: "Paracetamol", brand: "Panadol", form: "Capsule • 500mg", category: "Analgesics", available: 890, total: 1000, status: "In Stock", expiry: "May 2026" },
-];
+type Screen = "dashboard" | "orders" | "medicines" | "new-medicine" | "low-stock" | "out-of-stock" | "expired";
+type PrescriptionStatus = "ordered" | "partially_dispensed" | "dispensed" | "cancelled";
+type PrescriptionItemStatus = "pending" | "dispensed" | "unavailable" | "cancelled";
+type MedicineStatus = "active" | "inactive" | string;
+type BatchStatus = "in_stock" | "out_of_stock" | "expired" | string;
+type FilterValue = string | number | boolean;
 
-const medicineOrders = [
-  { id: "#ORD-9021", patient: "Eleanor Vance", mrn: "482-991A", doctor: "Dr. J. Aris", visit: "V-1049", items: 3, stock: "Available", status: "New Order", action: "Dispense" },
-  { id: "#ORD-9022", patient: "Marcus Thorne", mrn: "510-224B", doctor: "Dr. S. Chen", visit: "V-1050", items: 5, stock: "Partial", status: "Pending", action: "Dispense" },
-  { id: "#ORD-9023", patient: "Lila Rossi", mrn: "102-887C", doctor: "Dr. M. Silva", visit: "V-1051", items: 1, stock: "Out of Stock", status: "Pending", action: "Hold" },
-  { id: "#ORD-9018", patient: "James Holden", mrn: "773-001X", doctor: "Dr. J. Aris", visit: "V-1044", items: 2, stock: "Available", status: "Processing", action: "Review" },
-];
+type PatientSummary = {
+  full_name: string;
+  mrn: string | null;
+  student_id: string | null;
+};
 
-const lowStock = [
-  { medicine: "Amoxicillin", id: "MED-8921", form: "Capsule, 500mg", available: 0, threshold: 200, severity: "Out of Stock", expiry: "-", primary: true },
-  { medicine: "Atorvastatin", id: "MED-3342", form: "Tablet, 20mg", available: 12, threshold: 100, severity: "Critical", expiry: "Oct 15, 2024" },
-  { medicine: "Lisinopril", id: "MED-1109", form: "Tablet, 10mg", available: 45, threshold: 150, severity: "Low", expiry: "Dec 01, 2024" },
-  { medicine: "Metformin HCL", id: "MED-5521", form: "Tablet, 500mg", available: 89, threshold: 250, severity: "Low", expiry: "Nov 22, 2025" },
-  { medicine: "Ibuprofen", id: "MED-0982", form: "Suspension, 100mg/5mL", available: 5, threshold: 50, severity: "Critical", expiry: "Sep 30, 2024" },
-];
+type VisitSummary = {
+  id: string;
+  visit_code: string;
+  chief_complaint: string | null;
+  status: string;
+  priority: string;
+};
 
-const expired = [
-  { med: "Amoxicillin Suspension", type: "Antibiotic", batch: "BX-7829-A", maker: "PharmaCorp Inc.", date: "Oct 12, 2023", ago: "14 days ago", qty: "12 bottles", status: "Pending", action: "Log Disposal" },
-  { med: "Lidocaine HCl 2%", type: "Anesthetic", batch: "LD-441-B", maker: "MediDose Solutions", date: "Sep 30, 2023", ago: "26 days ago", qty: "5 vials", status: "In Transit", action: "Update Log" },
-  { med: "Hematology Controls Level 1", type: "Lab Reagent", batch: "HC-990-Q", maker: "BioHealth Diagnostics", date: "Oct 20, 2023", ago: "6 days ago", qty: "2 packs", status: "Pending", action: "Log Disposal" },
-  { med: "Ibuprofen 400mg", type: "NSAID", batch: "IB-112-X", maker: "GenericsIntl", date: "Aug 15, 2023", ago: "", qty: "0 tabs", status: "Disposed", action: "View Record" },
-];
+type DoctorSummary = {
+  full_name: string;
+  email: string;
+};
 
-const completedOrders = [
-  { id: "ORD-9921", patient: "Eleanor Vance", mrn: "MRN: 884-291", doctor: "Dr. Reynolds", summary: "Amoxicillin 500mg, Ibuprofen 400mg\n2 items", status: "Fully Dispensed", by: "Sarah Chen", time: "Oct 24, 14:30" },
-  { id: "ORD-9920", patient: "Marcus Thorne", mrn: "MRN: 112-943", doctor: "Dr. Patel", summary: "Lisinopril 10mg, Atorvastatin 20mg, Metformin 5...\n3 items", status: "Partially Dispensed", by: "Michael Chang", time: "Oct 24, 11:15" },
-  { id: "ORD-9918", patient: "Sophia Martinez", mrn: "MRN: 445-882", doctor: "Dr. Reynolds", summary: "Sertraline 50mg\n1 item", status: "Fully Dispensed", by: "Sarah Chen", time: "Oct 23, 16:45" },
-  { id: "ORD-9915", patient: "James Wilson", mrn: "MRN: 773-109", doctor: "Dr. Kim", summary: "Omeprazole 20mg, Albuterol Inhaler\n2 items", status: "Fully Dispensed", by: "Sarah Chen", time: "Oct 23, 09:20" },
-];
+type MedicineRecord = {
+  id: string;
+  name: string;
+  category: string | null;
+  description: string | null;
+  status: MedicineStatus;
+  created_at: string;
+  updated_at: string;
+};
 
-export function PharmacyShell({ segments = [] }: PharmacyShellProps) {
+type PrescriptionItemRecord = {
+  id: string;
+  prescription_id: string;
+  medicine_id: string;
+  requested_quantity: number;
+  dispensed_quantity: number;
+  dosage_instructions: string | null;
+  status: PrescriptionItemStatus;
+  dispensed_at: string | null;
+  created_at: string;
+  medicines: Pick<MedicineRecord, "id" | "name" | "category" | "description" | "status"> | null;
+};
+
+type PrescriptionRecord = {
+  id: string;
+  visit_id: string;
+  patient_id: string;
+  doctor_id: string;
+  status: PrescriptionStatus;
+  doctor_notes: string | null;
+  created_at: string;
+  updated_at: string;
+  completed_at: string | null;
+  patients: PatientSummary | null;
+  visits: VisitSummary | null;
+  doctor: DoctorSummary | null;
+  prescription_items: PrescriptionItemRecord[];
+};
+
+type BatchRecord = {
+  id: string;
+  medicine_id: string | null;
+  batch_number: string | null;
+  receipt_number: string | null;
+  manufacturer: string | null;
+  quantity: number;
+  unit_price: number | null;
+  expiry_date: string | null;
+  status: BatchStatus;
+  created_at: string;
+  medicines: Pick<MedicineRecord, "id" | "name" | "category" | "description" | "status"> | null;
+};
+
+type BatchStockRecord = Pick<BatchRecord, "id" | "medicine_id" | "quantity" | "status" | "expiry_date">;
+
+type QueryState<T> = {
+  loading: boolean;
+  data: T;
+  error: string | null;
+};
+
+type DashboardCounts = {
+  ordered: number;
+  partiallyDispensed: number;
+  dispensed: number;
+  pendingItems: number;
+  dispensedItems: number;
+  activeMedicines: number;
+  lowStockBatches: number;
+  outOfStockBatches: number;
+  expiredBatches: number;
+};
+
+type MedicineStockSummary = {
+  totalQuantity: number;
+  inStockBatches: number;
+  expiredBatches: number;
+};
+
+type QueryError = { message: string };
+type QueryResult<T> = { data: T[] | null; error: QueryError | null; count?: number | null };
+type CountResult = { data: null; error: QueryError | null; count: number | null };
+type SingleResult<T> = { data: T | null; error: QueryError | null };
+type CountOptions = { count: "exact"; head: true };
+
+type SupabaseQuery<T> = PromiseLike<QueryResult<T>> & {
+  eq(column: string, value: FilterValue): SupabaseQuery<T>;
+  in(column: string, values: FilterValue[]): SupabaseQuery<T>;
+  lt(column: string, value: FilterValue): SupabaseQuery<T>;
+  lte(column: string, value: FilterValue): SupabaseQuery<T>;
+  order(column: string, options: { ascending: boolean }): SupabaseQuery<T>;
+  limit(count: number): SupabaseQuery<T>;
+};
+
+type SupabaseCountQuery = PromiseLike<CountResult> & {
+  eq(column: string, value: FilterValue): SupabaseCountQuery;
+  lt(column: string, value: FilterValue): SupabaseCountQuery;
+  lte(column: string, value: FilterValue): SupabaseCountQuery;
+};
+
+type InsertMedicinePayload = Pick<MedicineRecord, "name" | "category" | "description" | "status">;
+type InsertQuery<T> = {
+  select(columns: string): {
+    single(): PromiseLike<SingleResult<T>>;
+  };
+};
+
+type CanonicalPharmacyClient = {
+  from(table: "prescriptions"): {
+    select(columns: string): SupabaseQuery<PrescriptionRecord>;
+    select(columns: string, options: CountOptions): SupabaseCountQuery;
+  };
+  from(table: "prescription_items"): {
+    select(columns: string, options: CountOptions): SupabaseCountQuery;
+  };
+  from(table: "medicines"): {
+    select(columns: string): SupabaseQuery<MedicineRecord>;
+    select(columns: string, options: CountOptions): SupabaseCountQuery;
+    insert(payload: InsertMedicinePayload): InsertQuery<MedicineRecord>;
+  };
+  from(table: "medicine_batches"): {
+    select(columns: string): SupabaseQuery<BatchRecord>;
+    select(columns: string, options: CountOptions): SupabaseCountQuery;
+  };
+};
+
+const emptyCounts: DashboardCounts = {
+  ordered: 0,
+  partiallyDispensed: 0,
+  dispensed: 0,
+  pendingItems: 0,
+  dispensedItems: 0,
+  activeMedicines: 0,
+  lowStockBatches: 0,
+  outOfStockBatches: 0,
+  expiredBatches: 0,
+};
+
+const prescriptionSelect =
+  "id,visit_id,patient_id,doctor_id,status,doctor_notes,created_at,updated_at,completed_at,patients(full_name,mrn,student_id),visits(id,visit_code,chief_complaint,status,priority),doctor:profiles!prescriptions_doctor_id_fkey(full_name,email),prescription_items(id,prescription_id,medicine_id,requested_quantity,dispensed_quantity,dosage_instructions,status,dispensed_at,created_at,medicines(id,name,category,description,status))";
+
+const medicineSelect = "id,name,category,description,status,created_at,updated_at";
+const batchStockSelect = "id,medicine_id,quantity,status,expiry_date";
+const batchSelect = "id,medicine_id,batch_number,receipt_number,manufacturer,quantity,unit_price,expiry_date,status,created_at,medicines(id,name,category,description,status)";
+
+export function PharmacyShell({ profile, segments = [] }: PharmacyShellProps) {
   const pathname = usePathname();
-  const screen = resolveScreen(segments);
+  const screen = resolvePharmacyScreen(segments);
 
   return (
-    <div className="min-h-screen bg-[#f3f8fc] text-[#101820]">
-      <PharmacySidebar activePath={pathname} />
-      <main className="min-h-screen lg:pl-[320px]">
-        <PharmacyTopbar screen={screen} />
-        {screen === "dashboard" && <PharmacyDashboard />}
-        {screen === "add-batch" && <AddMedicineBatch />}
-        {screen === "inventory" && <MedicineInventory />}
-        {screen === "details" && <MedicineDetails />}
-        {screen === "orders" && <MedicineOrdersQueue />}
-        {screen === "dispense" && <DispenseMedicines />}
-        {screen === "low-stock" && <LowStockMedicines />}
-        {screen === "expired" && <ExpiredMedicines />}
-        {screen === "out-of-stock" && <OutOfStockMedicines />}
-        {screen === "completed" && <CompletedOrdersLog />}
+    <div className="min-h-screen bg-[#f4f8fb] text-[#17212f]">
+      <PharmacySidebar activePath={pathname} profile={profile} />
+      <main className="min-h-screen lg:pl-[290px]">
+        <PharmacyTopbar profile={profile} />
+        {screen === "dashboard" ? <PharmacyDashboard /> : null}
+        {screen === "orders" ? <PharmacyOrders /> : null}
+        {screen === "medicines" ? <MedicineCatalog /> : null}
+        {screen === "new-medicine" ? <NewMedicineForm profile={profile} /> : null}
+        {screen === "low-stock" ? <BatchList mode="low-stock" /> : null}
+        {screen === "out-of-stock" ? <BatchList mode="out-of-stock" /> : null}
+        {screen === "expired" ? <BatchList mode="expired" /> : null}
       </main>
     </div>
   );
 }
 
-function resolveScreen(segments: string[]) {
+function resolvePharmacyScreen(segments: string[]): Screen {
   const path = segments.join("/");
   if (!path || path === "dashboard") return "dashboard";
   if (path === "orders") return "orders";
-  if (path === "orders/completed") return "completed";
-  if (path.startsWith("orders/")) return "dispense";
-  if (path === "medicines") return "inventory";
-  if (path === "medicines/new") return "add-batch";
+  if (path === "medicines") return "medicines";
+  if (path === "medicines/new") return "new-medicine";
   if (path === "medicines/low-stock") return "low-stock";
   if (path === "medicines/out-of-stock") return "out-of-stock";
   if (path === "medicines/expired") return "expired";
-  if (path.startsWith("medicines/")) return "details";
   return "dashboard";
 }
 
-function PharmacySidebar({ activePath }: { activePath: string }) {
-  async function handleLogout() {
+function PharmacySidebar({ activePath, profile }: { activePath: string; profile: AppProfile }) {
+  async function handleSignOut() {
     const supabase = createClient();
     await supabase.auth.signOut();
     window.location.href = "/login";
   }
 
-  const nav = [
-    { label: "Dashboard", href: "/pharmacy/dashboard", icon: Grid2X2 },
-    { label: "Lab Orders Queue", href: "/pharmacy/orders", icon: ClipboardList },
-    { label: "Pending Results", href: "/pharmacy/medicines/low-stock", icon: PackagePlus },
-    { label: "Completed Results", href: "/pharmacy/orders/completed", icon: CheckCircle2 },
-    { label: "Lab Test Catalog", href: "/pharmacy/medicines", icon: FlaskConical },
-  ];
-
   return (
-    <aside className="fixed inset-y-0 left-0 z-30 hidden w-[320px] border-r border-[#d5dee7] bg-[#f7fbff] lg:flex lg:flex-col">
-      <div className="px-10 py-7">
-        <div className="flex items-center gap-4">
-          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#078aa1] text-white">
-            <FlaskConical className="h-6 w-6" />
-          </div>
+    <aside className="fixed inset-y-0 left-0 z-30 hidden w-[290px] border-r border-[#d4e0e8] bg-white lg:flex lg:flex-col">
+      <div className="border-b border-[#d4e0e8] px-6 py-6">
+        <Link href="/pharmacy/dashboard" className="flex items-center gap-3">
+          <span className="flex h-11 w-11 items-center justify-center rounded-lg bg-[#00758d] text-white">
+            <Pill className="h-6 w-6" />
+          </span>
           <div>
-            <p className="text-[26px] font-bold text-[#00758d]">CliniSync</p>
-            <p className="text-[16px] text-[#243853]">Lab Management</p>
+            <p className="text-xl font-semibold text-[#00758d]">HealTech</p>
+            <p className="text-sm text-[#607084]">Pharmacy Workspace</p>
+          </div>
+        </Link>
+        <div className="mt-6 flex items-center gap-3">
+          <Avatar name={profile.full_name} />
+          <div className="min-w-0">
+            <p className="truncate font-semibold">{profile.full_name}</p>
+            <p className="truncate text-sm text-[#607084]">{profile.email}</p>
           </div>
         </div>
       </div>
-      <nav className="mt-5 space-y-3 px-5">
-        {nav.map((item) => {
-          const active =
-            activePath === item.href ||
-            (item.href === "/pharmacy/orders" && activePath.startsWith("/pharmacy/orders/") && !activePath.includes("completed")) ||
-            (item.href === "/pharmacy/medicines" && activePath.startsWith("/pharmacy/medicines/") && !activePath.includes("low-stock"));
+
+      <nav className="flex-1 space-y-1 px-3 py-5">
+        {navigationByRole.pharmacy.map((item) => {
+          const active = isActivePharmacyPath(activePath, item.href);
           return (
-            <Link key={item.href} href={item.href} className={cn("flex h-[50px] items-center gap-5 rounded-md border-r-2 border-transparent px-5 text-[18px] text-[#243853]", active && "border-[#008db0] bg-white font-medium text-[#0082a1] shadow-sm")}>
-              <item.icon className="h-6 w-6" />
-              {item.label}
+            <Link
+              key={item.href}
+              href={item.href}
+              className={cn(
+                "flex h-11 items-center gap-3 rounded-lg px-3 text-sm font-medium text-[#2d4058] transition hover:bg-[#edf6f8]",
+                active && "bg-[#e3f7fa] text-[#006d86]",
+              )}
+            >
+              <item.icon className="h-5 w-5" />
+              <span>{item.label}</span>
             </Link>
           );
         })}
       </nav>
-      <div className="mt-auto border-t border-[#d5dee7] px-10 py-7">
-        <div className="mb-7 flex items-center gap-5 text-[18px] text-[#243853]"><HelpCircle className="h-6 w-6" /> Support</div>
-        <button onClick={handleLogout} className="flex items-center gap-5 text-[18px] text-[#243853]"><LogOut className="h-6 w-6" /> Logout</button>
+
+      <div className="border-t border-[#d4e0e8] p-4">
+        <button onClick={handleSignOut} className="flex h-11 w-full items-center gap-3 rounded-lg px-3 text-sm font-medium text-[#2d4058] hover:bg-[#f4f8fb]">
+          <LogOut className="h-5 w-5" />
+          Sign Out
+        </button>
       </div>
     </aside>
   );
 }
 
-function PharmacyTopbar({ screen }: { screen: string }) {
-  const centerTitle = ["add-batch", "details", "orders", "dispense", "expired", "completed"].includes(screen);
-  const placeholder = screen === "orders" ? "Search orders, patients..." : screen === "out-of-stock" ? "Search medicines..." : screen === "inventory" || screen === "details" || screen === "low-stock" ? "Search inventory..." : "Search...";
+function isActivePharmacyPath(activePath: string, href: string) {
+  if (activePath === href) return true;
+  if (href === "/pharmacy/orders") return activePath.startsWith("/pharmacy/orders");
+  if (href === "/pharmacy/medicines") return activePath === "/pharmacy/medicines";
+  return false;
+}
+
+function PharmacyTopbar({ profile }: { profile: AppProfile }) {
   return (
-    <header className="sticky top-0 z-20 h-[80px] border-b border-[#d9e2ea] bg-white">
-      <div className="flex h-full items-center gap-8 px-8">
-        {centerTitle && <p className="text-[28px] font-semibold">CliniSync Lab</p>}
-        <div className={cn("relative", centerTitle ? "w-[405px]" : "w-[320px]")}>
-          <Search className="absolute left-4 top-1/2 h-6 w-6 -translate-y-1/2 text-[#7d91a8]" />
-          <input className="h-12 w-full rounded-lg border border-[#c5d1de] bg-[#f6f9fc] pl-12 text-[18px] outline-none" placeholder={placeholder} />
+    <header className="sticky top-0 z-20 border-b border-[#d4e0e8] bg-white/95 backdrop-blur">
+      <div className="flex h-16 items-center gap-4 px-5 lg:px-8">
+        <Link href="/pharmacy/dashboard" className="font-semibold text-[#00758d] lg:hidden">
+          HealTech
+        </Link>
+        <div className="relative hidden w-full max-w-md sm:block">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#7a8ca1]" />
+          <input
+            aria-label="Search pharmacy workspace"
+            className="h-10 w-full rounded-lg border border-[#cbd8e2] bg-[#f4f8fb] pl-10 pr-3 text-sm outline-none focus:border-[#00758d]"
+            placeholder="Search prescriptions, patients, or medicines"
+          />
         </div>
-        <div className="flex-1" />
-        <div className="flex items-center gap-7 text-[#344b69]">
-          <span className="text-[18px]">Lab Technician</span>
-          <Bell className="h-6 w-6" />
-          <Settings className="h-7 w-7" />
-          <img src="https://randomuser.me/api/portraits/men/32.jpg" alt="" className="h-10 w-10 rounded-full object-cover" />
+        <div className="ml-auto flex items-center gap-3 text-[#41546b]">
+          <Bell className="h-5 w-5" />
+          <Settings className="h-5 w-5" />
+          <div className="hidden items-center gap-2 border-l border-[#d4e0e8] pl-4 sm:flex">
+            <Avatar name={profile.full_name} small />
+            <span className="text-sm font-medium">{profile.full_name}</span>
+          </div>
         </div>
       </div>
     </header>
@@ -191,369 +326,657 @@ function PharmacyTopbar({ screen }: { screen: string }) {
 }
 
 function PharmacyDashboard() {
+  const supabase = useMemo(() => createClient() as unknown as CanonicalPharmacyClient, []);
+  const [counts, setCounts] = useState<DashboardCounts>(emptyCounts);
+  const [state, setState] = useState<QueryState<PrescriptionRecord[]>>({ loading: true, data: [], error: null });
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadDashboard() {
+      setState((current) => ({ ...current, loading: true, error: null }));
+      const today = todayIso();
+      const [ordered, partial, dispensed, pendingItems, dispensedItems, activeMedicines, lowStock, outOfStock, expired, recent] = await Promise.all([
+        countRows(supabase, "prescriptions", "status", "ordered"),
+        countRows(supabase, "prescriptions", "status", "partially_dispensed"),
+        countRows(supabase, "prescriptions", "status", "dispensed"),
+        countRows(supabase, "prescription_items", "status", "pending"),
+        countRows(supabase, "prescription_items", "status", "dispensed"),
+        countRows(supabase, "medicines", "status", "active"),
+        supabase.from("medicine_batches").select("id", { count: "exact", head: true }).eq("status", "in_stock").lte("quantity", 10),
+        countRows(supabase, "medicine_batches", "status", "out_of_stock"),
+        supabase.from("medicine_batches").select("id", { count: "exact", head: true }).lt("expiry_date", today),
+        supabase.from("prescriptions").select(prescriptionSelect).eq("status", "ordered").order("created_at", { ascending: false }).limit(6),
+      ]);
+
+      if (!active) return;
+
+      const error = [ordered, partial, dispensed, pendingItems, dispensedItems, activeMedicines, lowStock, outOfStock, expired, recent].find((result) => result.error)?.error;
+      if (error) {
+        setState({ loading: false, data: [], error: error.message });
+        return;
+      }
+
+      setCounts({
+        ordered: ordered.count ?? 0,
+        partiallyDispensed: partial.count ?? 0,
+        dispensed: dispensed.count ?? 0,
+        pendingItems: pendingItems.count ?? 0,
+        dispensedItems: dispensedItems.count ?? 0,
+        activeMedicines: activeMedicines.count ?? 0,
+        lowStockBatches: lowStock.count ?? 0,
+        outOfStockBatches: outOfStock.count ?? 0,
+        expiredBatches: expired.count ?? 0,
+      });
+      setState({ loading: false, data: recent.data ?? [], error: null });
+    }
+
+    void loadDashboard();
+    return () => {
+      active = false;
+    };
+  }, [supabase]);
+
   return (
-    <section className="px-10 py-12">
-      <Header title="Pharmacy Overview" subtitle="Real-time inventory and dispensing metrics">
-        <button onClick={() => window.print()} className="h-12 rounded-lg bg-white px-6 text-[18px] shadow"><Download className="mr-2 inline h-5 w-5" />Export Report</button>
-      </Header>
-      <div className="mt-8 grid grid-cols-[1fr_1fr_1fr_380px] gap-7">
-        <Metric value="14" label="New Medicine Orders" tag="New" icon={ShieldPlus} />
-        <Metric value="8" label="Pending Dispensing" tag="Pending" icon={Archive} amber />
-        <Metric value="32" label="Completed Today" tag="Today" icon={CheckCircle2} green />
-        <QuickActions />
+    <section className="space-y-6 px-5 py-6 lg:px-8">
+      <PageHeader title="Pharmacy Dashboard" description="Live prescription, item, medicine, and stock status from the canonical pharmacy tables." />
+      {state.error ? <ErrorState message={state.error} /> : null}
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <StatCard title="Ordered Prescriptions" value={counts.ordered} icon={ClipboardList} />
+        <StatCard title="Partially Dispensed" value={counts.partiallyDispensed} icon={FileClock} tone="warning" />
+        <StatCard title="Dispensed Prescriptions" value={counts.dispensed} icon={CheckCircle2} tone="success" />
+        <StatCard title="Pending Items" value={counts.pendingItems} icon={PackagePlus} tone="warning" />
+        <StatCard title="Dispensed Items" value={counts.dispensedItems} icon={BadgeCheck} tone="success" />
+        <StatCard title="Active Medicines" value={counts.activeMedicines} icon={Pill} />
+        <StatCard title="Low Stock Batches" value={counts.lowStockBatches} icon={AlertTriangle} tone="warning" />
+        <StatCard title="Out / Expired Batches" value={counts.outOfStockBatches + counts.expiredBatches} icon={Inbox} tone="danger" />
       </div>
-      <div className="mt-8 grid grid-cols-[1fr_380px] gap-7">
-        <div className="space-y-8">
-          <InventoryHealth />
-          <DashboardOrders />
-        </div>
-        <InventoryAlerts />
-      </div>
+
+      <DataCard
+        title="Recent Pending Prescriptions"
+        action={
+          <Link href="/pharmacy/orders" className="text-sm font-semibold text-[#006d86]">
+            View all
+          </Link>
+        }
+      >
+        {state.loading ? <LoadingState label="Loading pending prescriptions" /> : null}
+        {!state.loading && !state.error && state.data.length === 0 ? <EmptyState title="No pending prescriptions" description="There are no ordered prescriptions awaiting pharmacy review." /> : null}
+        {!state.loading && !state.error && state.data.length > 0 ? <PrescriptionCompactList prescriptions={state.data} /> : null}
+      </DataCard>
     </section>
   );
 }
 
-function Header({ title, subtitle, children }: { title: string; subtitle: string; children?: ReactNode }) {
-  return (
-    <div className="flex items-start justify-between">
-      <div>
-        <h1 className="text-[32px] font-semibold">{title}</h1>
-        <p className="mt-2 text-[18px] text-[#40536c]">{subtitle}</p>
-      </div>
-      <div className="flex gap-3">{children}</div>
-    </div>
-  );
-}
+function PharmacyOrders() {
+  const supabase = useMemo(() => createClient() as unknown as CanonicalPharmacyClient, []);
+  const [state, setState] = useState<QueryState<PrescriptionRecord[]>>({ loading: true, data: [], error: null });
 
-function Metric({ value, label, tag, icon: Icon, amber, green }: { value: string; label: string; tag: string; icon: typeof ShieldPlus; amber?: boolean; green?: boolean }) {
-  return (
-    <div className="min-h-[192px] rounded-lg border border-[#d7e1ea] bg-white p-6 shadow-sm">
-      <div className="flex justify-between">
-        <span className={cn("flex h-12 w-12 items-center justify-center rounded-full bg-[#e9f5f8] text-[#006d86]", amber && "bg-[#fff0df] text-[#b36200]", green && "bg-[#dff8eb] text-[#00824a]")}><Icon className="h-6 w-6" /></span>
-        <span className="h-fit rounded-full bg-[#eef3f7] px-3 py-1">{tag}</span>
-      </div>
-      <p className="mt-7 text-[40px] font-semibold">{value}</p>
-      <p className="text-[19px]">{label}</p>
-    </div>
-  );
-}
+  useEffect(() => {
+    let active = true;
 
-function QuickActions() {
-  const actions = [
-    ["Open Orders", "/pharmacy/orders", ClipboardList],
-    ["Add Batch", "/pharmacy/medicines/new", Plus],
-    ["View Low\nStock", "/pharmacy/medicines/low-stock", TrendingDown],
-    ["View Expired", "/pharmacy/medicines/expired", CalendarX],
-  ] as const;
-  return (
-    <div className="rounded-lg border border-[#d7e1ea] bg-white shadow-sm">
-      <h2 className="border-b border-[#d7e1ea] p-6 text-[26px] font-semibold"><AlertTriangle className="mr-3 inline h-6 w-6 text-[#687887]" />Quick Actions</h2>
-      <div className="grid grid-cols-2 gap-3 p-3">
-        {actions.map(([label, href, Icon]) => <Link key={label} href={href} className="flex h-[106px] flex-col items-center justify-center whitespace-pre-line rounded-md border border-[#d7e1ea] text-center text-[18px]"><Icon className="mb-3 h-6 w-6 text-[#8da0ba]" />{label}</Link>)}
-      </div>
-    </div>
-  );
-}
+    async function loadOrders() {
+      setState((current) => ({ ...current, loading: true, error: null }));
+      const result = await supabase.from("prescriptions").select(prescriptionSelect).order("created_at", { ascending: false });
+      if (!active) return;
+      if (result.error) {
+        setState({ loading: false, data: [], error: result.error.message });
+        return;
+      }
+      setState({ loading: false, data: result.data ?? [], error: null });
+    }
 
-function InventoryHealth() {
-  return (
-    <div className="rounded-lg border border-[#d7e1ea] bg-white p-8 shadow-sm">
-      <h2 className="mb-6 text-[28px] font-semibold"><Archive className="mr-3 inline h-7 w-7 text-[#687887]" />Inventory Health</h2>
-      <div className="grid grid-cols-4 gap-3">
-        {[
-          { label: "LOW STOCK", value: "9", tone: "text-[#b25b00]", icon: AlertTriangle },
-          { label: "OUT OF\nSTOCK", value: "2", tone: "text-[#c00000]", icon: Ban },
-          { label: "EXPIRING\nSOON", value: "11", tone: "text-[#b25b00]", icon: CalendarX },
-          { label: "EXPIRED", value: "4", tone: "text-[#c00000]", icon: CalendarX },
-        ].map((item) => <div key={item.label} className="rounded-lg bg-[#eef3f7] p-6"><p className={cn("whitespace-pre-line text-[16px]", item.tone)}><item.icon className="mr-2 inline h-5 w-5" />{item.label}</p><p className="mt-5 text-[32px] font-semibold">{item.value}</p></div>)}
-      </div>
-    </div>
-  );
-}
+    void loadOrders();
+    return () => {
+      active = false;
+    };
+  }, [supabase]);
 
-function DashboardOrders() {
   return (
-    <div className="overflow-hidden rounded-lg border border-[#d7e1ea] bg-white shadow-sm">
-      <div className="flex items-center justify-between p-8">
-        <h2 className="text-[28px] font-semibold">New Medicine Orders</h2>
-        <Link href="/pharmacy/orders" className="text-[18px] font-semibold text-[#006d86]">View All <ChevronRight className="inline h-5 w-5" /></Link>
-      </div>
-      <TableHeader cols="grid-cols-[1.2fr_0.9fr_0.9fr_0.6fr_0.8fr_0.8fr]" labels={["Patient", "MRN", "Doctor", "Items", "Status", "Action"]} light />
-      {[
-        ["JD", "John Doe", "#MRN-0921", "Dr. Smith", "3"],
-        ["SJ", "Sarah Jenkins", "#MRN-1045", "Dr. Adams", "1"],
-        ["MW", "Michael Wong", "#MRN-0833", "Dr. Patel", "2"],
-      ].map((row) => <div key={row[1]} className="grid min-h-[92px] grid-cols-[1.2fr_0.9fr_0.9fr_0.6fr_0.8fr_0.8fr] items-center border-t border-[#e1e8ee] px-5 text-[17px]"><span className="flex items-center gap-3"><Avatar initials={row[0]} />{row[1]}</span><span>{row[2]}</span><span>{row[3]}</span><span>{row[4]}</span><StatusPill value="New" /><Link href="/pharmacy/orders/ord-9021" className="rounded-md bg-[#006d86] px-5 py-2 text-center font-semibold text-white">Dispense</Link></div>)}
-    </div>
-  );
-}
-
-function InventoryAlerts() {
-  return (
-    <aside className="rounded-lg border border-[#d7e1ea] bg-white shadow-sm">
-      <div className="flex items-center justify-between border-b border-[#d7e1ea] p-6">
-        <h2 className="text-[28px] font-semibold"><Bell className="mr-3 inline h-7 w-7 text-[#687887]" />Inventory<br />Alerts</h2>
-        <span className="rounded-full border border-[#f5b5b5] bg-[#fff0f0] px-4 py-2 text-[#c00000]">Action<br />Required</span>
-      </div>
-      {[
-        { title: "Amoxicillin 500mg", body: "Out of stock. 3 pending orders blocked.", time: "10 mins ago", icon: Ban },
-        { title: "Lisinopril 10mg", body: "Low stock warning. Only 15 units remaining.", time: "45 mins ago", icon: AlertTriangle },
-        { title: "Insulin Glargine Pen", body: "Batch #IG-882 expiring in 7 days.", time: "2 hours ago", icon: CalendarX },
-      ].map((item) => <div key={item.title} className="flex gap-4 border-b border-[#edf1f5] p-6 last:border-0"><span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#fff0f0] text-[#c00000]"><item.icon className="h-5 w-5" /></span><p><b className="text-[18px]">{item.title}</b><br /><span className="text-[17px] text-[#2f3d4c]">{item.body}</span><br /><span className="text-[15px] text-[#8da0ba]">{item.time}</span></p></div>)}
-    </aside>
-  );
-}
-
-function AddMedicineBatch() {
-  const [message, setMessage] = useState("");
-  return (
-    <section className="px-8 py-6">
-      <Link href="/pharmacy/medicines" className="text-[18px] text-[#006d86]">← Back to Inventory</Link>
-      <Header title="Add Medicine Batch" subtitle="Enter details for new stock arriving at the facility.">
-        <Link href="/pharmacy/medicines" className="flex h-12 items-center rounded-lg border border-[#40536c] bg-white px-6 text-[18px]">Cancel</Link>
-        <button onClick={() => setMessage("Batch saved. Ready for another entry.")} className="h-12 rounded-lg border border-[#40536c] bg-white px-6 text-[18px]">Save &amp; Add Another</button>
-        <button onClick={() => setMessage("Medicine batch saved.")} className="h-12 rounded-lg bg-[#006d86] px-6 text-[18px] font-semibold text-white">Save Batch</button>
-      </Header>
-      <div className="mt-10 grid grid-cols-[1fr_385px] gap-8">
-        <div className="space-y-8">
-          <div className="rounded-lg border border-[#ff8d8d] bg-[#fff3f3] p-6 text-[#c00000]">
-            <p className="text-[19px] font-semibold"><AlertTriangle className="mr-4 inline h-7 w-7" />Warning: Short Expiry Detected</p>
-            <p className="ml-11 mt-2 text-[17px] text-[#2f3d4c]">The expiry date entered is within the next 3 months. Please ensure immediate rotation in stock.</p>
-          </div>
-          <FormCard title="Medicine Information" icon={ShieldPlus}>
-            <label className="col-span-2 text-[17px]">Medicine Name *<SearchInput placeholder="Search database or type new..." /></label>
-            <InputField label="Generic Name" value="Amoxicillin" />
-            <InputField label="Manufacturer" value="PharmaCorp Inc." />
-            <InputField label="Form" value="Capsule" select />
-            <div className="grid grid-cols-[1fr_1fr] gap-3"><InputField label="Strength" value="500" /><InputField label="Unit" value="mg" select /></div>
-          </FormCard>
-          <FormCard title="Batch Information" icon={Archive}>
-            <InputField label="Batch Number *" placeholder="E.G. BTH-2023-891" />
-            <InputField label="Receipt / PO Number" placeholder="E.G. PO-5542" />
-            <InputField label="Quantity Received *" value="0" suffix="units" />
-            <InputField label="Unit Price" placeholder="$  0.00" />
-            <hr className="col-span-2 border-[#d7e1ea]" />
-            <InputField label="Received Date" placeholder="mm/dd/yyyy" />
-            <InputField label="Expiry Date *" value="12/15/2023" danger helper="Date is within 3 months." />
-          </FormCard>
-          {message && <p className="text-[17px] text-[#006d86]">{message}</p>}
-        </div>
-        <aside className="space-y-8">
-          <FormCard title="Stock Settings" icon={Settings}>
-            <InputField label="Storage Location" value="Main Pharmacy - Shelf A1" select full />
-            <InputField label="Low Stock Threshold" value="50" suffix="units" full />
-            <label className="col-span-2 text-[18px]">Internal Notes<textarea className="mt-2 h-[122px] w-full resize-none rounded-lg border border-[#b9c8d5] p-4" placeholder="Add any special handling instructions or notes..." /></label>
-          </FormCard>
-          <div className="rounded-lg border border-[#d7e1ea] bg-[#eef3f7] p-6">
-            <h3 className="text-[20px] font-semibold"><InfoIcon className="mr-2 inline h-6 w-6" />Batch Tracking</h3>
-            <p className="mt-4 text-[17px] leading-7 text-[#2f3d4c]">Accurate batch and expiry tracking ensures compliance with clinical safety standards. FIFO (First-In, First-Out) rules will be automatically applied based on the expiry date entered here.</p>
-          </div>
-        </aside>
-      </div>
+    <section className="space-y-6 px-5 py-6 lg:px-8">
+      <PageHeader title="Prescription Orders" description="Canonical prescriptions with patient, visit, doctor, item, and medicine context." />
+      {state.loading ? <LoadingState label="Loading prescriptions" /> : null}
+      {state.error ? <ErrorState message={state.error} /> : null}
+      {!state.loading && !state.error && state.data.length === 0 ? <EmptyState title="No prescriptions" description="No prescriptions are currently visible to this pharmacy profile." /> : null}
+      {!state.loading && !state.error && state.data.length > 0 ? <PrescriptionList prescriptions={state.data} /> : null}
     </section>
   );
 }
 
-function MedicineInventory() {
+function MedicineCatalog() {
+  const supabase = useMemo(() => createClient() as unknown as CanonicalPharmacyClient, []);
   const [query, setQuery] = useState("");
-  const rows = useMemo(() => inventory.filter((item) => `${item.name} ${item.brand}`.toLowerCase().includes(query.toLowerCase())), [query]);
-  return (
-    <section className="px-8 py-9">
-      <div className="flex items-start justify-between">
-        <div><h1 className="text-[22px]">Medicine Inventory</h1><p className="mt-3 text-[20px] text-[#40536c]">Manage stock levels, track expirations, and update pharmacy inventory.</p></div>
-        <Link href="/pharmacy/medicines/new" className="flex h-12 items-center rounded-lg bg-[#006d86] px-5 text-[22px] text-white"><Plus /></Link>
-      </div>
-      <div className="mt-8 rounded-lg border border-[#d7e1ea] bg-white p-5 shadow-sm">
-        <div className="flex gap-4"><SearchBox value={query} onChange={setQuery} placeholder="Search by name, generic..." className="w-[320px]" /><FilterSelect label="Category: All" /><FilterSelect label="Stock: All" /></div>
-      </div>
-      <div className="mt-8 overflow-hidden rounded-lg border border-[#d7e1ea] bg-white shadow-sm">
-        <TableHeader cols="grid-cols-[1.6fr_1.5fr_1.2fr_1.4fr_1.2fr_1fr]" labels={["Medicine (Generic)", "Form / Strength", "Category", "Available / Total", "Stock Status", "Nearest Expiry"]} light />
-        {rows.map((item) => <Link key={item.name} href="/pharmacy/medicines/amoxicillin-500mg" className="grid min-h-[92px] grid-cols-[1.6fr_1.5fr_1.2fr_1.4fr_1.2fr_1fr] items-center border-t border-[#e1e8ee] px-5 text-[18px]"><span>{item.name}<br /><span className="text-[14px] text-[#40536c]">{item.brand}</span></span><span>{item.form}</span><span>{item.category}</span><span><b className={item.available < 20 ? "text-[#c74400]" : ""}>{item.available}</b> / <span className="text-[14px] text-[#40536c]">{item.total}</span></span><StockBadge value={item.status} /><span className={item.expiry === "Jan 2024" ? "text-[#c74400]" : ""}>{item.expiry}</span></Link>)}
-        <div className="flex h-[72px] items-center justify-between border-t border-[#d7e1ea] px-5 text-[18px] text-[#40536c]"><span>Showing 1 to 4 of 124 entries</span><ChevronLeft className="text-[#b7c3cf]" /></div>
-      </div>
-    </section>
-  );
-}
+  const [stock, setStock] = useState<Record<string, MedicineStockSummary>>({});
+  const [state, setState] = useState<QueryState<MedicineRecord[]>>({ loading: true, data: [], error: null });
 
-function MedicineDetails() {
+  useEffect(() => {
+    let active = true;
+
+    async function loadMedicines() {
+      setState((current) => ({ ...current, loading: true, error: null }));
+      const [medicinesResult, batchesResult] = await Promise.all([
+        supabase.from("medicines").select(medicineSelect).order("name", { ascending: true }),
+        supabase.from("medicine_batches").select(batchStockSelect).order("created_at", { ascending: false }),
+      ]);
+
+      if (!active) return;
+      const error = medicinesResult.error ?? batchesResult.error;
+      if (error) {
+        setState({ loading: false, data: [], error: error.message });
+        return;
+      }
+
+      setStock(buildStockSummary((batchesResult.data ?? []) as BatchStockRecord[]));
+      setState({ loading: false, data: medicinesResult.data ?? [], error: null });
+    }
+
+    void loadMedicines();
+    return () => {
+      active = false;
+    };
+  }, [supabase]);
+
+  const filtered = useMemo(() => {
+    const text = query.trim().toLowerCase();
+    if (!text) return state.data;
+    return state.data.filter((medicine) => [medicine.name, medicine.category, medicine.description, medicine.status].some((value) => value?.toLowerCase().includes(text)));
+  }, [query, state.data]);
+
   return (
-    <section className="px-10 py-12">
-      <Link href="/pharmacy/medicines" className="text-[18px]">← Back to Inventory</Link>
-      <div className="mt-12 flex items-end justify-between border-b border-[#b9c8d5] pb-8">
-        <div><h1 className="text-[32px] font-semibold">Amoxicillin 500mg Capsules <span className="ml-4 rounded-full bg-[#ffd8d5] px-3 py-2 text-[15px] text-[#9b0000]"><AlertTriangle className="mr-1 inline h-4 w-4" />Low Stock</span><span className="ml-2 rounded-full bg-[#b46600] px-3 py-2 text-[15px] text-white"><CalendarX className="mr-1 inline h-4 w-4" />1 Batch Expires Soon</span></h1><p className="mt-4 text-[17px] text-[#2f3d4c]">NDC: 00093-3109-05 <span className="mx-5 text-[#b6c0ca]">•</span> Manufacturer: Teva Pharmaceuticals <span className="mx-5 text-[#b6c0ca]">•</span> Category: Antibiotics</p></div>
-        <div className="flex gap-5"><button className="h-12 rounded-lg border border-[#40536c] bg-white px-6 text-[18px]"><Edit3 className="mr-2 inline h-5 w-5" />Edit Details</button><Link href="/pharmacy/medicines/new" className="flex h-12 items-center rounded-lg bg-[#006d86] px-6 text-[18px] font-semibold text-white"><Plus className="mr-2 h-5 w-5" />Receive Stock</Link></div>
-      </div>
-      <div className="mt-10 grid grid-cols-[475px_1fr] gap-8">
-        <div className="space-y-3">
-          <div className="rounded-lg border border-[#b9c8d5] bg-white p-6"><p className="text-[20px]"><Archive className="mr-2 inline h-5 w-5" />Total Stock</p><p className="mt-2 text-[42px] font-semibold">1,240</p><p className="text-[#d00000]">↓ Below reorder point (1,500)</p></div>
-          <div className="grid grid-cols-2 gap-3"><MiniCard title="Available" value="1,100" helper="Ready for dispense" /><MiniCard title="Active Batches" value="3" helper="In current inventory" /></div>
-          <InfoPanel />
+    <section className="space-y-6 px-5 py-6 lg:px-8">
+      <PageHeader
+        title="Medicine Catalog"
+        description="Canonical medicines available to doctor prescriptions and pharmacy stock."
+        action={
+          <Link href="/pharmacy/medicines/new" className="inline-flex h-10 items-center gap-2 rounded-lg bg-[#006d86] px-4 text-sm font-semibold text-white">
+            <PackagePlus className="h-4 w-4" />
+            Add Medicine
+          </Link>
+        }
+      />
+
+      <DataCard title="Medicines">
+        <div className="mb-4 max-w-md">
+          <SearchInput value={query} onChange={setQuery} placeholder="Search medicines by name, category, or status" />
         </div>
-        <div className="space-y-8">
-          <BatchesTable />
-          <MovementTable />
+        {state.loading ? <LoadingState label="Loading medicines" /> : null}
+        {state.error ? <ErrorState message={state.error} /> : null}
+        {!state.loading && !state.error && state.data.length === 0 ? <EmptyState title="No medicines" description="No canonical medicines are visible to this pharmacy profile." /> : null}
+        {!state.loading && !state.error && state.data.length > 0 && filtered.length === 0 ? <EmptyState title="No matching medicines" description="Try a different medicine name, category, or status." /> : null}
+        {!state.loading && !state.error && filtered.length > 0 ? <MedicineTable medicines={filtered} stock={stock} /> : null}
+      </DataCard>
+    </section>
+  );
+}
+
+function NewMedicineForm({ profile }: { profile: AppProfile }) {
+  const supabase = useMemo(() => createClient() as unknown as CanonicalPharmacyClient, []);
+  const [name, setName] = useState("");
+  const [category, setCategory] = useState("");
+  const [description, setDescription] = useState("");
+  const [status, setStatus] = useState<MedicineStatus>("active");
+  const [saving, setSaving] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setSaving(true);
+    setMessage(null);
+    setError(null);
+
+    const payload: InsertMedicinePayload = {
+      name: name.trim(),
+      category: category.trim() || null,
+      description: description.trim() || null,
+      status,
+    };
+
+    if (!payload.name) {
+      setSaving(false);
+      setError("Medicine name is required.");
+      return;
+    }
+
+    const result = await supabase.from("medicines").insert(payload).select(medicineSelect).single();
+    setSaving(false);
+
+    if (result.error) {
+      setError(`Could not create medicine. ${result.error.message}`);
+      return;
+    }
+
+    setName("");
+    setCategory("");
+    setDescription("");
+    setStatus("active");
+    setMessage(`Medicine created by ${profile.full_name}.`);
+  }
+
+  return (
+    <section className="space-y-6 px-5 py-6 lg:px-8">
+      <PageHeader title="Add Medicine" description="Create a canonical medicine record. Stock batches are managed separately through batch workflows." />
+      <DataCard title="Medicine Details">
+        <form onSubmit={handleSubmit} className="grid max-w-3xl gap-5">
+          {error ? <ErrorState message={error} /> : null}
+          {message ? <SuccessState message={message} /> : null}
+          <label className="grid gap-2 text-sm font-medium">
+            Name
+            <input value={name} onChange={(event) => setName(event.target.value)} className="h-11 rounded-lg border border-[#cbd8e2] px-3 outline-none focus:border-[#00758d]" placeholder="Medicine name" />
+          </label>
+          <label className="grid gap-2 text-sm font-medium">
+            Category
+            <input value={category} onChange={(event) => setCategory(event.target.value)} className="h-11 rounded-lg border border-[#cbd8e2] px-3 outline-none focus:border-[#00758d]" placeholder="Optional category" />
+          </label>
+          <label className="grid gap-2 text-sm font-medium">
+            Description
+            <textarea
+              value={description}
+              onChange={(event) => setDescription(event.target.value)}
+              className="min-h-28 rounded-lg border border-[#cbd8e2] px-3 py-2 outline-none focus:border-[#00758d]"
+              placeholder="Optional description"
+            />
+          </label>
+          <label className="grid gap-2 text-sm font-medium">
+            Status
+            <select value={status} onChange={(event) => setStatus(event.target.value)} className="h-11 rounded-lg border border-[#cbd8e2] px-3 outline-none focus:border-[#00758d]">
+              <option value="active">Active</option>
+              <option value="inactive">Inactive</option>
+            </select>
+          </label>
+          <div className="flex items-center gap-3">
+            <button disabled={saving} className="inline-flex h-11 items-center gap-2 rounded-lg bg-[#006d86] px-5 text-sm font-semibold text-white disabled:opacity-60">
+              {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <PackagePlus className="h-4 w-4" />}
+              Create Medicine
+            </button>
+            <Link href="/pharmacy/medicines" className="text-sm font-semibold text-[#006d86]">
+              Back to catalog
+            </Link>
+          </div>
+        </form>
+      </DataCard>
+    </section>
+  );
+}
+
+function BatchList({ mode }: { mode: "low-stock" | "out-of-stock" | "expired" }) {
+  const supabase = useMemo(() => createClient() as unknown as CanonicalPharmacyClient, []);
+  const [state, setState] = useState<QueryState<BatchRecord[]>>({ loading: true, data: [], error: null });
+  const meta = batchPageMeta(mode);
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadBatches() {
+      setState((current) => ({ ...current, loading: true, error: null }));
+      let query = supabase.from("medicine_batches").select(batchSelect).order("created_at", { ascending: false });
+      if (mode === "low-stock") query = query.eq("status", "in_stock").lte("quantity", 10);
+      if (mode === "out-of-stock") query = query.eq("status", "out_of_stock");
+      if (mode === "expired") query = query.lt("expiry_date", todayIso());
+
+      const result = await query;
+      if (!active) return;
+      if (result.error) {
+        setState({ loading: false, data: [], error: result.error.message });
+        return;
+      }
+      setState({ loading: false, data: result.data ?? [], error: null });
+    }
+
+    void loadBatches();
+    return () => {
+      active = false;
+    };
+  }, [mode, supabase]);
+
+  return (
+    <section className="space-y-6 px-5 py-6 lg:px-8">
+      <PageHeader title={meta.title} description={meta.description} />
+      <DataCard title={meta.cardTitle}>
+        {state.loading ? <LoadingState label={meta.loadingLabel} /> : null}
+        {state.error ? <ErrorState message={state.error} /> : null}
+        {!state.loading && !state.error && state.data.length === 0 ? <EmptyState title={meta.emptyTitle} description={meta.emptyDescription} /> : null}
+        {!state.loading && !state.error && state.data.length > 0 ? <BatchTable batches={state.data} /> : null}
+      </DataCard>
+    </section>
+  );
+}
+
+function PrescriptionCompactList({ prescriptions }: { prescriptions: PrescriptionRecord[] }) {
+  return (
+    <div className="divide-y divide-[#dce6ee]">
+      {prescriptions.map((prescription) => (
+        <div key={prescription.id} className="grid gap-3 py-4 md:grid-cols-[1.5fr_1fr_1fr_auto] md:items-center">
+          <div>
+            <p className="font-semibold">{prescription.patients?.full_name ?? "Unknown patient"}</p>
+            <p className="text-sm text-[#607084]">{patientIdentifier(prescription.patients)} / {prescription.visits?.visit_code ?? prescription.visit_id}</p>
+          </div>
+          <div>
+            <p className="text-sm text-[#607084]">Doctor</p>
+            <p className="font-medium">{prescription.doctor?.full_name ?? prescription.doctor_id}</p>
+          </div>
+          <div>
+            <Badge tone={badgeTone(prescription.status)}>{formatLabel(prescription.status)}</Badge>
+            <p className="mt-1 text-sm text-[#607084]">{prescription.prescription_items.length} item(s)</p>
+          </div>
+          <Link href="/pharmacy/orders" className="text-sm font-semibold text-[#006d86]">
+            Review
+          </Link>
         </div>
-      </div>
-    </section>
+      ))}
+    </div>
   );
 }
 
-function MedicineOrdersQueue() {
-  const [tab, setTab] = useState("New Orders");
+function PrescriptionList({ prescriptions }: { prescriptions: PrescriptionRecord[] }) {
   return (
-    <section className="px-8 py-10">
-      <Header title="Medicine Orders Queue" subtitle="Manage and dispense prescriptions for pending patient visits.">
-        <button className="h-12 rounded-lg bg-[#006d86] px-6 text-[18px] font-semibold text-white"><Plus className="mr-2 inline h-5 w-5" />Manual Entry</button>
-      </Header>
-      <div className="mt-8 overflow-hidden rounded-lg border border-[#b9c8d5] bg-white">
-        <div className="flex h-[50px] items-end gap-4 border-b border-[#b9c8d5] px-5">
-          {["New Orders", "Pending Dispense", "Partially Dispensed", "Completed"].map((item) => <button key={item} onClick={() => setTab(item)} className={cn("h-full border-b-2 border-transparent px-5 text-[18px]", tab === item && "border-[#00758d] text-[#006d86]")}>{item}{item === "New Orders" && <span className="ml-2 rounded-full bg-[#0089a5] px-2 text-sm text-white">12</span>}</button>)}
+    <div className="space-y-4">
+      {prescriptions.map((prescription) => (
+        <DataCard key={prescription.id} title={prescription.patients?.full_name ?? "Unknown patient"} action={<Badge tone={badgeTone(prescription.status)}>{formatLabel(prescription.status)}</Badge>}>
+          <div className="grid gap-4 lg:grid-cols-4">
+            <InfoBlock label="MRN / Student ID" value={patientIdentifier(prescription.patients)} />
+            <InfoBlock label="Visit" value={prescription.visits?.visit_code ?? prescription.visit_id} helper={prescription.visits?.chief_complaint ?? "No chief complaint recorded"} />
+            <InfoBlock label="Doctor" value={prescription.doctor?.full_name ?? prescription.doctor_id} helper={prescription.doctor?.email ?? undefined} />
+            <InfoBlock label="Created" value={formatDateTime(prescription.created_at)} helper={prescription.completed_at ? `Completed ${formatDateTime(prescription.completed_at)}` : "Not completed"} />
+          </div>
+          {prescription.doctor_notes ? <p className="mt-4 rounded-lg bg-[#edf6f8] p-3 text-sm text-[#2d4058]">{prescription.doctor_notes}</p> : null}
+          <div className="mt-5 overflow-hidden rounded-lg border border-[#d4e0e8]">
+            <div className="grid grid-cols-[1.4fr_0.7fr_0.7fr_1.5fr_0.7fr] bg-[#eef4f8] px-4 py-3 text-xs font-semibold uppercase tracking-wide text-[#607084]">
+              <span>Medicine</span>
+              <span>Requested</span>
+              <span>Dispensed</span>
+              <span>Dosage</span>
+              <span>Status</span>
+            </div>
+            {prescription.prescription_items.length === 0 ? (
+              <div className="px-4 py-5 text-sm text-[#607084]">No prescription items are attached.</div>
+            ) : (
+              prescription.prescription_items.map((item) => (
+                <div key={item.id} className="grid min-h-16 grid-cols-[1.4fr_0.7fr_0.7fr_1.5fr_0.7fr] items-center border-t border-[#e5edf3] px-4 py-3 text-sm">
+                  <span>
+                    <span className="font-medium">{item.medicines?.name ?? item.medicine_id}</span>
+                    <br />
+                    <span className="text-xs text-[#607084]">{item.medicines?.category ?? "Uncategorized"}</span>
+                  </span>
+                  <span>{item.requested_quantity}</span>
+                  <span>{item.dispensed_quantity}</span>
+                  <span>{item.dosage_instructions ?? "No dosage instructions"}</span>
+                  <span><Badge tone={badgeTone(item.status)}>{formatLabel(item.status)}</Badge></span>
+                </div>
+              ))
+            )}
+          </div>
+        </DataCard>
+      ))}
+    </div>
+  );
+}
+
+function MedicineTable({ medicines, stock }: { medicines: MedicineRecord[]; stock: Record<string, MedicineStockSummary> }) {
+  return (
+    <div className="overflow-hidden rounded-lg border border-[#d4e0e8]">
+      <div className="grid grid-cols-[1.5fr_1fr_1.8fr_0.9fr_0.9fr_0.9fr_1fr] bg-[#eef4f8] px-4 py-3 text-xs font-semibold uppercase tracking-wide text-[#607084]">
+        <span>Name</span>
+        <span>Category</span>
+        <span>Description</span>
+        <span>Status</span>
+        <span>Total Qty</span>
+        <span>Batches</span>
+        <span>Updated</span>
+      </div>
+      {medicines.map((medicine) => {
+        const summary = stock[medicine.id] ?? { totalQuantity: 0, inStockBatches: 0, expiredBatches: 0 };
+        return (
+          <div key={medicine.id} className="grid min-h-20 grid-cols-[1.5fr_1fr_1.8fr_0.9fr_0.9fr_0.9fr_1fr] items-center border-t border-[#e5edf3] px-4 py-3 text-sm">
+            <span>
+              <span className="font-semibold">{medicine.name}</span>
+              <br />
+              <span className="text-xs text-[#607084]">{medicine.id}</span>
+            </span>
+            <span>{medicine.category ?? "Uncategorized"}</span>
+            <span className="line-clamp-2 text-[#41546b]">{medicine.description ?? "No description"}</span>
+            <span><Badge tone={badgeTone(medicine.status)}>{formatLabel(medicine.status)}</Badge></span>
+            <span>{summary.totalQuantity}</span>
+            <span>{summary.inStockBatches} in stock{summary.expiredBatches ? `, ${summary.expiredBatches} expired` : ""}</span>
+            <span>{formatDate(medicine.updated_at)}</span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function BatchTable({ batches }: { batches: BatchRecord[] }) {
+  return (
+    <div className="overflow-hidden rounded-lg border border-[#d4e0e8]">
+      <div className="grid grid-cols-[1.3fr_0.9fr_1fr_1fr_0.8fr_0.8fr_0.9fr_0.9fr] bg-[#eef4f8] px-4 py-3 text-xs font-semibold uppercase tracking-wide text-[#607084]">
+        <span>Medicine</span>
+        <span>Category</span>
+        <span>Batch</span>
+        <span>Receipt</span>
+        <span>Qty</span>
+        <span>Unit Price</span>
+        <span>Expiry</span>
+        <span>Status</span>
+      </div>
+      {batches.map((batch) => (
+        <div key={batch.id} className="grid min-h-20 grid-cols-[1.3fr_0.9fr_1fr_1fr_0.8fr_0.8fr_0.9fr_0.9fr] items-center border-t border-[#e5edf3] px-4 py-3 text-sm">
+          <span>
+            <span className="font-semibold">{batch.medicines?.name ?? batch.medicine_id ?? "Unlinked medicine"}</span>
+            <br />
+            <span className="text-xs text-[#607084]">{batch.manufacturer ?? "No manufacturer"}</span>
+          </span>
+          <span>{batch.medicines?.category ?? "Uncategorized"}</span>
+          <span>{batch.batch_number ?? "No batch number"}</span>
+          <span>{batch.receipt_number ?? "No receipt"}</span>
+          <span>{batch.quantity}</span>
+          <span>{batch.unit_price == null ? "Not set" : formatCurrency(batch.unit_price)}</span>
+          <span>{batch.expiry_date ? formatDate(batch.expiry_date) : "No expiry"}</span>
+          <span><Badge tone={badgeTone(batch.status)}>{formatLabel(batch.status)}</Badge></span>
         </div>
-        <TableHeader cols="grid-cols-[130px_1.3fr_1fr_0.8fr_0.5fr_1fr_0.9fr_0.8fr]" labels={["Order ID", "Patient Details", "Prescribing Doctor", "Visit ID", "Items", "Stock Availability", "Status", "Action"]} light />
-        {medicineOrders.map((order) => <div key={order.id} className="grid min-h-[94px] grid-cols-[130px_1.3fr_1fr_0.8fr_0.5fr_1fr_0.9fr_0.8fr] items-center border-t border-[#eef2f5] px-5 text-[18px]"><span>{order.id}</span><span>{order.patient}<br /><span className="text-[14px]">MRN: {order.mrn}</span></span><span>{order.doctor}</span><span>{order.visit}</span><span>{order.items}</span><StockAvail value={order.stock} /><StatusPill value={order.status} /><Link href="/pharmacy/orders/ord-9021" className={cn("rounded-md px-5 py-3 text-center font-semibold", order.action === "Dispense" ? "bg-[#006d86] text-white" : "border border-[#d7e1ea] text-[#006d86]")}>{order.action}</Link></div>)}
-        <div className="flex h-[90px] items-center justify-between border-t border-[#b9c8d5] px-5"><span>Showing 1 to 4 of 12 orders</span><span className="flex gap-7"><ChevronLeft /><ChevronRight /></span></div>
+      ))}
+    </div>
+  );
+}
+
+function PageHeader({ title, description, action }: { title: string; description: string; action?: React.ReactNode }) {
+  return (
+    <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+      <div>
+        <h1 className="text-2xl font-semibold">{title}</h1>
+        <p className="mt-1 text-sm text-[#607084]">{description}</p>
       </div>
-    </section>
+      {action}
+    </div>
   );
 }
 
-function DispenseMedicines() {
-  const [message, setMessage] = useState("");
+function DataCard({ title, action, children }: { title: string; action?: React.ReactNode; children: React.ReactNode }) {
   return (
-    <section className="px-8 py-8">
-      <div className="flex items-start justify-between"><div><p className="text-[18px] text-[#344b69]">← Back to Queue <span className="mx-2">/</span> <b className="text-black">Order #ORD-2023-8942</b></p><h1 className="mt-2 text-[32px] font-semibold">Dispense Medicines</h1></div><button onClick={() => window.print()} className="h-12 rounded-lg border border-[#40536c] bg-white px-6 text-[18px]"><Printer className="mr-2 inline h-5 w-5" />Print Labels</button></div>
-      <div className="mt-8 flex items-center justify-between rounded-[14px] border border-[#d7e1ea] bg-white p-8 shadow-sm"><div className="flex items-center gap-5"><Avatar initials="EJ" large /><div><h2 className="text-[26px] font-semibold">Eleanor Jenkins</h2><p className="text-[#40536c]">DOB: 14 May 1968 (55y) <span className="mx-5">|</span> # MRN: PT-99214</p></div></div><InfoField label="Prescribing Doctor" value="Dr. Sarah Chen (Cardiology)" /><InfoField label="Order Date" value="Today, 09:45 AM" /></div>
-      <div className="mt-8 grid grid-cols-[1fr_385px] gap-8">
-        <div><h2 className="mb-6 text-[28px] font-semibold">Requested Items (3)</h2><DispenseItem name="Atorvastatin Calcium" meta="40mg Tablet • Oral" qty="30" ok /><DispenseItem name="Lisinopril" meta="20mg Tablet • Oral" qty="90" warning /><DispenseItem name="Aspirin" meta="81mg Chewable • Oral" qty="30" disabled /></div>
-        <aside className="h-fit rounded-[14px] border border-[#d7e1ea] bg-white p-6 shadow-sm"><h2 className="border-b border-[#d7e1ea] pb-5 text-[28px] font-semibold">Dispense Summary</h2>{[["Total Items Requested","3"],["Items to Dispense Fully","1"],["Items Partially Filled","1"],["Items Out of Stock","1"]].map(([a,b],i)=><p key={a} className="mt-5 flex justify-between text-[18px] text-[#40536c]"><span>{a}</span><b className={i===1?"text-[#00802b]":i>1?"text-[#c74400]":"text-black"}>{b}</b></p>)}<div className="mt-8 rounded-lg bg-[#e9eef3] p-5"><p className="text-[18px] font-semibold"><InfoIcon className="mr-2 inline h-6 w-6 text-[#006d86]" />Partial Order Fulfillment</p><p className="ml-8 mt-2 text-[17px] leading-6 text-[#40536c]">Proceeding will create a backorder for 45x Lisinopril and 30x Aspirin. Patient will be notified.</p></div><button onClick={()=>setMessage("Available medicines dispensed.")} className="mt-8 h-14 w-full rounded-lg bg-[#006d86] text-[18px] font-semibold text-white">Dispense Available (2 items)</button><button onClick={()=>setMessage("Order placed on hold.")} className="mt-4 h-14 w-full rounded-lg border border-[#40536c] bg-white text-[18px]">Hold Entire Order</button>{message && <p className="mt-4 text-[#006d86]">{message}</p>}</aside>
+    <section className="rounded-lg border border-[#d4e0e8] bg-white shadow-sm">
+      <div className="flex items-center justify-between border-b border-[#d4e0e8] px-5 py-4">
+        <h2 className="font-semibold">{title}</h2>
+        {action}
       </div>
+      <div className="p-5">{children}</div>
     </section>
   );
 }
 
-function LowStockMedicines() {
+function StatCard({ title, value, icon: Icon, tone = "info" }: { title: string; value: number; icon: typeof ClipboardList; tone?: "info" | "success" | "warning" | "danger" }) {
+  const toneClass = {
+    info: "bg-[#e3f7fa] text-[#006d86]",
+    success: "bg-[#e4f7e9] text-[#087a35]",
+    warning: "bg-[#fff5d9] text-[#9b6400]",
+    danger: "bg-[#ffe8e5] text-[#b42318]",
+  }[tone];
+
   return (
-    <section className="px-10 py-12">
-      <Header title="Low Stock Medicines" subtitle="Monitor and replenish critical inventory items."><button className="h-12 rounded-lg border border-[#40536c] bg-white px-6 text-[18px]">Filters</button><button className="h-12 rounded-lg bg-[#006d86] px-6 text-[18px] font-semibold text-white"><Download className="mr-2 inline h-5 w-5" />Export Report</button></Header>
-      <div className="mt-8 grid grid-cols-3 gap-5"><BigMetric title="Low Stock Items" value="42" /><BigMetric title="Critical Stock" value="18" red /><BigMetric title="Out of Stock" value="3" darkRed /></div>
-      <div className="mt-10 overflow-hidden rounded-lg border border-[#b9c8d5] bg-white"><TableHeader cols="grid-cols-[1.5fr_1.8fr_0.9fr_0.9fr_1.1fr_1.2fr_1fr]" labels={["Medicine","Form / Strength","Available","Threshold","Severity","Nearest Expiry","Action"]} dark />{lowStock.map((row)=><div key={row.id} className={cn("grid min-h-[86px] grid-cols-[1.5fr_1.8fr_0.9fr_0.9fr_1.1fr_1.2fr_1fr] items-center border-t border-[#b9c8d5] px-5 text-[17px]", row.primary && "bg-[#fff7f7]")}><span>{row.medicine}<br /><span className="text-[14px] text-[#324c71]">ID: {row.id}</span></span><span>{row.form}</span><span className={row.available < 20 ? "font-semibold text-[#c00000]" : "text-[#b25b00]"}>{row.available}</span><span>{row.threshold}</span><SeverityBadge value={row.severity} /><span>{row.expiry}</span><Link href="/pharmacy/medicines/new" className={cn("rounded-md px-4 py-2 text-center font-semibold", row.primary || row.severity==="Critical" ? "bg-[#006d86] text-white" : "border border-[#40536c]")}>⊕ Add Batch</Link></div>)}<Pagination text="Showing 1 to 5 of 63 entries" /></div>
-    </section>
+    <div className="rounded-lg border border-[#d4e0e8] bg-white p-5 shadow-sm">
+      <div className="flex items-center justify-between">
+        <span className={cn("flex h-10 w-10 items-center justify-center rounded-lg", toneClass)}>
+          <Icon className="h-5 w-5" />
+        </span>
+        <span className="text-3xl font-semibold">{value}</span>
+      </div>
+      <p className="mt-5 text-sm font-medium text-[#41546b]">{title}</p>
+    </div>
   );
 }
 
-function ExpiredMedicines() {
+function LoadingState({ label }: { label: string }) {
   return (
-    <section className="px-8 py-10">
-      <Header title="Expired Medicines" subtitle="Manage and log the disposal of expired laboratory reagents and medications."><button onClick={() => window.print()} className="h-12 rounded-lg border border-[#40536c] bg-white px-6 text-[18px]"><Printer className="mr-2 inline h-5 w-5" />Print Manifest</button></Header>
-      <div className="mt-8 rounded-lg border border-[#ff8d8d] bg-[#ffd8d5] p-6 text-[#a00000]"><p className="text-[28px] font-semibold"><AlertTriangle className="mr-5 inline h-7 w-7" />Critical Safety Protocol <X className="float-right h-6 w-6" /></p><p className="ml-12 mt-2 text-[18px]">Expired medicines must not be dispensed. All items listed below require immediate secure disposal according to biohazard protocols. Ensure disposal is logged before removing items from the secure hold area.</p></div>
-      <div className="mt-8 overflow-hidden rounded-lg border border-[#d7e1ea] bg-white"><div className="flex justify-between p-5"><span className="rounded-full border border-[#f5b5b5] bg-[#fff0f0] px-4 py-2 text-[18px] text-[#c00000]">12 Items Pending Disposal</span><FilterSelect label="All Manufacturers" /></div><TableHeader cols="grid-cols-[1.4fr_0.8fr_1.2fr_1fr_0.8fr_1fr_1fr]" labels={["Medicine / Reagent","Batch #","Manufacturer","Expired Date","Qty Remaining","Disposal Status","Actions"]} dark />{expired.map((row)=><div key={row.med} className="grid min-h-[102px] grid-cols-[1.4fr_0.8fr_1.2fr_1fr_0.8fr_1fr_1fr] items-center border-t border-[#d7e1ea] px-5 text-[17px]"><span>{row.med}<br /><span className="text-[14px]">{row.type}</span></span><span>{row.batch}</span><span>{row.maker}</span><span className={row.ago ? "text-[#c00000]" : "text-[#687887]"}>{row.date}<br /><span className="text-[13px] text-black">{row.ago}</span></span><span>{row.qty}</span><DisposalBadge value={row.status} /><span>{row.action.includes("Log") ? <button className="rounded-lg bg-[#006d86] px-6 py-3 text-white">{row.action}</button> : <button className="rounded-lg border bg-[#e9eef3] px-6 py-3">{row.action}</button>}</span></div>)}<Pagination text="Showing 1-4 of 12 items" /></div>
-    </section>
+    <div className="flex min-h-32 items-center justify-center gap-2 text-sm text-[#607084]">
+      <Loader2 className="h-4 w-4 animate-spin" />
+      {label}
+    </div>
   );
 }
 
-function OutOfStockMedicines() {
+function EmptyState({ title, description }: { title: string; description: string }) {
   return (
-    <section className="px-[60px] py-16">
-      <div className="flex items-start justify-between"><div><h1 className="text-[32px] font-semibold">Out of Stock Medicines</h1><p className="mt-2 text-[18px]">Review unavailable inventory and prioritize replenishment based on pending patient orders.</p></div><Link href="/pharmacy/medicines/new" className="flex h-12 items-center rounded-lg bg-[#006d86] px-6 text-[18px] font-semibold text-white"><Plus className="mr-2 h-5 w-5" />Add Batch</Link></div>
-      <div className="mt-14 grid grid-cols-3 gap-8"><BigMetric title="TOTAL OUT OF STOCK" value="24 items" darkRed /><BigMetric title="PENDING ORDERS AFFECTED" value="156 orders" /><BigMetric title="AWAITING DELIVERY" value="8 batches" /></div>
-      <div className="mt-16 overflow-hidden rounded-lg border border-[#d7e1ea] bg-white"><div className="flex items-center justify-between p-8"><h2 className="text-[28px] font-semibold">Critical Shortages</h2><Filter className="h-6 w-6 text-[#344b69]" /></div><TableHeader cols="grid-cols-[1.5fr_1fr_1fr_1fr_1fr_1fr_1fr]" labels={["Medicine","Form","Strength","Last Stocked","Last Dispensed","Pending Orders","Action"]} light />{[["Amoxicillin","Capsule","500mg","Oct 12, 2023","Nov 05, 2023","42 Affected","Order Now"],["Lisinopril","Tablet","20mg","Sep 28, 2023","Nov 06, 2023","28 Affected","Order Now"],["Metformin","Tablet","1000mg","Oct 01, 2023","Nov 04, 2023","15 Affected","Ordered (Nov 07)"],["Albuterol","Inhaler","90mcg","Sep 15, 2023","Nov 06, 2023","5 Affected","Order Now"]].map((row,i)=><div key={row[0]} className="grid min-h-[92px] grid-cols-[1.5fr_1fr_1fr_1fr_1fr_1fr_1fr] items-center border-t border-[#e1e8ee] px-8 text-[17px]"><span><span className={cn("mr-4 inline-flex h-10 w-10 items-center justify-center rounded-full", i===0?"bg-[#fff0f0] text-[#c00000]":"bg-[#eef3f7]")}><Pill className="h-5 w-5" /></span>{row[0]}</span><span>{row[1]}</span><span>{row[2]}</span><span>{row[3]}</span><span>{row[4]}</span><span><span className={cn("rounded-full px-3 py-2 text-[15px]", i<2?"bg-[#ffd8d5] text-[#c00000]":"bg-[#dfe5ea]")}>{row[5]}</span></span><span className={row[6].startsWith("Order")?"text-[#006d86]":"text-[#8da0ba]"}>{row[6]}</span></div>)}</div>
-    </section>
+    <div className="rounded-lg border border-dashed border-[#cbd8e2] bg-[#f8fbfd] p-8 text-center">
+      <p className="font-semibold">{title}</p>
+      <p className="mt-1 text-sm text-[#607084]">{description}</p>
+    </div>
   );
 }
 
-function CompletedOrdersLog() {
+function ErrorState({ message }: { message: string }) {
   return (
-    <section className="px-10 py-12">
-      <Header title="Completed Medicine Orders" subtitle="Historical log of all dispensed prescriptions."><button className="h-12 rounded-lg border border-[#b9c8d5] bg-white px-6 text-[18px]"><Download className="mr-2 inline h-5 w-5" />Export Log</button><button onClick={() => window.print()} className="h-12 rounded-lg bg-[#006d86] px-6 text-[18px] font-semibold text-white"><Printer className="mr-2 inline h-5 w-5" />Print Summary</button></Header>
-      <div className="mt-10 grid grid-cols-4 gap-5 rounded-lg border border-[#b9c8d5] bg-white p-6"><InputField label="Date Range" value="Last 7 Days" /><InputField label="Prescribing Doctor" value="All Doctors" select /><InputField label="Dispensed By" value="All Dispensers" select /><InputField label="Status" value="All Completed" select /></div>
-      <div className="mt-8 overflow-hidden rounded-lg border border-[#b9c8d5] bg-white"><TableHeader cols="grid-cols-[110px_1.2fr_0.8fr_2fr_1.1fr_1.2fr_0.8fr]" labels={["Order ID","Patient / MRN","Doctor","Medicines Summary","Status","Dispensed By","Completed"]} light />{completedOrders.map(row=><div key={row.id} className="grid min-h-[112px] grid-cols-[110px_1.2fr_0.8fr_2fr_1.1fr_1.2fr_0.8fr] items-center border-t border-[#b9c8d5] px-5 text-[17px]"><span className="text-[#006d86]">{row.id}</span><span>{row.patient}<br /><span className="text-[14px]">{row.mrn}</span></span><span>{row.doctor}</span><span className="whitespace-pre-line">{row.summary}</span><CompleteBadge value={row.status} /><span>{row.by}</span><span>{row.time}</span></div>)}<Pagination text="Showing 1 to 4 of 128 entries" pages /></div>
-    </section>
+    <div className="rounded-lg border border-[#f2aaa4] bg-[#fff1f0] p-4 text-sm text-[#b42318]">
+      <AlertTriangle className="mr-2 inline h-4 w-4" />
+      {message}
+    </div>
   );
 }
 
-function FormCard({ title, icon: Icon, children }: { title: string; icon: typeof ShieldPlus; children: ReactNode }) {
-  return <div className="rounded-lg border border-[#d7e1ea] bg-white p-8 shadow-sm"><h2 className="border-b border-[#d7e1ea] pb-4 text-[28px] font-semibold"><Icon className="mr-3 inline h-6 w-6 text-[#00758d]" />{title}</h2><div className="mt-8 grid grid-cols-2 gap-6">{children}</div></div>;
+function SuccessState({ message }: { message: string }) {
+  return (
+    <div className="rounded-lg border border-[#a7dfb7] bg-[#edf8ef] p-4 text-sm text-[#087a35]">
+      <CheckCircle2 className="mr-2 inline h-4 w-4" />
+      {message}
+    </div>
+  );
 }
 
-function InputField({ label, value, placeholder, select, suffix, danger, helper, full }: { label: string; value?: string; placeholder?: string; select?: boolean; suffix?: string; danger?: boolean; helper?: string; full?: boolean }) {
-  return <label className={cn("text-[17px]", full && "col-span-2")}>{label}<span className={cn("mt-2 flex h-12 items-center justify-between rounded-lg border bg-white px-4 text-[17px]", danger ? "border-[#d00000] bg-[#fff3f3] text-[#c00000]" : "border-[#b9c8d5]")}><span className={!value ? "text-[#687887]" : ""}>{value ?? placeholder}</span>{suffix && <span className="text-[#b1bfca]">{suffix}</span>}{select && <ChevronDown className="h-5 w-5 text-[#687887]" />}</span>{helper && <p className="mt-2 text-[14px] text-[#d00000]">{helper}</p>}</label>;
+function SearchInput({ value, onChange, placeholder }: { value: string; onChange: (value: string) => void; placeholder: string }) {
+  return (
+    <span className="relative block">
+      <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#7a8ca1]" />
+      <input
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        className="h-10 w-full rounded-lg border border-[#cbd8e2] bg-[#f4f8fb] pl-10 pr-3 text-sm outline-none focus:border-[#00758d]"
+        placeholder={placeholder}
+      />
+    </span>
+  );
 }
 
-function SearchInput({ placeholder }: { placeholder: string }) {
-  return <span className="relative mt-2 block"><Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[#b1bfca]" /><input className="h-12 w-full rounded-lg border border-[#b9c8d5] pl-12 text-[17px]" placeholder={placeholder} /></span>;
+function InfoBlock({ label, value, helper }: { label: string; value: string; helper?: string }) {
+  return (
+    <div>
+      <p className="text-xs font-semibold uppercase tracking-wide text-[#607084]">{label}</p>
+      <p className="mt-1 font-medium">{value}</p>
+      {helper ? <p className="mt-1 text-sm text-[#607084]">{helper}</p> : null}
+    </div>
+  );
 }
 
-function SearchBox({ placeholder, className, value, onChange }: { placeholder: string; className?: string; value: string; onChange: (value: string) => void }) {
-  return <span className={cn("relative block", className)}><Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[#8da0ba]" /><input value={value} onChange={(e) => onChange(e.target.value)} className="h-12 w-full rounded-lg border border-[#d7e1ea] bg-[#f1f5f9] pl-12 text-[18px]" placeholder={placeholder} /></span>;
+function Avatar({ name, small }: { name: string; small?: boolean }) {
+  return (
+    <span className={cn("flex shrink-0 items-center justify-center rounded-full bg-[#d9eef3] font-semibold text-[#006d86]", small ? "h-8 w-8 text-xs" : "h-10 w-10 text-sm")}>
+      {initials(name)}
+    </span>
+  );
 }
 
-function FilterSelect({ label }: { label: string }) {
-  return <button className="h-12 rounded-lg border border-[#d7e1ea] bg-white px-5 text-[18px]">{label} <ChevronDown className="ml-3 inline h-5 w-5" /></button>;
+function countRows(client: CanonicalPharmacyClient, table: "prescriptions", column: string, value: FilterValue): PromiseLike<CountResult>;
+function countRows(client: CanonicalPharmacyClient, table: "prescription_items", column: string, value: FilterValue): PromiseLike<CountResult>;
+function countRows(client: CanonicalPharmacyClient, table: "medicines", column: string, value: FilterValue): PromiseLike<CountResult>;
+function countRows(client: CanonicalPharmacyClient, table: "medicine_batches", column: string, value: FilterValue): PromiseLike<CountResult>;
+function countRows(client: CanonicalPharmacyClient, table: "prescriptions" | "prescription_items" | "medicines" | "medicine_batches", column: string, value: FilterValue) {
+  if (table === "prescriptions") return client.from("prescriptions").select("id", { count: "exact", head: true }).eq(column, value);
+  if (table === "prescription_items") return client.from("prescription_items").select("id", { count: "exact", head: true }).eq(column, value);
+  if (table === "medicines") return client.from("medicines").select("id", { count: "exact", head: true }).eq(column, value);
+  return client.from("medicine_batches").select("id", { count: "exact", head: true }).eq(column, value);
 }
 
-function InfoField({ label, value }: { label: string; value: string }) {
-  return <div><p className="text-[15px] uppercase tracking-[0.04em] text-[#40536c]">{label}</p><p className="mt-2 text-[18px]">{value}</p></div>;
+function buildStockSummary(batches: BatchStockRecord[]) {
+  const today = todayIso();
+  return batches.reduce<Record<string, MedicineStockSummary>>((summary, batch) => {
+    if (!batch.medicine_id) return summary;
+    const current = summary[batch.medicine_id] ?? { totalQuantity: 0, inStockBatches: 0, expiredBatches: 0 };
+    current.totalQuantity += batch.quantity;
+    if (batch.status === "in_stock") current.inStockBatches += 1;
+    if (batch.expiry_date && batch.expiry_date < today) current.expiredBatches += 1;
+    summary[batch.medicine_id] = current;
+    return summary;
+  }, {});
 }
 
-function TableHeader({ cols, labels, dark, light }: { cols: string; labels: string[]; dark?: boolean; light?: boolean }) {
-  return <div className={cn("grid px-5 py-4 text-[15px] uppercase tracking-[0.04em]", cols, dark ? "bg-[#34465d] text-white" : light ? "bg-[#eef3f7] text-[#40536c]" : "bg-[#eef3f7] text-[#40536c]")}>{labels.map((label) => <span key={label}>{label}</span>)}</div>;
+function batchPageMeta(mode: "low-stock" | "out-of-stock" | "expired") {
+  if (mode === "low-stock") {
+    return {
+      title: "Low Stock Batches",
+      description: "In-stock batches with quantity at or below 10 units.",
+      cardTitle: "Low Stock",
+      loadingLabel: "Loading low stock batches",
+      emptyTitle: "No low stock batches",
+      emptyDescription: "No in-stock batches are currently at or below the low stock threshold.",
+    };
+  }
+  if (mode === "out-of-stock") {
+    return {
+      title: "Out of Stock Batches",
+      description: "Batches marked out of stock in the canonical stock table.",
+      cardTitle: "Out of Stock",
+      loadingLabel: "Loading out of stock batches",
+      emptyTitle: "No out of stock batches",
+      emptyDescription: "No out of stock batches are currently visible.",
+    };
+  }
+  return {
+    title: "Expired Batches",
+    description: "Batches with expiry dates earlier than today.",
+    cardTitle: "Expired Stock",
+    loadingLabel: "Loading expired batches",
+    emptyTitle: "No expired batches",
+    emptyDescription: "No expired medicine batches are currently visible.",
+  };
 }
 
-function StatusPill({ value }: { value: string }) {
-  return <span className={cn("w-fit rounded-full px-3 py-2 text-[15px]", value === "New" || value === "New Order" ? "bg-[#e7f8fc] text-[#00758d]" : value === "Processing" ? "bg-[#7bdcff] text-[#00627c]" : "bg-[#dfe5ea] text-[#2f3d4c]")}>• {value}</span>;
+function patientIdentifier(patient: PatientSummary | null) {
+  if (!patient) return "No patient identifier";
+  return patient.mrn ?? patient.student_id ?? "No patient identifier";
 }
 
-function StockBadge({ value }: { value: string }) {
-  return <span className={cn("w-fit rounded-full px-3 py-1 text-[15px]", value === "In Stock" ? "bg-[#d8f3df] text-[#00802b]" : value === "Low Stock" ? "bg-[#fff0df] text-[#b25b00]" : "bg-[#ffd8d5] text-[#c00000]")}>{value}</span>;
+function formatLabel(value: string) {
+  return value.replaceAll("_", " ").replace(/\b\w/g, (char) => char.toUpperCase());
 }
 
-function StockAvail({ value }: { value: string }) {
-  return <span className={cn("w-fit rounded-full px-3 py-2 text-[15px]", value === "Available" ? "bg-[#0089a5] text-white" : value === "Partial" ? "bg-[#b46600] text-white" : "bg-[#ffd8d5] text-[#c00000]")}>{value}</span>;
+function formatDate(value: string) {
+  return new Intl.DateTimeFormat("en", { dateStyle: "medium" }).format(new Date(value));
 }
 
-function SeverityBadge({ value }: { value: string }) {
-  return <span className={cn("w-fit rounded-md px-3 py-2 text-[15px]", value === "Out of Stock" ? "bg-[#c91419] text-white" : value === "Critical" ? "bg-[#ffd8d5] text-[#c00000]" : "bg-[#fff0df] text-[#b25b00]")}>{value}</span>;
+function formatDateTime(value: string) {
+  return new Intl.DateTimeFormat("en", { dateStyle: "medium", timeStyle: "short" }).format(new Date(value));
 }
 
-function DisposalBadge({ value }: { value: string }) {
-  return <span className={cn("w-fit rounded-md px-3 py-2 text-[15px]", value === "Pending" ? "bg-[#fff0f0] text-[#c00000] border border-[#f5b5b5]" : value === "In Transit" ? "bg-[#fff0df] text-[#9a4b00] border border-[#e3bd83]" : "bg-[#dfe5ea] text-[#687887]")}>{value}</span>;
+function formatCurrency(value: number) {
+  return new Intl.NumberFormat("en", { style: "currency", currency: "USD" }).format(value);
 }
 
-function CompleteBadge({ value }: { value: string }) {
-  return <span className={cn("w-fit rounded-full px-4 py-3 text-[16px]", value.startsWith("Fully") ? "bg-[#d8f3df] text-[#00802b]" : "bg-[#e1e6eb] text-[#2f3d4c]")}>• {value}</span>;
+function todayIso() {
+  return new Date().toISOString().slice(0, 10);
 }
 
-function Avatar({ initials, large }: { initials: string; large?: boolean }) {
-  return <span className={cn("flex shrink-0 items-center justify-center rounded-full bg-[#d8e4ff] text-[#324c71]", large ? "h-[60px] w-[60px] text-[24px]" : "h-10 w-10")}>{initials}</span>;
-}
-
-function MiniCard({ title, value, helper }: { title: string; value: string; helper: string }) {
-  return <div className="rounded-lg border border-[#b9c8d5] bg-white p-6"><p className="text-[20px]">{title}</p><p className="mt-3 text-[30px] font-semibold">{value}</p><p className="mt-2 text-[15px]">{helper}</p></div>;
-}
-
-function InfoPanel() {
-  const rows = [["Generic Name", "Amoxicillin"], ["Dosage Form", "Capsule, Oral"], ["Strength", "500 mg"], ["Storage", "Room Temp (20-25°C)"], ["Rx Required", "Yes"]];
-  return <div className="rounded-lg border border-[#b9c8d5] bg-white p-8"><h2 className="mb-6 text-[28px] font-semibold"><InfoIcon className="mr-3 inline h-7 w-7 text-[#00758d]" />Medicine Information</h2>{rows.map(([a,b]) => <p key={a} className="flex justify-between border-b border-[#d7e1ea] py-4 text-[17px] last:border-0"><span>{a}</span><b>{b}</b></p>)}</div>;
-}
-
-function BatchesTable() {
-  const rows = [["AMX-2023-88A","Shelf A-12","800","Nov 2025","Optimal"],["AMX-2023-42B","Shelf B-04","300","Dec 2023","Expires Soon"],["AMX-2022-19C","Quarantine Bin","140","Aug 2023","Expired"]];
-  return <div className="overflow-hidden rounded-lg border border-[#b9c8d5] bg-white"><div className="flex justify-between p-6"><h2 className="text-[28px] font-semibold">Current Batches</h2><button className="text-[18px] text-[#006d86]">View All Batches</button></div><TableHeader cols="grid-cols-[1.3fr_1.3fr_0.5fr_1fr_1fr]" labels={["Batch #","Location","Qty","Expiry Date","Status"]} light />{rows.map(row=><div key={row[0]} className="grid min-h-[72px] grid-cols-[1.3fr_1.3fr_0.5fr_1fr_1fr] items-center border-t border-[#d7e1ea] px-5 text-[17px]"><span className="text-[#006d86]">{row[0]}</span><span>{row[1]}</span><span className={row[4]==="Expired"?"text-[#c00000]":""}>{row[2]}</span><span className={row[4]!=="Optimal"?"text-[#a44b00]":""}>{row[3]}</span><span><SeverityBadge value={row[4]} /></span></div>)}</div>;
-}
-
-function MovementTable() {
-  const rows = [["Oct 24, 2023 - 14:30","↑ Dispense","-30","RX-99201","J. Smith"],["Oct 24, 2023 - 09:15","↑ Dispense","-60","RX-99184","M. Davis"],["Oct 22, 2023 - 11:00","↓ Receive","+800","PO-2023-114","A. Wilson"],["Oct 20, 2023 - 16:45","↑ Dispense","-45","RX-99012","J. Smith"]];
-  return <div className="overflow-hidden rounded-lg border border-[#b9c8d5] bg-white"><h2 className="p-6 text-[28px] font-semibold">Recent Stock Movement</h2><TableHeader cols="grid-cols-[1.7fr_1fr_0.5fr_1fr_1fr]" labels={["Date & Time","Type","Qty","Reference / Rx","User"]} light />{rows.map(row=><div key={row[0]} className="grid min-h-[68px] grid-cols-[1.7fr_1fr_0.5fr_1fr_1fr] items-center border-t border-[#d7e1ea] px-5 text-[17px]"><span>{row[0]}</span><span className={row[1].includes("Dispense")?"text-[#d00000]":"text-[#006d86]"}>{row[1]}</span><span>{row[2]}</span><span>{row[3]}</span><span>{row[4]}</span></div>)}</div>;
-}
-
-function DispenseItem({ name, meta, qty, ok, warning, disabled }: { name: string; meta: string; qty: string; ok?: boolean; warning?: boolean; disabled?: boolean }) {
-  return <div className={cn("mb-5 rounded-lg border bg-white p-5", warning && "border-[#d00000] bg-[#fff8f8]", disabled && "opacity-55")}><div className="flex justify-between"><div><h3 className="text-[26px] font-semibold"><span className="mr-3 rounded bg-[#bdf3ff] px-3 py-1 text-[13px]">RX</span>{name}</h3><p className="mt-2 text-[18px] text-[#40536c]">{meta}</p></div><p className="text-right uppercase text-[#40536c]">Requested Qty<br /><b className="text-[30px] text-black">{qty}</b> tabs</p></div><div className="mt-5 border-t border-[#d7e1ea] pt-5"><p className="mb-2 uppercase tracking-[0.04em] text-[#40536c]">Dosage Instructions</p><div className="rounded-lg bg-[#eef3f7] p-4">{warning ? "Take 1 tablet by mouth daily in the morning." : disabled ? "Cannot dispense. Only available batch is expired (Oct 2023). Item requires restock." : "Take 1 tablet daily by mouth in the evening. Do not take with grapefruit juice."}</div>{warning && <div className="mt-5 rounded-lg bg-[#ffd8d5] p-4 text-[#c00000]"><AlertTriangle className="mr-2 inline h-5 w-5" />Insufficient stock across all active batches. Maximum available to dispense is 45 tabs.</div>}<div className="mt-5 grid grid-cols-[1fr_120px_50px] gap-5"><InputField label="Select Batch" value={disabled ? "No valid batches available" : warning ? "Batch #LS-992-X • Exp: Jan 2025 • Stock: 45 (LOW)" : "Batch #AT-2023-A • Exp: Dec 2024 • Stock: 150"} select /><InputField label="Dispense" value={warning ? "45" : ok ? "30" : "0"} danger={warning} />{ok && <CheckCircle2 className="mt-9 h-10 w-10 text-[#00a844]" />}{warning && <CircleAlert className="mt-9 h-8 w-8 text-[#d00000]" />}</div></div></div>;
-}
-
-function BigMetric({ title, value, red, darkRed }: { title: string; value: string; red?: boolean; darkRed?: boolean }) {
-  return <div className="rounded-lg border border-[#b9c8d5] bg-white p-8"><span className={cn("mb-7 flex h-[60px] w-[60px] items-center justify-center rounded-lg bg-[#eef3f7]", red && "bg-[#ffd8d5] text-[#c00000]", darkRed && "bg-[#c91419] text-white")}><AlertTriangle className="h-7 w-7" /></span><p className="uppercase tracking-[0.04em] text-[#40536c]">{title}</p><p className={cn("mt-3 text-[40px] font-semibold", darkRed && "text-[#c00000]")}>{value}</p></div>;
-}
-
-function Pagination({ text, pages }: { text: string; pages?: boolean }) {
-  return <div className="flex h-[80px] items-center justify-between border-t border-[#d7e1ea] px-5 text-[17px]"><span>{text}</span>{pages ? <span className="flex items-center gap-6"><ChevronLeft className="text-[#b1bfca]" /><b className="rounded bg-[#006d86] px-4 py-3 text-white">1</b>2 3 ... <ChevronRight /></span> : <span className="flex gap-3"><button className="rounded border border-[#d7e1ea] p-3 text-[#b1bfca]"><ChevronLeft /></button><button className="rounded border border-[#d7e1ea] p-3"><ChevronRight /></button></span>}</div>;
+function initials(name: string) {
+  return name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase())
+    .join("");
 }
