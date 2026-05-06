@@ -129,6 +129,8 @@ type PrescriptionItemRecord = {
   dosage_instructions: string | null;
   status: string;
   dispensed_at: string | null;
+  created_at: string;
+  updated_at: string | null;
   medicines: {
     id: string;
     name: string;
@@ -147,12 +149,15 @@ type PrescriptionRecord = {
   doctor_notes: string | null;
   created_at: string;
   completed_at: string | null;
+  updated_at: string | null;
   visits: {
     id: string;
     visit_code: string;
     chief_complaint: string | null;
     status: string;
     priority: string;
+    created_at: string;
+    completed_at: string | null;
   } | null;
   doctor: DoctorSummary | null;
   prescription_items: PrescriptionItemRecord[];
@@ -225,7 +230,7 @@ const appointmentRequestSelect =
 const labResultSelect =
   "id,visit_id,patient_id,doctor_id,lab_test_id,result_value,result_notes,status,entered_at,reviewed_at,visible_to_patient,created_at,updated_at,lab_tests(name,code,unit,normal_range,description),visits(id,visit_code,chief_complaint,status,priority,created_at,completed_at),doctor:profiles!lab_results_doctor_id_fkey(full_name,email)";
 const prescriptionSelect =
-  "id,visit_id,patient_id,doctor_id,status,doctor_notes,created_at,completed_at,visits(id,visit_code,chief_complaint,status,priority),doctor:profiles!prescriptions_doctor_id_fkey(full_name,email),prescription_items(id,prescription_id,medicine_id,requested_quantity,dispensed_quantity,dosage_instructions,status,dispensed_at,medicines(id,name,category,description,status))";
+  "id,visit_id,patient_id,doctor_id,status,doctor_notes,created_at,completed_at,updated_at,visits(id,visit_code,chief_complaint,status,priority,created_at,completed_at),doctor:profiles!prescriptions_doctor_id_fkey(full_name,email),prescription_items(id,prescription_id,medicine_id,requested_quantity,dispensed_quantity,dosage_instructions,status,dispensed_at,created_at,updated_at,medicines(id,name,category,description,status))";
 
 export function PatientShell({ profile, segments = [] }: PatientShellProps) {
   const pathname = usePathname();
@@ -607,6 +612,12 @@ function PatientLabResultsPage({ supabase, patient }: { supabase: PatientPortalC
 
 function PatientMedicinesPage({ supabase, patient }: { supabase: PatientPortalClient; patient: PatientRecord }) {
   const [state, setState] = useState<QueryState<PrescriptionRecord[]>>({ loading: true, data: [], error: null });
+  const [query, setQuery] = useState("");
+  const [filter, setFilter] = useState<"all" | "active" | "partially_dispensed" | "dispensed">("all");
+  const [selectedPrescriptionId, setSelectedPrescriptionId] = useState<string | null>(null);
+
+  const filteredPrescriptions = useMemo(() => filterPrescriptions(state.data, query, filter), [filter, query, state.data]);
+  const selectedPrescription = filteredPrescriptions.find((prescription) => prescription.id === selectedPrescriptionId) ?? null;
 
   useEffect(() => {
     let active = true;
@@ -632,11 +643,45 @@ function PatientMedicinesPage({ supabase, patient }: { supabase: PatientPortalCl
     <PageFrame>
       <PageHeader title="Medicines" description="Prescriptions linked to your visits." />
       <DataCard title="Prescriptions">
+        <div className="mb-5 grid gap-3 lg:grid-cols-[1fr_auto]">
+          <SearchField value={query} onChange={setQuery} placeholder="Search by medicine, visit, doctor, status, or dosage" />
+          <div className="flex flex-wrap gap-2">
+            {[
+              ["all", "All"],
+              ["active", "Active / Ordered"],
+              ["partially_dispensed", "Partially Dispensed"],
+              ["dispensed", "Dispensed"],
+            ].map(([value, label]) => (
+              <button
+                key={value}
+                onClick={() => setFilter(value as "all" | "active" | "partially_dispensed" | "dispensed")}
+                className={cn(
+                  "h-10 rounded-lg border border-[#cbd8e2] px-4 text-sm font-semibold text-[#41546b]",
+                  filter === value && "border-[#00758d] bg-[#e3f7fa] text-[#006d86]",
+                )}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
         {state.loading ? <LoadingState label="Loading medicines" /> : null}
         {state.error ? <ErrorState message={state.error} /> : null}
-        {!state.loading && !state.error && state.data.length === 0 ? <EmptyState title="No prescriptions" description="Your prescribed medicines will appear here when available." /> : null}
-        {!state.loading && !state.error && state.data.length > 0 ? <PrescriptionList prescriptions={state.data} /> : null}
+        {!state.loading && !state.error && state.data.length === 0 ? (
+          <EmptyState title="No prescriptions" description="Your prescribed medicines will appear here after your doctor creates a prescription." />
+        ) : null}
+        {!state.loading && !state.error && state.data.length > 0 && filteredPrescriptions.length === 0 ? (
+          <EmptyState title="No matching prescriptions" description="Try a different medicine, visit, doctor, status, or dosage search." />
+        ) : null}
+        {!state.loading && !state.error && filteredPrescriptions.length > 0 ? (
+          <PrescriptionList
+            prescriptions={filteredPrescriptions}
+            selectedPrescriptionId={selectedPrescriptionId}
+            onSelect={(prescription) => setSelectedPrescriptionId((current) => (current === prescription.id ? null : prescription.id))}
+          />
+        ) : null}
       </DataCard>
+      {selectedPrescription ? <PrescriptionDetail prescription={selectedPrescription} onClose={() => setSelectedPrescriptionId(null)} /> : null}
     </PageFrame>
   );
 }
@@ -835,31 +880,61 @@ function LabResultDetail({ result, onClose }: { result: LabResultRecord; onClose
   );
 }
 
-function PrescriptionList({ prescriptions }: { prescriptions: PrescriptionRecord[] }) {
+function PrescriptionList({
+  prescriptions,
+  selectedPrescriptionId,
+  onSelect,
+}: {
+  prescriptions: PrescriptionRecord[];
+  selectedPrescriptionId: string | null;
+  onSelect: (prescription: PrescriptionRecord) => void;
+}) {
   return (
     <div className="space-y-4">
       {prescriptions.map((prescription) => (
-        <section key={prescription.id} className="rounded-lg border border-[#d4e0e8] p-4">
+        <section
+          key={prescription.id}
+          className={cn("rounded-lg border border-[#d4e0e8] p-4", selectedPrescriptionId === prescription.id && "border-[#00758d] bg-[#f8fbfd]")}
+        >
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
-              <p className="font-semibold">{prescription.visits?.visit_code ?? prescription.visit_id}</p>
-              <p className="mt-1 text-sm text-[#607084]">{prescription.doctor_notes ?? "No prescription notes"}</p>
+              <p className="font-semibold">{prescription.doctor?.full_name ?? prescription.doctor_id}</p>
+              <p className="mt-1 text-sm text-[#607084]">
+                {[prescription.visits?.visit_code ?? prescription.visit_id, prescription.visits?.chief_complaint].filter(Boolean).join(" / ")}
+              </p>
             </div>
-            <Badge tone={badgeTone(prescription.status)}>{formatLabel(prescription.status)}</Badge>
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge tone={badgeTone(prescription.status)}>{formatLabel(prescription.status)}</Badge>
+              <button onClick={() => onSelect(prescription)} className="h-9 rounded-lg border border-[#cbd8e2] px-3 text-sm font-semibold text-[#41546b]">
+                {selectedPrescriptionId === prescription.id ? "Hide Details" : "View Details"}
+              </button>
+            </div>
           </div>
+
+          <div className="mt-4 grid gap-4 md:grid-cols-3">
+            <InfoBlock label="Doctor Notes" value={prescription.doctor_notes ?? "No prescription notes"} />
+            <InfoBlock label="Created" value={formatDateTime(prescription.created_at)} />
+            <InfoBlock label="Completed" value={prescription.completed_at ? formatDateTime(prescription.completed_at) : "Not completed"} />
+          </div>
+
           <div className="mt-4 divide-y divide-[#e5edf3]">
             {prescription.prescription_items.length === 0 ? (
               <p className="py-3 text-sm text-[#607084]">No medicines are attached to this prescription.</p>
             ) : (
               prescription.prescription_items.map((item) => (
-                <div key={item.id} className="grid gap-3 py-3 md:grid-cols-[1fr_160px_160px_auto]">
+                <div key={item.id} className="grid gap-3 py-3 lg:grid-cols-[1.2fr_130px_130px_130px_auto]">
                   <div>
                     <p className="font-medium">{item.medicines?.name ?? item.medicine_id}</p>
-                    <p className="text-sm text-[#607084]">{item.dosage_instructions ?? "No dosage instructions"}</p>
+                    <p className="text-sm text-[#607084]">
+                      {[item.medicines?.category, item.dosage_instructions ?? "No dosage instructions"].filter(Boolean).join(" / ")}
+                    </p>
                   </div>
                   <InfoBlock label="Requested" value={String(item.requested_quantity)} />
                   <InfoBlock label="Dispensed" value={String(item.dispensed_quantity)} />
-                  <Badge tone={badgeTone(item.status)}>{formatLabel(item.status)}</Badge>
+                  <InfoBlock label="Remaining" value={String(remainingPrescriptionQuantity(item))} helper={item.dispensed_at ? `Dispensed ${formatDateTime(item.dispensed_at)}` : undefined} />
+                  <div>
+                    <Badge tone={badgeTone(item.status)}>{formatLabel(item.status)}</Badge>
+                  </div>
                 </div>
               ))
             )}
@@ -867,6 +942,70 @@ function PrescriptionList({ prescriptions }: { prescriptions: PrescriptionRecord
         </section>
       ))}
     </div>
+  );
+}
+
+function PrescriptionDetail({ prescription, onClose }: { prescription: PrescriptionRecord; onClose: () => void }) {
+  return (
+    <DataCard title="Prescription Details">
+      <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h2 className="text-xl font-semibold">{prescription.visits?.visit_code ?? "Prescription"}</h2>
+          <p className="mt-1 text-sm text-[#607084]">{prescription.visits?.chief_complaint ?? "Full prescription context from your visit."}</p>
+        </div>
+        <button onClick={onClose} className="h-10 rounded-lg border border-[#cbd8e2] px-4 text-sm font-semibold text-[#41546b]">
+          Close Details
+        </button>
+      </div>
+
+      <div className="grid gap-5 lg:grid-cols-3">
+        <InfoBlock label="Prescription ID" value={prescription.id} />
+        <InfoBlock label="Status" value={formatLabel(prescription.status)} />
+        <InfoBlock label="Doctor" value={prescription.doctor?.full_name ?? prescription.doctor_id} helper={prescription.doctor?.email ?? undefined} />
+        <InfoBlock label="Visit Code" value={prescription.visits?.visit_code ?? prescription.visit_id} />
+        <InfoBlock label="Visit Status" value={prescription.visits?.status ? formatLabel(prescription.visits.status) : "Not available"} />
+        <InfoBlock label="Visit Priority" value={prescription.visits?.priority ? formatLabel(prescription.visits.priority) : "Not available"} />
+        <InfoBlock label="Chief Complaint" value={prescription.visits?.chief_complaint ?? "No chief complaint recorded"} />
+        <InfoBlock label="Created" value={formatDateTime(prescription.created_at)} />
+        <InfoBlock label="Completed" value={prescription.completed_at ? formatDateTime(prescription.completed_at) : "Not completed"} />
+        <InfoBlock label="Updated" value={prescription.updated_at ? formatDateTime(prescription.updated_at) : "Not available"} />
+        <InfoBlock label="Visit Created" value={prescription.visits?.created_at ? formatDateTime(prescription.visits.created_at) : "Not available"} />
+        <InfoBlock label="Visit Completed" value={prescription.visits?.completed_at ? formatDateTime(prescription.visits.completed_at) : "Not completed"} />
+      </div>
+
+      <div className="mt-5 rounded-lg border border-[#d4e0e8] bg-[#f8fbfd] p-4">
+        <p className="text-xs font-semibold uppercase tracking-wide text-[#607084]">Doctor Notes</p>
+        <p className="mt-2 text-sm text-[#2d4058]">{prescription.doctor_notes ?? "No prescription notes were recorded."}</p>
+      </div>
+
+      <div className="mt-5">
+        <p className="mb-3 text-sm font-semibold text-[#41546b]">Medicine Items</p>
+        {prescription.prescription_items.length === 0 ? (
+          <EmptyState title="No medicine items" description="No medicines are attached to this prescription." />
+        ) : (
+          <div className="divide-y divide-[#e5edf3] rounded-lg border border-[#d4e0e8]">
+            {prescription.prescription_items.map((item) => (
+              <div key={item.id} className="grid gap-4 p-4 lg:grid-cols-[1.2fr_1fr_1fr_auto]">
+                <div>
+                  <p className="font-semibold">{item.medicines?.name ?? item.medicine_id}</p>
+                  <p className="mt-1 text-sm text-[#607084]">{item.medicines?.description ?? item.dosage_instructions ?? "No medicine description available"}</p>
+                </div>
+                <InfoBlock label="Dosage" value={item.dosage_instructions ?? "No dosage instructions"} helper={item.medicines?.category ?? undefined} />
+                <InfoBlock
+                  label="Quantity"
+                  value={`${item.dispensed_quantity} of ${item.requested_quantity} dispensed`}
+                  helper={`${remainingPrescriptionQuantity(item)} remaining`}
+                />
+                <div>
+                  <Badge tone={badgeTone(item.status)}>{formatLabel(item.status)}</Badge>
+                  <p className="mt-2 text-sm text-[#607084]">{item.dispensed_at ? formatDateTime(item.dispensed_at) : "Not dispensed"}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </DataCard>
   );
 }
 
@@ -1052,9 +1191,42 @@ function filterLabResults(results: LabResultRecord[], query: string, filter: "al
   });
 }
 
+function filterPrescriptions(prescriptions: PrescriptionRecord[], query: string, filter: "all" | "active" | "partially_dispensed" | "dispensed") {
+  const text = query.trim().toLowerCase();
+
+  return prescriptions.filter((prescription) => {
+    if (filter === "active" && prescription.status !== "ordered") return false;
+    if (filter === "partially_dispensed" && prescription.status !== "partially_dispensed") return false;
+    if (filter === "dispensed" && prescription.status !== "dispensed") return false;
+    if (!text) return true;
+
+    return [
+      prescription.status,
+      prescription.doctor_notes,
+      prescription.doctor?.full_name,
+      prescription.doctor?.email,
+      prescription.doctor_id,
+      prescription.visits?.visit_code,
+      prescription.visits?.chief_complaint,
+      ...prescription.prescription_items.flatMap((item) => [
+        item.status,
+        item.dosage_instructions,
+        item.medicine_id,
+        item.medicines?.name,
+        item.medicines?.category,
+        item.medicines?.description,
+      ]),
+    ].some((value) => value?.toLowerCase().includes(text));
+  });
+}
+
 function formatResultValue(result: LabResultRecord) {
   if (!result.result_value) return "Result not entered";
   return [result.result_value, result.lab_tests?.unit].filter(Boolean).join(" ");
+}
+
+function remainingPrescriptionQuantity(item: PrescriptionItemRecord) {
+  return Math.max(item.requested_quantity - item.dispensed_quantity, 0);
 }
 
 function patientIdentifier(patient: PatientRecord | null) {
