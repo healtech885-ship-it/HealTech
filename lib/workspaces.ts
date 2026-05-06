@@ -27,7 +27,7 @@ export type WorkspaceAction =
   | { kind: "update"; table: string; idField: string; success: string }
   | { kind: "function"; name: string; success: string };
 
-export type WorkspaceMode = "list" | "create" | "details" | "edit" | "settings" | "store-request-details" | "patient-details";
+export type WorkspaceMode = "list" | "create" | "details" | "edit" | "settings" | "store-request-details" | "patient-details" | "appointment-request-details";
 
 export type WorkspaceConfig = {
   title: string;
@@ -140,6 +140,7 @@ export function getWorkspaceConfig(role: UserRole, segments?: string[]): Workspa
   const editEmployeeId = role === "admin" && segments?.[0] === "employees" && segments[1] === "edit" ? segments[2] : undefined;
   const storeRequestId = role === "admin" && segments?.[0] === "store" && segments[1] === "requests" ? segments[2] : undefined;
   const receptionPatientId = role === "reception" && segments?.[0] === "patients" && segments[1] !== "new" ? segments[1] : undefined;
+  const receptionAppointmentRequestId = role === "reception" && segments?.[0] === "appointment-requests" ? segments[1] : undefined;
 
   if (first === "dashboard") return base;
 
@@ -162,6 +163,7 @@ export function getWorkspaceConfig(role: UserRole, segments?: string[]): Workspa
     "reception/patients/new": { ...defaultByRole.reception, title: "New Patient", table: "patients", select: patientSelect(), detailSelect: patientSelect(), hiddenColumns: ["id", "profile_id", "department_id", "department", "departments", "dorm_info", "emergency_phone", "nationality", "blood_type", "address"], columnLabels: patientColumnLabels(), actionLabel: "Register Patient", action: { kind: "function", name: "create-patient", success: "Patient registered" }, fields: patientFields(), dashboard: false },
     "reception/visits": { ...defaultByRole.reception, title: "Queued Visits", table: "visits", select: defaultByRole.reception.select, filters: [{ column: "status", operator: "eq", value: "queued" }], actionLabel: "Create Visit", action: { kind: "function", name: "create-visit", success: "Visit created" }, fields: visitFields(), dashboard: false },
     "reception/visits/new": { ...defaultByRole.reception, title: "New Visit", table: "visits", select: defaultByRole.reception.select, actionLabel: "Create Visit", action: { kind: "function", name: "create-visit", success: "Visit created" }, fields: visitFields(), dashboard: false },
+    "reception/appointment-requests": { ...defaultByRole.reception, title: "Appointment Requests", table: "appointment_requests", select: appointmentRequestSelect(), detailSelect: appointmentRequestSelect(), orderBy: "created_at", rowLink: { hrefBase: "/reception/appointment-requests", idField: "id", label: "Open" }, hiddenColumns: ["id", "patient_id", "requested_department_id", "reviewed_by"], columnLabels: appointmentRequestColumnLabels(), actionLabel: "Appointment requests are reviewed from details", action: { kind: "none" }, fields: [], dashboard: false, readonly: true },
 
     "doctor/visits": defaultByRole.doctor,
     "doctor/lab-orders": { ...defaultByRole.doctor, title: "Order Lab Tests", table: "lab_orders", select: "id,visit_id,patient_id,doctor_id,status,doctor_notes,created_at,completed_at", actionLabel: "Order Lab Tests", action: { kind: "function", name: "order-lab-tests", success: "Lab order created" }, fields: labOrderFields(), dashboard: false },
@@ -250,6 +252,21 @@ export function getWorkspaceConfig(role: UserRole, segments?: string[]): Workspa
     };
   }
 
+  if (receptionAppointmentRequestId) {
+    return {
+      ...overrides["reception/appointment-requests"],
+      title: "Appointment Request Details",
+      mode: "appointment-request-details",
+      recordId: receptionAppointmentRequestId,
+      recordIdField: "id",
+      actionLabel: "Appointment request details are read-only",
+      action: { kind: "none" },
+      fields: [],
+      readonly: true,
+      dashboard: false,
+    };
+  }
+
   const exact = overrides[`${role}/${path}`];
   if (exact) return exact;
   if (role === "admin" && path.startsWith("leave-requests/")) return { ...overrides["admin/leave-requests"], title: "Leave Request Details" };
@@ -313,6 +330,27 @@ function patientColumnLabels() {
     birth_date: "Birth date",
     phone: "Phone",
     status: "Status",
+    created_at: "Created at",
+  };
+}
+
+function appointmentRequestSelect() {
+  return "id,patient_id,requested_department_id,preferred_date,reason,status,admin_comment,reviewed_by,reviewed_at,created_at,patients(full_name,mrn,student_id,phone),requested_department:departments!appointment_requests_requested_department_id_fkey(name),reviewer:profiles!appointment_requests_reviewed_by_fkey(full_name,email)";
+}
+
+function appointmentRequestColumnLabels() {
+  return {
+    patient_name: "Patient name",
+    mrn: "MRN",
+    student_id: "Student ID",
+    patient_phone: "Patient phone",
+    requested_department: "Requested department",
+    preferred_date: "Preferred date",
+    reason: "Reason",
+    status: "Status",
+    admin_comment: "Comment",
+    reviewed_by_name: "Reviewed by",
+    reviewed_at: "Reviewed at",
     created_at: "Created at",
   };
 }

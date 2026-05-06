@@ -4,6 +4,7 @@ import {
   Beaker,
   Boxes,
   Building2,
+  CalendarDays,
   CalendarClock,
   ClipboardList,
   FileBarChart,
@@ -62,6 +63,7 @@ export const navigationByRole: Record<UserRole, NavItem[]> = {
     { label: "Add Patient", href: "/reception/patients/new", icon: UserRound },
     { label: "Create Visit", href: "/reception/visits/new", icon: ClipboardList },
     { label: "Queued Visits", href: "/reception/visits", icon: Activity },
+    { label: "Appointment Requests", href: "/reception/appointment-requests", icon: CalendarDays },
   ],
   doctor: [
     { label: "Dashboard", href: "/doctor/dashboard", icon: Home },

@@ -114,7 +114,7 @@ export function WorkspaceClient({ config }: { config: WorkspaceConfig }) {
     setError(null);
 
     const client = supabase as unknown as SupabaseLike;
-    const recordMode = Boolean(config.recordId && (config.mode === "details" || config.mode === "edit" || config.mode === "store-request-details" || config.mode === "patient-details"));
+    const recordMode = Boolean(config.recordId && (config.mode === "details" || config.mode === "edit" || config.mode === "store-request-details" || config.mode === "patient-details" || config.mode === "appointment-request-details"));
     const settingsMode = config.mode === "settings";
     let query = client.from(config.table).select(recordMode ? config.detailSelect ?? config.select : config.select).limit(recordMode ? 1 : 50);
     if (recordMode && config.recordId) {
@@ -274,6 +274,10 @@ export function WorkspaceClient({ config }: { config: WorkspaceConfig }) {
 
   if (config.mode === "patient-details") {
     return <PatientDetailsView loading={loading} record={record} error={error} visits={patientVisitRows} />;
+  }
+
+  if (config.mode === "appointment-request-details") {
+    return <AppointmentRequestDetailsView loading={loading} record={record} error={error} onReload={loadData} />;
   }
 
   if (isEmployeeRecordMode && config.mode === "details") {
@@ -719,6 +723,211 @@ function PatientDetailsView({
           />
         </CardContent>
       </Card>
+    </div>
+  );
+}
+
+function AppointmentRequestDetailsView({
+  loading,
+  record,
+  error,
+  onReload,
+}: {
+  loading: boolean;
+  record: Record<string, unknown> | null;
+  error: string | null;
+  onReload: () => Promise<void>;
+}) {
+  const supabase = useMemo(() => createClient(), []);
+  const [doctors, setDoctors] = useState<ReferenceOption[]>([]);
+  const [adminComment, setAdminComment] = useState("");
+  const [doctorId, setDoctorId] = useState("");
+  const [priority, setPriority] = useState("normal");
+  const [chiefComplaint, setChiefComplaint] = useState("");
+  const [actionLoading, setActionLoading] = useState<"approved" | "rejected" | "converted_to_visit" | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [actionMessage, setActionMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    void supabase
+      .from("profiles")
+      .select("id,full_name,email,role,status")
+      .eq("role", "doctor")
+      .eq("status", "active")
+      .order("full_name", { ascending: true })
+      .then(({ data }) => {
+        if (!active) return;
+        setDoctors(normalizeReferenceOptions("doctors", asArray(data)));
+      });
+    return () => {
+      active = false;
+    };
+  }, [supabase]);
+
+  if (loading) return <LoadingState />;
+  if (error && !record) return <Notice tone="danger" text={error} />;
+  if (!record) return <Notice tone="warning" text="Appointment request not found." />;
+
+  const request = appointmentRequestSummary(record);
+
+  async function review(decision: "approved" | "rejected" | "converted_to_visit") {
+    if (decision === "converted_to_visit" && !doctorId) {
+      setActionError("Doctor is required to create a visit");
+      return;
+    }
+
+    setActionLoading(decision);
+    setActionError(null);
+    setActionMessage(null);
+
+    const { error: reviewError } = await supabase.functions.invoke("review-appointment-request", {
+      body: {
+        appointment_request_id: request.id,
+        decision,
+        admin_comment: adminComment,
+        doctor_id: decision === "converted_to_visit" ? doctorId : undefined,
+        chief_complaint: decision === "converted_to_visit" ? chiefComplaint || request.reason : undefined,
+        priority: decision === "converted_to_visit" ? priority : undefined,
+      },
+    });
+
+    setActionLoading(null);
+    if (reviewError) {
+      setActionError(reviewError.message ?? String(reviewError));
+      return;
+    }
+
+    setActionMessage(decision === "converted_to_visit" ? "Appointment request converted to a visit" : `Appointment request ${decision}`);
+    setAdminComment("");
+    setDoctorId("");
+    setPriority("normal");
+    setChiefComplaint("");
+    await onReload();
+  }
+
+  const details = [
+    ["Request ID", request.id],
+    ["Patient name", request.patientName],
+    ["MRN", request.mrn],
+    ["Student ID", request.studentId],
+    ["Phone", request.patientPhone],
+    ["Requested department", request.requestedDepartment],
+    ["Preferred date", request.preferredDate],
+    ["Reason", request.reason],
+    ["Status", request.status],
+    ["Comment", request.adminComment],
+    ["Reviewed by", request.reviewedByName],
+    ["Reviewed at", request.reviewedAt],
+    ["Created", request.createdAt],
+  ];
+
+  return (
+    <div className="min-w-0 space-y-6">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <Link href="/reception/appointment-requests" className="inline-flex items-center gap-2 text-sm font-semibold text-primary hover:underline">
+            <ArrowLeft className="h-4 w-4" />
+            Appointment requests
+          </Link>
+          <div className="mt-2 flex flex-wrap items-center gap-3">
+            <h1 className="text-[30px] font-semibold leading-10 tracking-normal text-[#080d10]">{request.patientName}</h1>
+            <StatusBadge value={request.status} />
+          </div>
+          <p className="text-[17px] leading-7 text-[#3d4950]">Preferred date {request.preferredDate} for {request.requestedDepartment}.</p>
+        </div>
+      </div>
+
+      <section className="grid min-w-0 gap-6 xl:grid-cols-[minmax(0,1fr)_380px]">
+        <Card className="min-w-0 overflow-hidden">
+          <CardHeader>
+            <CardTitle>Request Details</CardTitle>
+            <CardDescription>Review patient appointment request information before changing status.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {error ? <Notice tone="danger" text={error} /> : null}
+            <dl className="grid gap-4 md:grid-cols-2">
+              {details.map(([label, value]) => (
+                <div key={label} className="rounded-lg border border-border bg-white p-4">
+                  <dt className="text-xs font-semibold uppercase tracking-[0.02em] text-[var(--on-surface-variant)]">{label}</dt>
+                  <dd className="mt-2 break-words text-sm font-semibold text-[var(--on-surface)]">{formatDetailValue(value)}</dd>
+                </div>
+              ))}
+            </dl>
+          </CardContent>
+        </Card>
+
+        <Card className="min-w-0 overflow-hidden">
+          <CardHeader>
+            <CardTitle>Reception Action</CardTitle>
+            <CardDescription>Pending requests can be reviewed. Approved requests can be converted into queued visits.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {request.status === "pending" ? (
+              <>
+                <div className="space-y-2">
+                  <Label htmlFor="appointment_admin_comment">Comment</Label>
+                  <Textarea id="appointment_admin_comment" value={adminComment} onChange={(event) => setAdminComment(event.target.value)} placeholder="Optional review note" />
+                </div>
+                <div className="grid gap-2 sm:grid-cols-2">
+                  <Button type="button" onClick={() => void review("approved")} disabled={Boolean(actionLoading)}>
+                    {actionLoading === "approved" ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                    Approve
+                  </Button>
+                  <Button type="button" variant="destructive" onClick={() => void review("rejected")} disabled={Boolean(actionLoading)}>
+                    {actionLoading === "rejected" ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                    Reject
+                  </Button>
+                </div>
+              </>
+            ) : null}
+
+            {request.status === "approved" ? (
+              <>
+                <div className="space-y-2">
+                  <Label htmlFor="appointment_doctor">Doctor *</Label>
+                  <select
+                    id="appointment_doctor"
+                    value={doctorId}
+                    onChange={(event) => setDoctorId(event.target.value)}
+                    className="h-12 w-full rounded-lg border border-[#bdc8ce] bg-white px-4 text-[15px] text-[#171c1e] outline-none transition focus:border-[#00647c] focus:ring-3 focus:ring-[#00647c]/15"
+                  >
+                    <option value="">Select doctor</option>
+                    {doctors.map((doctor) => <option key={doctor.value} value={doctor.value}>{doctor.label}</option>)}
+                  </select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="appointment_priority">Priority</Label>
+                  <select
+                    id="appointment_priority"
+                    value={priority}
+                    onChange={(event) => setPriority(event.target.value)}
+                    className="h-12 w-full rounded-lg border border-[#bdc8ce] bg-white px-4 text-[15px] text-[#171c1e] outline-none transition focus:border-[#00647c] focus:ring-3 focus:ring-[#00647c]/15"
+                  >
+                    {["low", "normal", "high", "urgent"].map((option) => <option key={option} value={option}>{option}</option>)}
+                  </select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="appointment_chief_complaint">Chief complaint</Label>
+                  <Textarea id="appointment_chief_complaint" value={chiefComplaint} onChange={(event) => setChiefComplaint(event.target.value)} placeholder={request.reason !== "Not set" ? request.reason : "Optional chief complaint"} />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="appointment_conversion_comment">Comment</Label>
+                  <Textarea id="appointment_conversion_comment" value={adminComment} onChange={(event) => setAdminComment(event.target.value)} placeholder="Optional conversion note" />
+                </div>
+                <Button type="button" className="w-full" onClick={() => void review("converted_to_visit")} disabled={Boolean(actionLoading)}>
+                  {actionLoading === "converted_to_visit" ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                  Create visit from request
+                </Button>
+              </>
+            ) : null}
+
+            {["rejected", "completed", "cancelled"].includes(request.status) ? <ReadOnlyNotice /> : null}
+            {actionError ? <Notice tone="danger" text={actionError} /> : null}
+            {actionMessage ? <Notice tone="success" text={actionMessage} /> : null}
+          </CardContent>
+        </Card>
+      </section>
     </div>
   );
 }
@@ -1509,6 +1718,7 @@ function normalizeRows(rows: unknown[], config?: WorkspaceConfig): ModuleRecord[
     if (config?.table === "employees") return flattenEmployee(record);
     if (config?.table === "patients" && config.rowLink?.hrefBase === "/reception/patients") return flattenReceptionPatient(record);
     if (config?.table === "visits" && config.columnLabels?.patient_name) return flattenReceptionVisit(record);
+    if (config?.table === "appointment_requests" && config.rowLink?.hrefBase === "/reception/appointment-requests") return flattenAppointmentRequest(record);
     if (config?.table === "store_items") return flattenStoreItem(record);
     if (config?.table === "store_item_batches") return flattenStoreItemBatch(record);
     if (config?.table === "store_requests") return flattenStoreRequest(record);
@@ -1606,6 +1816,31 @@ function flattenPatientVisitHistory(row: Record<string, unknown>) {
     created_at: row.created_at,
     id: row.id,
     doctor_id: row.doctor_id,
+  };
+}
+
+function flattenAppointmentRequest(row: Record<string, unknown>) {
+  const patient = relationObject(row.patients);
+  const department = relationObject(row.requested_department);
+  const reviewer = relationObject(row.reviewer);
+
+  return {
+    patient_name: patient.full_name ?? "Not set",
+    mrn: patient.mrn ?? "Not set",
+    student_id: patient.student_id ?? "Not set",
+    patient_phone: patient.phone ?? "Not set",
+    requested_department: department.name ?? "Not set",
+    preferred_date: row.preferred_date ?? "Not set",
+    reason: row.reason ?? "Not set",
+    status: row.status ?? "Not set",
+    admin_comment: row.admin_comment ?? "Not set",
+    reviewed_by_name: reviewer.full_name ?? "Not set",
+    reviewed_at: row.reviewed_at ?? "Not set",
+    created_at: row.created_at,
+    id: row.id,
+    patient_id: row.patient_id,
+    requested_department_id: row.requested_department_id,
+    reviewed_by: row.reviewed_by,
   };
 }
 
@@ -1728,6 +1963,30 @@ function patientSummary(row: Record<string, unknown>) {
     dormInfo: String(row.dorm_info ?? "Not set"),
     nationality: String(row.nationality ?? "Not set"),
     status: String(row.status ?? "Not set"),
+    createdAt: formatDateTime(row.created_at),
+  };
+}
+
+function appointmentRequestSummary(row: Record<string, unknown>) {
+  const patient = relationObject(row.patients);
+  const department = relationObject(row.requested_department);
+  const reviewer = relationObject(row.reviewer);
+
+  return {
+    id: String(row.id ?? ""),
+    patientId: String(row.patient_id ?? ""),
+    patientName: String(patient.full_name ?? "Not set"),
+    mrn: String(patient.mrn ?? "Not set"),
+    studentId: String(patient.student_id ?? "Not set"),
+    patientPhone: String(patient.phone ?? "Not set"),
+    requestedDepartmentId: String(row.requested_department_id ?? ""),
+    requestedDepartment: String(department.name ?? "Not set"),
+    preferredDate: String(row.preferred_date ?? "Not set"),
+    reason: String(row.reason ?? "Not set"),
+    status: String(row.status ?? "Not set"),
+    adminComment: String(row.admin_comment ?? "Not set"),
+    reviewedByName: String(reviewer.full_name ?? "Not set"),
+    reviewedAt: formatDateTime(row.reviewed_at),
     createdAt: formatDateTime(row.created_at),
   };
 }
