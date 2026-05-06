@@ -107,6 +107,18 @@ type AppointmentRequestInsert = {
   status: "pending";
 };
 
+type PatientContactFormState = {
+  phone: string;
+  emergency_phone: string;
+  address: string;
+};
+
+type PatientContactUpdate = {
+  phone: string | null;
+  emergency_phone: string | null;
+  address: string | null;
+};
+
 type LabResultRecord = {
   id: string;
   visit_id: string;
@@ -219,9 +231,18 @@ type SupabaseCountQuery = PromiseLike<CountResult> & {
   eq(column: string, value: FilterValue): SupabaseCountQuery;
 };
 
+type SupabaseUpdateFilter<T> = {
+  select(columns: string): SupabaseQuery<T>;
+};
+
+type SupabaseUpdateQuery<T> = {
+  eq(column: string, value: FilterValue): SupabaseUpdateFilter<T>;
+};
+
 type PatientPortalClient = {
   from(table: "patients"): {
     select(columns: string): SupabaseQuery<PatientRecord>;
+    update(payload: PatientContactUpdate): SupabaseUpdateQuery<PatientRecord>;
   };
   from(table: "visits"): {
     select(columns: string): SupabaseQuery<VisitRecord>;
@@ -299,7 +320,13 @@ export function PatientShell({ profile, segments = [] }: PatientShellProps) {
         {!patientState.loading && !patientState.error && patient ? (
           <>
             {screen === "dashboard" ? <PatientDashboard supabase={supabase} profile={profile} patient={patient} /> : null}
-            {screen === "profile" ? <PatientProfilePage patient={patient} /> : null}
+            {screen === "profile" ? (
+              <PatientProfilePage
+                supabase={supabase}
+                patient={patient}
+                onPatientUpdated={(updatedPatient) => setPatientState({ loading: false, patient: updatedPatient, error: null })}
+              />
+            ) : null}
             {screen === "visits" ? <PatientVisitsPage supabase={supabase} patient={patient} /> : null}
             {screen === "lab-results" ? <PatientLabResultsPage supabase={supabase} patient={patient} /> : null}
             {screen === "medicines" ? <PatientMedicinesPage supabase={supabase} patient={patient} /> : null}
@@ -490,11 +517,69 @@ function PatientDashboard({ supabase, profile, patient }: { supabase: PatientPor
   );
 }
 
-function PatientProfilePage({ patient }: { patient: PatientRecord }) {
+function PatientProfilePage({
+  supabase,
+  patient,
+  onPatientUpdated,
+}: {
+  supabase: PatientPortalClient;
+  patient: PatientRecord;
+  onPatientUpdated: (patient: PatientRecord) => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [form, setForm] = useState<PatientContactFormState>(() => patientContactFormFromPatient(patient));
+  const [saving, setSaving] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
+  function startEditing() {
+    setForm(patientContactFormFromPatient(patient));
+    setFormError(null);
+    setSuccessMessage(null);
+    setEditing(true);
+  }
+
+  function cancelEditing() {
+    setForm(patientContactFormFromPatient(patient));
+    setFormError(null);
+    setEditing(false);
+  }
+
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setFormError(null);
+    setSuccessMessage(null);
+
+    const validationError = validatePatientContactForm(form);
+    if (validationError) {
+      setFormError(validationError);
+      return;
+    }
+
+    const payload = patientContactUpdatePayload(form);
+    setSaving(true);
+    const result = await supabase.from("patients").update(payload).eq("id", patient.id).select(patientSelect).maybeSingle();
+    setSaving(false);
+
+    if (result.error) {
+      setFormError(result.error.message);
+      return;
+    }
+    if (!result.data) {
+      setFormError("Your contact information could not be updated.");
+      return;
+    }
+
+    onPatientUpdated(result.data);
+    setForm(patientContactFormFromPatient(result.data));
+    setEditing(false);
+    setSuccessMessage("Contact information updated.");
+  }
+
   return (
     <PageFrame>
-      <PageHeader title="My Profile" description="Read-only patient demographics and contact information." />
-      <DataCard title="Patient Record">
+      <PageHeader title="My Profile" description="Your patient demographics and contact information." />
+      <DataCard title="Patient Identity">
         <InfoGrid
           rows={[
             ["Full Name", patient.full_name],
@@ -504,15 +589,78 @@ function PatientProfilePage({ patient }: { patient: PatientRecord }) {
             ["Gender", patient.gender ?? "Not recorded"],
             ["Birth Date", patient.birth_date ? formatDate(patient.birth_date) : "Not recorded"],
             ["Blood Type", patient.blood_type ?? "Not recorded"],
-            ["Phone", patient.phone ?? "Not recorded"],
-            ["Emergency Phone", patient.emergency_phone ?? "Not recorded"],
             ["Nationality", patient.nationality ?? "Not recorded"],
             ["Dorm Info", patient.dorm_info ?? "Not recorded"],
-            ["Address", patient.address ?? "Not recorded"],
             ["Status", formatLabel(patient.status)],
             ["Last Updated", formatDateTime(patient.updated_at)],
           ]}
         />
+      </DataCard>
+
+      <DataCard title="Contact Information">
+        {!editing ? (
+          <div className="space-y-5">
+            {successMessage ? <div className="rounded-lg border border-[#a8dfb7] bg-[#effaf2] p-4 text-sm text-[#087a35]">{successMessage}</div> : null}
+            <InfoGrid
+              rows={[
+                ["Phone", patient.phone ?? "Not recorded"],
+                ["Emergency Phone", patient.emergency_phone ?? "Not recorded"],
+                ["Address", patient.address ?? "Not recorded"],
+              ]}
+            />
+            <div className="flex justify-end">
+              <button onClick={startEditing} className="h-10 rounded-lg bg-[#00758d] px-4 text-sm font-semibold text-white">
+                Edit Contact Info
+              </button>
+            </div>
+          </div>
+        ) : (
+          <form onSubmit={handleSubmit} className="grid gap-5">
+            <div className="grid gap-4 lg:grid-cols-2">
+              <label className="grid gap-2 text-sm font-medium text-[#41546b]">
+                Phone
+                <input
+                  value={form.phone}
+                  onChange={(event) => setForm((current) => ({ ...current, phone: event.target.value }))}
+                  className="h-11 rounded-lg border border-[#cbd8e2] bg-[#f4f8fb] px-3 text-sm text-[#17212f] outline-none focus:border-[#00758d]"
+                  disabled={saving}
+                />
+              </label>
+              <label className="grid gap-2 text-sm font-medium text-[#41546b]">
+                Emergency Phone
+                <input
+                  value={form.emergency_phone}
+                  onChange={(event) => setForm((current) => ({ ...current, emergency_phone: event.target.value }))}
+                  className="h-11 rounded-lg border border-[#cbd8e2] bg-[#f4f8fb] px-3 text-sm text-[#17212f] outline-none focus:border-[#00758d]"
+                  disabled={saving}
+                />
+              </label>
+            </div>
+            <label className="grid gap-2 text-sm font-medium text-[#41546b]">
+              Address
+              <textarea
+                value={form.address}
+                onChange={(event) => setForm((current) => ({ ...current, address: event.target.value }))}
+                className="min-h-28 rounded-lg border border-[#cbd8e2] bg-[#f4f8fb] px-3 py-2 text-sm text-[#17212f] outline-none focus:border-[#00758d]"
+                disabled={saving}
+              />
+            </label>
+            {formError ? <ErrorState message={formError} /> : null}
+            <div className="flex flex-wrap justify-end gap-3">
+              <button type="button" onClick={cancelEditing} disabled={saving} className="h-10 rounded-lg border border-[#cbd8e2] px-4 text-sm font-semibold text-[#41546b]">
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={saving}
+                className="inline-flex h-10 items-center gap-2 rounded-lg bg-[#00758d] px-4 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                {saving ? "Saving" : "Save Changes"}
+              </button>
+            </div>
+          </form>
+        )}
       </DataCard>
     </PageFrame>
   );
@@ -1384,6 +1532,34 @@ function validateAppointmentRequestForm(form: AppointmentRequestFormState) {
   if (form.preferred_date < todayDateInputValue()) return "Preferred date cannot be in the past.";
   if (!form.reason.trim()) return "Reason is required.";
   return null;
+}
+
+function patientContactFormFromPatient(patient: PatientRecord): PatientContactFormState {
+  return {
+    phone: patient.phone ?? "",
+    emergency_phone: patient.emergency_phone ?? "",
+    address: patient.address ?? "",
+  };
+}
+
+function validatePatientContactForm(form: PatientContactFormState) {
+  if (form.phone.length > 0 && !form.phone.trim()) return "Phone cannot contain only spaces.";
+  if (form.emergency_phone.length > 0 && !form.emergency_phone.trim()) return "Emergency phone cannot contain only spaces.";
+  if (form.address.length > 0 && !form.address.trim()) return "Address cannot contain only spaces.";
+  return null;
+}
+
+function patientContactUpdatePayload(form: PatientContactFormState): PatientContactUpdate {
+  return {
+    phone: nullableTrimmedValue(form.phone),
+    emergency_phone: nullableTrimmedValue(form.emergency_phone),
+    address: nullableTrimmedValue(form.address),
+  };
+}
+
+function nullableTrimmedValue(value: string) {
+  const trimmed = value.trim();
+  return trimmed ? trimmed : null;
 }
 
 function todayDateInputValue() {
