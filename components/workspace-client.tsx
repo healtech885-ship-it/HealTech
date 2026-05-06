@@ -2,9 +2,11 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   AlertCircle,
   AlertTriangle,
+  ArrowLeft,
   BriefcaseMedical,
   Building2,
   Calendar,
@@ -12,6 +14,7 @@ import {
   Check,
   ChevronDown,
   ClipboardPlus,
+  Edit,
   FileText,
   Filter,
   Loader2,
@@ -64,7 +67,9 @@ type SupabaseLike = {
 
 export function WorkspaceClient({ config }: { config: WorkspaceConfig }) {
   const supabase = useMemo(() => createClient(), []);
+  const router = useRouter();
   const [rows, setRows] = useState<ModuleRecord[]>([]);
+  const [record, setRecord] = useState<Record<string, unknown> | null>(null);
   const [referenceRows, setReferenceRows] = useState<ModuleRecord[]>([]);
   const [references, setReferences] = useState<Partial<Record<ReferenceKey, ReferenceOption[]>>>({});
   const [counters, setCounters] = useState<Record<string, unknown> | null>(null);
@@ -87,9 +92,14 @@ export function WorkspaceClient({ config }: { config: WorkspaceConfig }) {
     setError(null);
 
     const client = supabase as unknown as SupabaseLike;
-    let query = client.from(config.table).select(config.select).limit(50);
-    for (const filter of config.filters ?? []) query = applyFilter(query, filter);
-    if (config.orderBy) query = query.order(config.orderBy, { ascending: false });
+    const recordMode = Boolean(config.recordId && (config.mode === "details" || config.mode === "edit"));
+    let query = client.from(config.table).select(recordMode ? config.detailSelect ?? config.select : config.select).limit(recordMode ? 1 : 50);
+    if (recordMode && config.recordId) {
+      query = query.eq(config.recordIdField ?? "id", config.recordId);
+    } else {
+      for (const filter of config.filters ?? []) query = applyFilter(query, filter);
+      if (config.orderBy) query = query.order(config.orderBy, { ascending: false });
+    }
 
     const fieldReferenceKeys = uniqueReferenceKeys(config.fields);
     const referencePromises = fieldReferenceKeys.map(async (key) => {
@@ -108,9 +118,15 @@ export function WorkspaceClient({ config }: { config: WorkspaceConfig }) {
     ]);
 
     if (tableError) setError(tableError.message);
-    setRows(normalizeRows(asArray(data)));
+    const rawRows = asArray(data);
+    const rawRecord = recordMode ? rawRows[0] as Record<string, unknown> | undefined : null;
+    setRecord(rawRecord ?? null);
+    setRows(normalizeRows(rawRows, config));
     setReferenceRows(normalizeRows(asArray(refs)));
     setReferences(Object.fromEntries(referenceResults));
+    if (recordMode && config.mode === "edit" && rawRecord) {
+      form.reset(employeeFormDefaults(rawRecord));
+    }
     if (countersResult?.data && typeof countersResult.data === "object") setCounters(countersResult.data as Record<string, unknown>);
     setLoading(false);
   }
@@ -124,7 +140,7 @@ export function WorkspaceClient({ config }: { config: WorkspaceConfig }) {
       active = false;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [config.table, config.select]);
+  }, [config.table, config.select, config.mode, config.recordId]);
 
   async function onSubmit(values: FormValues) {
     if (config.action.kind === "none") return;
@@ -136,6 +152,9 @@ export function WorkspaceClient({ config }: { config: WorkspaceConfig }) {
     try {
       payload = coercePayload(values, config.fields);
       payload = prepareActionPayload(config, payload);
+      if (config.action.kind === "function" && config.action.name === "update-employee" && config.recordId) {
+        payload.employee_id = config.recordId;
+      }
     } catch (parseError) {
       setSaving(false);
       setError(parseError instanceof Error ? parseError.message : "Invalid form payload");
@@ -166,10 +185,37 @@ export function WorkspaceClient({ config }: { config: WorkspaceConfig }) {
 
     setMessage(config.action.success);
     form.reset();
+    if (config.action.kind === "function" && config.action.name === "update-employee" && config.recordId) {
+      router.push(`/admin/employees/${config.recordId}`);
+      router.refresh();
+      return;
+    }
     await loadData();
   }
 
   const isAdminDashboard = config.dashboard && config.title === "Administration Dashboard";
+  const isEmployeeRecordMode = config.table === "employees" && Boolean(config.recordId) && (config.mode === "details" || config.mode === "edit");
+
+  if (isEmployeeRecordMode && config.mode === "details") {
+    return <EmployeeDetailsView loading={loading} record={record} error={error} />;
+  }
+
+  if (isEmployeeRecordMode && config.mode === "edit") {
+    return (
+      <EmployeeEditView
+        loading={loading}
+        record={record}
+        config={config}
+        form={form}
+        watchedValues={watchedValues}
+        references={references}
+        saving={saving}
+        error={error}
+        message={message}
+        onSubmit={onSubmit}
+      />
+    );
+  }
 
   return (
     <div className="min-w-0 space-y-6">
@@ -200,7 +246,7 @@ export function WorkspaceClient({ config }: { config: WorkspaceConfig }) {
           </CardHeader>
           <CardContent className="min-w-0">
             <DataToolbar search={search} setSearch={setSearch} quickFilter={quickFilter} setQuickFilter={setQuickFilter} />
-            {loading ? <LoadingState /> : <DataTable rows={visibleRows(rows, search, quickFilter).length ? visibleRows(rows, search, quickFilter) : [{ state: "No records visible for this role" }]} />}
+            {loading ? <LoadingState /> : <DataTable rows={visibleRows(rows, search, quickFilter).length ? visibleRows(rows, search, quickFilter) : [{ state: "No records visible for this role" }]} rowLink={config.rowLink} />}
           </CardContent>
         </Card>
 
@@ -248,6 +294,178 @@ export function WorkspaceClient({ config }: { config: WorkspaceConfig }) {
           </Card>
         </div>
       </section>
+    </div>
+  );
+}
+
+function EmployeeDetailsView({
+  loading,
+  record,
+  error,
+}: {
+  loading: boolean;
+  record: Record<string, unknown> | null;
+  error: string | null;
+}) {
+  if (loading) return <LoadingState />;
+  if (error) return <Notice tone="danger" text={error} />;
+  if (!record) return <Notice tone="warning" text="Employee not found." />;
+
+  const employee = employeeSummary(record);
+  const details = [
+    ["Employee ID", employee.id],
+    ["Profile ID", employee.profileId],
+    ["Full name", employee.fullName],
+    ["Email", employee.email],
+    ["Phone", employee.phone],
+    ["Role", employee.role],
+    ["Account status", employee.profileStatus],
+    ["Department", employee.departmentName],
+    ["Job title", employee.jobTitle],
+    ["Employee code", employee.employeeCode],
+    ["Hire date", employee.hireDate],
+    ["Employee status", employee.employeeStatus],
+    ["Created", employee.createdAt],
+  ];
+
+  return (
+    <div className="min-w-0 space-y-6">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <Link href="/admin/employees" className="inline-flex items-center gap-2 text-sm font-semibold text-primary hover:underline">
+            <ArrowLeft className="h-4 w-4" />
+            Employees
+          </Link>
+          <h1 className="mt-2 text-[30px] font-semibold leading-10 tracking-normal text-[#080d10]">{employee.fullName}</h1>
+          <p className="text-[17px] leading-7 text-[#3d4950]">{employee.jobTitle} {employee.departmentName !== "Not set" ? `in ${employee.departmentName}` : ""}</p>
+        </div>
+        <Link href={`/admin/employees/edit/${employee.id}`} className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground transition-colors hover:bg-[#003f82] focus:outline-none focus:ring-3 focus:ring-blue-200">
+          <Edit className="h-4 w-4" />
+          Edit
+        </Link>
+      </div>
+
+      <Card className="min-w-0 overflow-hidden">
+        <CardHeader>
+          <CardTitle>Employee Details</CardTitle>
+          <CardDescription>Profile and employment information for this staff account.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <dl className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            {details.map(([label, value]) => (
+              <div key={label} className="rounded-lg border border-border bg-white p-4">
+                <dt className="text-xs font-semibold uppercase tracking-[0.02em] text-[var(--on-surface-variant)]">{label}</dt>
+                <dd className="mt-2 break-words text-sm font-semibold text-[var(--on-surface)]">{formatDetailValue(value)}</dd>
+              </div>
+            ))}
+          </dl>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+function EmployeeEditView({
+  loading,
+  record,
+  config,
+  form,
+  watchedValues,
+  references,
+  saving,
+  error,
+  message,
+  onSubmit,
+}: {
+  loading: boolean;
+  record: Record<string, unknown> | null;
+  config: WorkspaceConfig;
+  form: ReturnType<typeof useForm<FormValues>>;
+  watchedValues: FormValues;
+  references: Partial<Record<ReferenceKey, ReferenceOption[]>>;
+  saving: boolean;
+  error: string | null;
+  message: string | null;
+  onSubmit: (values: FormValues) => Promise<void>;
+}) {
+  if (loading) return <LoadingState />;
+  if (error && !record) return <Notice tone="danger" text={error} />;
+  if (!record) return <Notice tone="warning" text="Employee not found." />;
+
+  const employee = employeeSummary(record);
+
+  return (
+    <div className="min-w-0 space-y-6">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <Link href={`/admin/employees/${employee.id}`} className="inline-flex items-center gap-2 text-sm font-semibold text-primary hover:underline">
+            <ArrowLeft className="h-4 w-4" />
+            Employee details
+          </Link>
+          <h1 className="mt-2 text-[30px] font-semibold leading-10 tracking-normal text-[#080d10]">Edit {employee.fullName}</h1>
+          <p className="text-[17px] leading-7 text-[#3d4950]">{employee.email}</p>
+        </div>
+        <Link href={`/admin/employees/${employee.id}`} className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-border bg-white px-4 text-sm font-semibold text-[var(--on-surface)] transition-colors hover:bg-muted focus:outline-none focus:ring-3 focus:ring-blue-200">
+          Cancel
+        </Link>
+      </div>
+
+      <section className="grid min-w-0 gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
+        <Card className="min-w-0 overflow-hidden">
+          <CardHeader>
+            <CardTitle>Employee Profile</CardTitle>
+            <CardDescription>Updates are applied to the existing profile and employee records.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form className="space-y-4" onSubmit={form.handleSubmit(onSubmit)}>
+              {config.fields.map((field) => (
+                <FieldControl
+                  key={field.name}
+                  field={field}
+                  register={form.register}
+                  setValue={form.setValue}
+                  value={watchedValues?.[field.name]}
+                  error={form.formState.errors[field.name]?.message?.toString()}
+                  references={references}
+                />
+              ))}
+              {error ? <Notice tone="danger" text={error} /> : null}
+              {message ? <Notice tone="success" text={message} /> : null}
+              <div className="flex flex-col gap-3 sm:flex-row">
+                <Button type="submit" className="sm:w-auto" disabled={saving}>
+                  {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                  {config.actionLabel}
+                </Button>
+                <Link href={`/admin/employees/${employee.id}`} className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-border bg-white px-4 text-sm font-semibold text-[var(--on-surface)] transition-colors hover:bg-muted focus:outline-none focus:ring-3 focus:ring-blue-200">
+                  Cancel
+                </Link>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
+
+        <Card className="min-w-0 overflow-hidden">
+          <CardHeader>
+            <CardTitle>Current Account</CardTitle>
+            <CardDescription>Email and identifiers are shown for reference only.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3 text-sm">
+            <ReadOnlyLine label="Employee ID" value={employee.id} />
+            <ReadOnlyLine label="Profile ID" value={employee.profileId} />
+            <ReadOnlyLine label="Email" value={employee.email} />
+            <ReadOnlyLine label="Created" value={employee.createdAt} />
+          </CardContent>
+        </Card>
+      </section>
+    </div>
+  );
+}
+
+function ReadOnlyLine({ label, value }: { label: string; value: unknown }) {
+  return (
+    <div className="rounded-lg border border-border bg-muted p-3">
+      <p className="text-xs font-semibold uppercase tracking-[0.02em] text-[var(--on-surface-variant)]">{label}</p>
+      <p className="mt-1 break-words font-semibold text-[var(--on-surface)]">{formatDetailValue(value)}</p>
     </div>
   );
 }
@@ -777,8 +995,8 @@ function matchesQuickFilter(row: ModuleRecord, quickFilter: QuickFilter) {
   return ["completed", "reviewed", "dispensed", "approved"].includes(status);
 }
 
-function normalizeRows(rows: unknown[]): ModuleRecord[] {
-  return rows.map((row) => flatten(row as Record<string, unknown>));
+function normalizeRows(rows: unknown[], config?: WorkspaceConfig): ModuleRecord[] {
+  return rows.map((row) => config?.table === "employees" ? flattenEmployee(row as Record<string, unknown>) : flatten(row as Record<string, unknown>));
 }
 
 function asArray(value: unknown[] | Record<string, unknown> | null): unknown[] {
@@ -792,6 +1010,79 @@ function flatten(row: Record<string, unknown>) {
     out[key] = typeof value === "object" && value !== null ? JSON.stringify(value) : value;
   }
   return out;
+}
+
+function flattenEmployee(row: Record<string, unknown>) {
+  const profile = relationObject(row.profiles);
+  const department = relationObject(row.departments);
+
+  return {
+    id: row.id,
+    full_name: profile.full_name ?? "Not set",
+    email: profile.email ?? "Not set",
+    role: profile.role ?? "Not set",
+    account_status: profile.status ?? "Not set",
+    department: department.name ?? "Not set",
+    job_title: row.job_title ?? "Not set",
+    employee_code: row.employee_code ?? "Not set",
+    hire_date: row.hire_date ?? "Not set",
+    employee_status: row.status ?? "Not set",
+    created_at: row.created_at,
+  };
+}
+
+function employeeSummary(row: Record<string, unknown>) {
+  const profile = relationObject(row.profiles);
+  const department = relationObject(row.departments);
+
+  return {
+    id: String(row.id ?? ""),
+    profileId: String(row.profile_id ?? ""),
+    fullName: String(profile.full_name ?? "Not set"),
+    email: String(profile.email ?? "Not set"),
+    phone: String(profile.phone ?? "Not set"),
+    role: String(profile.role ?? "Not set"),
+    profileStatus: String(profile.status ?? "Not set"),
+    departmentName: String(department.name ?? "Not set"),
+    jobTitle: String(row.job_title ?? "Not set"),
+    employeeCode: String(row.employee_code ?? "Not set"),
+    hireDate: String(row.hire_date ?? "Not set"),
+    employeeStatus: String(row.status ?? "Not set"),
+    createdAt: formatDateTime(row.created_at),
+  };
+}
+
+function employeeFormDefaults(row: Record<string, unknown>): FormValues {
+  const profile = relationObject(row.profiles);
+
+  return {
+    full_name: profile.full_name ?? "",
+    phone: profile.phone ?? "",
+    role: profile.role ?? "",
+    profile_status: profile.status ?? "active",
+    department_id: row.department_id ?? "",
+    job_title: row.job_title ?? "",
+    employee_code: row.employee_code ?? "",
+    hire_date: row.hire_date ?? "",
+    employee_status: row.status ?? "active",
+  };
+}
+
+function relationObject(value: unknown): Record<string, unknown> {
+  if (Array.isArray(value)) return value[0] && typeof value[0] === "object" ? value[0] as Record<string, unknown> : {};
+  return value && typeof value === "object" ? value as Record<string, unknown> : {};
+}
+
+function formatDetailValue(value: unknown) {
+  if (value === null || value === undefined || value === "") return "Not set";
+  return String(value);
+}
+
+function formatDateTime(value: unknown) {
+  if (!value) return "Not set";
+  const date = new Date(String(value));
+  if (Number.isNaN(date.getTime())) return String(value);
+  return date.toLocaleString();
 }
 
 function labelize(value: string) {

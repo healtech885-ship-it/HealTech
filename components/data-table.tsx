@@ -6,10 +6,17 @@ import {
   useReactTable,
   type ColumnDef,
 } from "@tanstack/react-table";
+import Link from "next/link";
 import { StatusBadge } from "@/components/status-badge";
 import type { ModuleRecord } from "@/types/app.types";
 
-export function DataTable({ rows }: { rows: ModuleRecord[] }) {
+type RowLink = {
+  hrefBase: string;
+  idField?: string;
+  label: string;
+};
+
+export function DataTable({ rows, rowLink }: { rows: ModuleRecord[]; rowLink?: RowLink }) {
   const columns: ColumnDef<ModuleRecord>[] = Object.keys(rows[0] ?? { Empty: "No records" }).map((key) => ({
     accessorKey: key,
     header: key,
@@ -20,6 +27,22 @@ export function DataTable({ rows }: { rows: ModuleRecord[] }) {
       return looksLikeStatus ? <StatusBadge value={String(value)} /> : <span className="table-numeric">{formatCell(value)}</span>;
     },
   }));
+
+  if (rowLink) {
+    columns.push({
+      id: "actions",
+      header: "Actions",
+      cell: ({ row }) => {
+        const id = row.original[rowLink.idField ?? "id"];
+        if (!id) return <span className="text-[var(--on-surface-variant)]">Unavailable</span>;
+        return (
+          <Link href={`${rowLink.hrefBase}/${id}`} className="font-semibold text-primary hover:underline">
+            {rowLink.label}
+          </Link>
+        );
+      },
+    });
+  }
 
   // eslint-disable-next-line react-hooks/incompatible-library
   const table = useReactTable({ data: rows, columns, getCoreRowModel: getCoreRowModel() });

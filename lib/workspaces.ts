@@ -27,6 +27,8 @@ export type WorkspaceAction =
   | { kind: "update"; table: string; idField: string; success: string }
   | { kind: "function"; name: string; success: string };
 
+export type WorkspaceMode = "list" | "create" | "details" | "edit";
+
 export type WorkspaceConfig = {
   title: string;
   eyebrow: string;
@@ -34,6 +36,15 @@ export type WorkspaceConfig = {
   table: string;
   select: string;
   orderBy?: string;
+  mode?: WorkspaceMode;
+  recordId?: string;
+  recordIdField?: string;
+  detailSelect?: string;
+  rowLink?: {
+    hrefBase: string;
+    idField?: string;
+    label: string;
+  };
   actionLabel: string;
   action: WorkspaceAction;
   fields: WorkspaceField[];
@@ -121,12 +132,14 @@ export function getWorkspaceConfig(role: UserRole, segments?: string[]): Workspa
   const base = defaultByRole[role];
   const path = (segments ?? ["dashboard"]).join("/");
   const first = segments?.[0] ?? "dashboard";
+  const employeeId = role === "admin" && segments?.[0] === "employees" && segments[1] !== "new" && segments[1] !== "edit" ? segments[1] : undefined;
+  const editEmployeeId = role === "admin" && segments?.[0] === "employees" && segments[1] === "edit" ? segments[2] : undefined;
 
   if (first === "dashboard") return base;
 
   const overrides: Record<string, WorkspaceConfig> = {
-    "admin/employees": { ...base, title: "Employees", table: "employees", select: "id,profile_id,department_id,job_title,employee_code,hire_date,status,created_at", actionLabel: "Create Employee", action: { kind: "function", name: "create-employee", success: "Employee account created" }, fields: employeeFields(), dashboard: false },
-    "admin/employees/new": { ...base, title: "Add Employee", table: "employees", select: "id,profile_id,department_id,job_title,employee_code,hire_date,status,created_at", actionLabel: "Create Employee", action: { kind: "function", name: "create-employee", success: "Employee account created" }, fields: employeeFields(), dashboard: false },
+    "admin/employees": { ...base, title: "Employees", table: "employees", select: employeeSelect(), detailSelect: employeeSelect(), orderBy: "created_at", mode: "list", rowLink: { hrefBase: "/admin/employees", idField: "id", label: "Open" }, actionLabel: "Create Employee", action: { kind: "function", name: "create-employee", success: "Employee account created" }, fields: employeeFields(), dashboard: false },
+    "admin/employees/new": { ...base, title: "Add Employee", table: "employees", select: employeeSelect(), detailSelect: employeeSelect(), mode: "create", actionLabel: "Create Employee", action: { kind: "function", name: "create-employee", success: "Employee account created" }, fields: employeeFields(), dashboard: false },
     "admin/departments": { ...base, title: "Departments", table: "departments", select: `id,name,description,status,created_at`, actionLabel: "Add Department", action: { kind: "insert", table: "departments", success: "Department added" }, fields: departmentFields(), dashboard: false },
     "admin/patients": { ...base, title: "Patients", table: "patients", select: "id,full_name,student_id,mrn,gender,birth_date,phone,status,created_at", actionLabel: "Register Patient", action: { kind: "function", name: "create-patient", success: "Patient registered" }, fields: patientFields(), dashboard: false },
     "admin/visits": { ...base, title: "Visits", table: "visits", select: defaultByRole.doctor.select, actionLabel: "Create Visit", action: { kind: "function", name: "create-visit", success: "Visit created" }, fields: visitFields(), dashboard: false },
@@ -170,9 +183,38 @@ export function getWorkspaceConfig(role: UserRole, segments?: string[]): Workspa
     "patient/account-settings": { ...defaultByRole.patient, title: "Account Settings", table: "profiles", select: "id,full_name,email,phone,role,status,created_at", actionLabel: "Update Profile", action: { kind: "update", table: "profiles", idField: "id", success: "Profile updated" }, fields: profileSettingsFields(), dashboard: false },
   };
 
+  if (employeeId) {
+    return {
+      ...overrides["admin/employees"],
+      title: "Employee Details",
+      mode: "details",
+      recordId: employeeId,
+      recordIdField: "id",
+      actionLabel: "Employee details are read-only",
+      action: { kind: "none" },
+      fields: [],
+      readonly: true,
+      dashboard: false,
+    };
+  }
+
+  if (editEmployeeId) {
+    return {
+      ...overrides["admin/employees"],
+      title: "Edit Employee",
+      mode: "edit",
+      recordId: editEmployeeId,
+      recordIdField: "id",
+      actionLabel: "Save Employee",
+      action: { kind: "function", name: "update-employee", success: "Employee updated" },
+      fields: employeeEditFields(),
+      readonly: false,
+      dashboard: false,
+    };
+  }
+
   const exact = overrides[`${role}/${path}`];
   if (exact) return exact;
-  if (role === "admin" && path.startsWith("employees/")) return { ...overrides["admin/employees"], title: "Employee Details", readonly: false };
   if (role === "admin" && path.startsWith("leave-requests/")) return { ...overrides["admin/leave-requests"], title: "Leave Request Details" };
   if (role === "reception" && path.startsWith("patients/")) return { ...overrides["reception/patients"], title: "Patient Details" };
   if (role === "doctor" && path.startsWith("visits/")) return { ...defaultByRole.doctor, title: "Visit Details", dashboard: false };
@@ -181,6 +223,10 @@ export function getWorkspaceConfig(role: UserRole, segments?: string[]): Workspa
   if (role === "pharmacy" && path.startsWith("medicines/")) return { ...overrides["pharmacy/medicines"], title: "Medicine Details", dashboard: false };
   if (role === "patient" && path.startsWith("visits/")) return { ...overrides["patient/visits"], title: "Visit Details" };
   return { ...base, title: `${base.title} / ${path}` };
+}
+
+function employeeSelect() {
+  return "id,profile_id,department_id,job_title,employee_code,hire_date,status,created_at,profiles(full_name,email,phone,role,status),departments(name)";
 }
 
 function employeeFields(): WorkspaceField[] {
@@ -193,6 +239,20 @@ function employeeFields(): WorkspaceField[] {
     { name: "department_id", label: "Department", reference: "departments" },
     { name: "job_title", label: "Job title" },
     { name: "employee_code", label: "Employee code" },
+  ];
+}
+
+function employeeEditFields(): WorkspaceField[] {
+  return [
+    { name: "full_name", label: "Full name", required: true },
+    { name: "phone", label: "Phone" },
+    { name: "role", label: "Role", type: "select", required: true, options: ["admin", "reception", "doctor", "lab", "pharmacy"] },
+    { name: "profile_status", label: "Account status", type: "select", required: true, options: ["active", "inactive", "suspended"] },
+    { name: "department_id", label: "Department", reference: "departments" },
+    { name: "job_title", label: "Job title" },
+    { name: "employee_code", label: "Employee code" },
+    { name: "hire_date", label: "Hire date", type: "date" },
+    { name: "employee_status", label: "Employee status", type: "select", required: true, options: ["active", "inactive", "on_leave", "terminated"] },
   ];
 }
 
