@@ -36,6 +36,7 @@ type VisitStatus = Database["public"]["Enums"]["visit_status"];
 type VisitPriority = Database["public"]["Enums"]["visit_priority"];
 type VisitRow = Tables<"visits">;
 type PatientRow = Pick<Tables<"patients">, "id" | "full_name" | "mrn" | "student_id" | "gender" | "birth_date" | "phone">;
+type LabTestRow = Pick<Tables<"lab_tests">, "id" | "name" | "code" | "description" | "normal_range" | "unit" | "status">;
 type VisitAction = "starting" | "saving" | "completing";
 
 type DoctorVisit = VisitRow & {
@@ -578,7 +579,189 @@ function VisitDetailCard({ visit, onRefresh }: { visit: DoctorVisit; onRefresh: 
           </div>
         ) : null}
       </DataPanel>
+
+      <LabOrderPanel visit={visit} closed={closed} onRefresh={onRefresh} />
     </div>
+  );
+}
+
+function LabOrderPanel({ visit, closed, onRefresh }: { visit: DoctorVisit; closed: boolean; onRefresh: () => Promise<DoctorVisit | null> }) {
+  const supabase = useMemo(() => createClient(), []);
+  const [tests, setTests] = useState<LabTestRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [doctorNotes, setDoctorNotes] = useState("");
+  const [query, setQuery] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadLabTests() {
+      setLoading(true);
+      setLoadError(null);
+      const { data, error } = await supabase
+        .from("lab_tests")
+        .select("id,name,code,description,normal_range,unit,status")
+        .eq("status", "active")
+        .order("name", { ascending: true });
+
+      if (!active) return;
+      if (error) {
+        setLoadError(error.message);
+        setTests([]);
+      } else {
+        setTests((data ?? []) as LabTestRow[]);
+      }
+      setLoading(false);
+    }
+
+    void loadLabTests();
+    return () => {
+      active = false;
+    };
+  }, [supabase]);
+
+  const filteredTests = tests.filter((test) => {
+    const needle = query.trim().toLowerCase();
+    if (!needle) return true;
+    return `${test.name} ${test.code ?? ""} ${test.description ?? ""}`.toLowerCase().includes(needle);
+  });
+
+  function toggleTest(id: string) {
+    setSelectedIds((current) => (current.includes(id) ? current.filter((item) => item !== id) : [...current, id]));
+  }
+
+  async function handleSubmit() {
+    setSubmitError(null);
+    setSuccess(null);
+
+    if (closed) {
+      setSubmitError("Lab tests cannot be ordered for a closed visit.");
+      return;
+    }
+    if (!visit.id) {
+      setSubmitError("No visit is loaded.");
+      return;
+    }
+    if (selectedIds.length === 0) {
+      setSubmitError("Select at least one lab test before submitting.");
+      return;
+    }
+
+    setSubmitting(true);
+    const { error } = await supabase.functions.invoke("order-lab-tests", {
+      body: {
+        visit_id: visit.id,
+        lab_test_ids: selectedIds,
+        doctor_notes: doctorNotes.trim() || undefined,
+      },
+    });
+
+    if (error) {
+      setSubmitError(error.message);
+      setSubmitting(false);
+      return;
+    }
+
+    setSelectedIds([]);
+    setDoctorNotes("");
+    setQuery("");
+    setSuccess("Lab tests ordered successfully.");
+    await onRefresh();
+    setSubmitting(false);
+  }
+
+  return (
+    <DataPanel
+      title="Order Lab Tests"
+      description="Request one or more active lab tests for this visit."
+      action={success ? <Link href="/doctor/lab-results" className="text-sm font-semibold text-[#006d86]">View lab results</Link> : null}
+    >
+      {closed ? <InlineNotice tone="danger" message="Lab tests cannot be ordered for a closed visit." /> : null}
+      {success ? <InlineNotice tone="success" message={success} /> : null}
+      {submitError ? <InlineNotice tone="danger" message={submitError} /> : null}
+      {loadError ? <ErrorState message={loadError} /> : null}
+
+      {!closed ? (
+        <div className="space-y-5">
+          <div>
+            <label className="text-sm font-semibold text-[#41546b]" htmlFor="lab-test-search">Search Lab Tests</label>
+            <div className="relative mt-2">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#7a8ca1]" />
+              <input
+                id="lab-test-search"
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                disabled={loading || submitting}
+                className="h-11 w-full rounded-lg border border-[#cbd8e2] bg-white pl-10 pr-3 text-sm outline-none focus:border-[#00758d] disabled:bg-[#eef3f7]"
+                placeholder="Search by test name, code, or description"
+              />
+            </div>
+          </div>
+
+          {loading ? <LoadingState label="Loading active lab tests" /> : null}
+          {!loading && !loadError && tests.length === 0 ? <EmptyState title="No active lab tests" description="There are no active lab tests available to order." /> : null}
+          {!loading && !loadError && tests.length > 0 ? (
+            <div className="max-h-[360px] overflow-y-auto rounded-lg border border-[#d4e0e8]">
+              {filteredTests.length === 0 ? (
+                <p className="p-4 text-sm text-[#607084]">No lab tests match your search.</p>
+              ) : (
+                <div className="divide-y divide-[#e1e9ef]">
+                  {filteredTests.map((test) => (
+                    <label key={test.id} className="flex cursor-pointer gap-3 p-4 hover:bg-[#f8fbfd]">
+                      <input
+                        type="checkbox"
+                        checked={selectedIds.includes(test.id)}
+                        disabled={submitting}
+                        onChange={() => toggleTest(test.id)}
+                        className="mt-1 h-4 w-4 rounded border-[#cbd8e2]"
+                      />
+                      <span className="min-w-0 flex-1">
+                        <span className="block font-semibold">{test.name}</span>
+                        <span className="mt-1 block text-sm text-[#607084]">
+                          {test.code ? `Code: ${test.code}` : "No code"}
+                          {test.unit ? ` / Unit: ${test.unit}` : ""}
+                          {test.normal_range ? ` / Range: ${test.normal_range}` : ""}
+                        </span>
+                        {test.description ? <span className="mt-1 block text-sm text-[#41546b]">{test.description}</span> : null}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              )}
+            </div>
+          ) : null}
+
+          <label className="block">
+            <span className="text-sm font-semibold text-[#41546b]">Doctor Notes</span>
+            <textarea
+              value={doctorNotes}
+              disabled={submitting}
+              onChange={(event) => setDoctorNotes(event.target.value)}
+              className="mt-2 min-h-[110px] w-full resize-y rounded-lg border border-[#cbd8e2] bg-white p-3 text-sm leading-6 outline-none focus:border-[#00758d] disabled:bg-[#eef3f7]"
+              placeholder="Optional notes for the lab team"
+            />
+          </label>
+
+          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[#e1e9ef] pt-5">
+            <p className="text-sm text-[#607084]">{selectedIds.length} selected</p>
+            <button
+              type="button"
+              onClick={handleSubmit}
+              disabled={submitting || loading}
+              className="inline-flex h-10 items-center justify-center rounded-lg bg-[#006d86] px-4 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {submitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Beaker className="mr-2 h-4 w-4" />}
+              Order Selected Tests
+            </button>
+          </div>
+        </div>
+      ) : null}
+    </DataPanel>
   );
 }
 
