@@ -2,19 +2,23 @@
 
 import Link from "next/link";
 import {
+  AlertTriangle,
   Bell,
   BriefcaseMedical,
   CircleHelp,
   Clock3,
   ChevronsLeft,
   ChevronsRight,
+  ClipboardList,
   Menu,
   Plus,
   Search,
+  Settings,
   ShieldCheck,
+  UserRound,
   X,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { SignOutButton } from "@/components/auth/sign-out-button";
 import { navigationByRole, roleLabels, type NavItem } from "@/lib/constants/navigation";
 import { cn } from "@/lib/utils";
@@ -132,6 +136,8 @@ function AdminShell({
   const settingsItem = adminItems.find((item) => item.href === "/admin/settings");
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [activeTopbarMenu, setActiveTopbarMenu] = useState<AdminTopbarMenu>(null);
+  const [emergencyOpen, setEmergencyOpen] = useState(false);
 
   return (
     <div className="min-h-screen overflow-x-clip bg-[#f6fafd] font-[Manrope,Inter,Segoe_UI,Arial,sans-serif] text-[#171c1e] lg:grid lg:grid-cols-[auto_minmax(0,1fr)]">
@@ -263,21 +269,35 @@ function AdminShell({
                 placeholder="Search patients, records..."
               />
             </div>
-            <div className="ml-auto flex items-center gap-4 text-[#51647c] sm:gap-6">
-              <span className="relative">
-                <Bell className="h-6 w-6" />
-                <span className="absolute -right-0.5 -top-1 h-2.5 w-2.5 rounded-full border border-white bg-[#ba1a1a]" />
-              </span>
-              <Clock3 className="h-6 w-6" />
-              <CircleHelp className="h-6 w-6" />
+            <div className="ml-auto flex items-center gap-2 text-[#51647c] sm:gap-3">
+              <AdminNotificationsMenu
+                open={activeTopbarMenu === "notifications"}
+                onOpenChange={(open) => setActiveTopbarMenu(open ? "notifications" : null)}
+              />
+              <AdminClockMenu
+                profile={profile}
+                open={activeTopbarMenu === "clock"}
+                onOpenChange={(open) => setActiveTopbarMenu(open ? "clock" : null)}
+              />
+              <AdminHelpMenu
+                open={activeTopbarMenu === "help"}
+                onOpenChange={(open) => setActiveTopbarMenu(open ? "help" : null)}
+              />
               <span className="hidden h-8 w-px bg-[#d7e1e7] sm:block" />
-              <button className="hidden h-10 items-center gap-2 rounded-full border border-[#f2b8b5] bg-white px-5 text-[16px] font-medium text-[#c10010] md:flex">
+              <button
+                type="button"
+                aria-label="Open emergency workflow"
+                onClick={() => setEmergencyOpen(true)}
+                className="flex h-10 items-center gap-2 rounded-full border border-[#f2b8b5] bg-white px-3 text-sm font-semibold text-[#c10010] transition hover:bg-[#fff6f5] focus:outline-none focus:ring-2 focus:ring-[#f2b8b5] md:px-5 md:text-[16px]"
+              >
                 <span className="text-[26px] leading-none">*</span>
-                Emergency
+                <span className="hidden sm:inline">Emergency</span>
               </button>
-              <span className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full border border-[#c7d5e0] bg-[#e5eef4] text-sm font-semibold text-[#00647c]">
-                {initials(profile.full_name)}
-              </span>
+              <AdminProfileMenu
+                profile={profile}
+                open={activeTopbarMenu === "profile"}
+                onOpenChange={(open) => setActiveTopbarMenu(open ? "profile" : null)}
+              />
             </div>
           </div>
           <nav className="flex gap-2 overflow-x-auto border-t border-[#d9e3ea] px-4 py-2 lg:hidden">
@@ -293,8 +313,365 @@ function AdminShell({
 
         <div className="min-w-0 px-5 py-8 lg:px-[30px] lg:py-9">{children}</div>
       </main>
+      <EmergencyWorkflowDialog open={emergencyOpen} onClose={() => setEmergencyOpen(false)} />
     </div>
   );
+}
+
+type AdminTopbarMenu = "notifications" | "clock" | "help" | "profile" | null;
+
+const adminNotifications = [
+  {
+    title: "Low stock medicines require review",
+    description: "Open stock batches to review low or expiring inventory.",
+    href: "/admin/store/batches",
+    unread: true,
+  },
+  {
+    title: "Pending leave requests",
+    description: "Review staff leave requests waiting for admin action.",
+    href: "/admin/leave-requests",
+    unread: true,
+  },
+  {
+    title: "Store requests awaiting approval",
+    description: "Store team requests need approval or rejection.",
+    href: "/admin/store/requests",
+    unread: true,
+  },
+];
+
+const adminHelpItems = [
+  { title: "How to create an employee", description: "Open Employees, then use Create Employee.", href: "/admin/employees/new" },
+  { title: "How to register patients", description: "Open Patients and register a new patient profile.", href: "/admin/patients" },
+  { title: "How to manage visits", description: "Open Visits to review clinic workflow state.", href: "/admin/visits" },
+  { title: "How to review store requests", description: "Open Store Requests and review pending items.", href: "/admin/store/requests" },
+];
+
+function AdminNotificationsMenu({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
+  const ref = useDismissibleLayer<HTMLDivElement>(open, () => onOpenChange(false));
+  const unreadCount = adminNotifications.filter((item) => item.unread).length;
+
+  return (
+    <div ref={ref} className="relative">
+      <TopbarIconButton
+        label="Open notifications"
+        open={open}
+        onClick={() => onOpenChange(!open)}
+        badge={unreadCount > 0}
+      >
+        <Bell className="h-5 w-5 sm:h-6 sm:w-6" />
+      </TopbarIconButton>
+      {open ? (
+        <TopbarPanel className="right-0 w-[min(92vw,360px)]">
+          <div className="flex items-start justify-between gap-4 border-b border-[#e1e9ef] px-4 py-3">
+            <div>
+              <p className="text-sm font-bold text-[#11181c]">Notifications</p>
+              <p className="mt-0.5 text-xs text-[#607084]">{unreadCount} unread clinic item{unreadCount === 1 ? "" : "s"}</p>
+            </div>
+            <span className="rounded-full bg-[#fde9e6] px-2.5 py-1 text-xs font-semibold text-[#ba1a1a]">Live</span>
+          </div>
+          <div className="max-h-[320px] overflow-y-auto py-2">
+            {adminNotifications.length === 0 ? (
+              <p className="px-4 py-5 text-sm text-[#607084]">No notifications right now.</p>
+            ) : (
+              adminNotifications.map((item) => (
+                <Link key={item.title} href={item.href} onClick={() => onOpenChange(false)} className="flex gap-3 px-4 py-3 transition hover:bg-[#f5f9fc]">
+                  <span className={cn("mt-1 h-2.5 w-2.5 shrink-0 rounded-full", item.unread ? "bg-[#ba1a1a]" : "bg-[#c6d4df]")} />
+                  <span>
+                    <span className="block text-sm font-semibold text-[#263a54]">{item.title}</span>
+                    <span className="mt-1 block text-xs leading-5 text-[#607084]">{item.description}</span>
+                  </span>
+                </Link>
+              ))
+            )}
+          </div>
+          <div className="border-t border-[#e1e9ef] px-4 py-3">
+            <button type="button" disabled className="w-full rounded-lg border border-[#d7e1e8] bg-[#f7fbfd] px-3 py-2 text-sm font-semibold text-[#7a8ca1]">
+              View all notifications - coming soon
+            </button>
+          </div>
+        </TopbarPanel>
+      ) : null}
+    </div>
+  );
+}
+
+function AdminClockMenu({
+  profile,
+  open,
+  onOpenChange,
+}: {
+  profile: AppProfile;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) {
+  const ref = useDismissibleLayer<HTMLDivElement>(open, () => onOpenChange(false));
+  const [now, setNow] = useState<Date | null>(null);
+
+  useEffect(() => {
+    const updateTime = () => setNow(new Date());
+    const firstTick = window.setTimeout(updateTime, 0);
+    const interval = window.setInterval(updateTime, 60_000);
+    return () => {
+      window.clearTimeout(firstTick);
+      window.clearInterval(interval);
+    };
+  }, []);
+
+  const dateFormatter = useMemo(() => new Intl.DateTimeFormat(undefined, { dateStyle: "full" }), []);
+  const timeFormatter = useMemo(() => new Intl.DateTimeFormat(undefined, { hour: "2-digit", minute: "2-digit" }), []);
+
+  return (
+    <div ref={ref} className="relative">
+      <TopbarIconButton label="Open time and session status" open={open} onClick={() => onOpenChange(!open)}>
+        <Clock3 className="h-5 w-5 sm:h-6 sm:w-6" />
+      </TopbarIconButton>
+      {open ? (
+        <TopbarPanel className="right-0 w-[min(92vw,320px)]">
+          <div className="border-b border-[#e1e9ef] px-4 py-3">
+            <p className="text-sm font-bold text-[#11181c]">Clinic Time</p>
+            <p className="mt-0.5 text-xs text-[#607084]">Local device time, refreshed every minute.</p>
+          </div>
+          <div className="grid gap-3 px-4 py-4 text-sm">
+            <StatusRow label="Date" value={now ? dateFormatter.format(now) : "Loading"} />
+            <StatusRow label="Time" value={now ? timeFormatter.format(now) : "Loading"} />
+            <StatusRow label="Role" value={roleLabels[profile.role]} />
+            <StatusRow label="Last updated" value={now ? timeFormatter.format(now) : "Loading"} />
+          </div>
+        </TopbarPanel>
+      ) : null}
+    </div>
+  );
+}
+
+function AdminHelpMenu({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
+  const ref = useDismissibleLayer<HTMLDivElement>(open, () => onOpenChange(false));
+
+  return (
+    <div ref={ref} className="relative">
+      <TopbarIconButton label="Open help menu" open={open} onClick={() => onOpenChange(!open)}>
+        <CircleHelp className="h-5 w-5 sm:h-6 sm:w-6" />
+      </TopbarIconButton>
+      {open ? (
+        <TopbarPanel className="right-0 w-[min(92vw,380px)]">
+          <div className="border-b border-[#e1e9ef] px-4 py-3">
+            <p className="text-sm font-bold text-[#11181c]">Admin Help</p>
+            <p className="mt-0.5 text-xs text-[#607084]">Quick links for common admin workflows.</p>
+          </div>
+          <div className="py-2">
+            {adminHelpItems.map((item) => (
+              <Link key={item.title} href={item.href} onClick={() => onOpenChange(false)} className="block px-4 py-3 transition hover:bg-[#f5f9fc]">
+                <span className="block text-sm font-semibold text-[#263a54]">{item.title}</span>
+                <span className="mt-1 block text-xs leading-5 text-[#607084]">{item.description}</span>
+              </Link>
+            ))}
+          </div>
+          <div className="border-t border-[#e1e9ef] bg-[#f8fbfd] px-4 py-3">
+            <p className="text-sm font-semibold text-[#263a54]">Need support?</p>
+            <p className="mt-1 text-xs leading-5 text-[#607084]">Contact the clinic system administrator or your internal IT support channel.</p>
+          </div>
+        </TopbarPanel>
+      ) : null}
+    </div>
+  );
+}
+
+function AdminProfileMenu({
+  profile,
+  open,
+  onOpenChange,
+}: {
+  profile: AppProfile;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) {
+  const ref = useDismissibleLayer<HTMLDivElement>(open, () => onOpenChange(false));
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        type="button"
+        aria-label="Open profile menu"
+        aria-haspopup="menu"
+        aria-expanded={open}
+        onClick={() => onOpenChange(!open)}
+        className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full border border-[#c7d5e0] bg-[#e5eef4] text-sm font-semibold text-[#00647c] transition hover:border-[#8fb4c2] focus:outline-none focus:ring-2 focus:ring-[#00758d]/25"
+      >
+        {initials(profile.full_name)}
+      </button>
+      {open ? (
+        <TopbarPanel className="right-0 w-[min(92vw,320px)]">
+          <div className="border-b border-[#e1e9ef] px-4 py-4">
+            <div className="flex items-center gap-3">
+              <span className="flex h-11 w-11 items-center justify-center rounded-full bg-[#e5eef4] text-sm font-bold text-[#00647c]">
+                {initials(profile.full_name)}
+              </span>
+              <div className="min-w-0">
+                <p className="truncate text-sm font-bold text-[#11181c]">{profile.full_name}</p>
+                <p className="truncate text-xs text-[#607084]">{profile.email}</p>
+              </div>
+            </div>
+          </div>
+          <div className="grid gap-3 px-4 py-4 text-sm">
+            <StatusRow label="Role" value={roleLabels[profile.role]} />
+            <StatusRow label="Account status" value={profile.status} />
+          </div>
+          <div className="border-t border-[#e1e9ef] px-4 py-3">
+            <Link href="/admin/settings" onClick={() => onOpenChange(false)} className="mb-2 flex h-10 items-center gap-2 rounded-lg px-3 text-sm font-semibold text-[#263a54] transition hover:bg-[#f5f9fc]">
+              <Settings className="h-4 w-4" />
+              Admin settings
+            </Link>
+            <SignOutButton className="w-full justify-center" label="Logout" variant="secondary" />
+          </div>
+        </TopbarPanel>
+      ) : null}
+    </div>
+  );
+}
+
+function EmergencyWorkflowDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const dialogRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") onClose();
+    }
+
+    document.addEventListener("keydown", onKeyDown);
+    const previous = document.activeElement;
+    dialogRef.current?.focus();
+    return () => {
+      document.removeEventListener("keydown", onKeyDown);
+      if (previous instanceof HTMLElement) previous.focus();
+    };
+  }, [open, onClose]);
+
+  if (!open) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#0f172a]/45 p-4" role="presentation" onMouseDown={(event) => {
+      if (event.target === event.currentTarget) onClose();
+    }}>
+      <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="emergency-workflow-title"
+        tabIndex={-1}
+        className="w-full max-w-xl rounded-xl bg-white shadow-[0_24px_60px_rgba(15,23,42,0.24)] outline-none"
+      >
+        <div className="flex items-start justify-between gap-4 border-b border-[#f2b8b5] px-5 py-4">
+          <div className="flex items-start gap-3">
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#fde9e6] text-[#ba1a1a]">
+              <AlertTriangle className="h-6 w-6" />
+            </span>
+            <div>
+              <h2 id="emergency-workflow-title" className="text-lg font-bold text-[#11181c]">Emergency Workflow</h2>
+              <p className="mt-1 text-sm leading-6 text-[#607084]">Clinic workflow shortcuts for urgent cases. This does not call external emergency services.</p>
+            </div>
+          </div>
+          <button type="button" onClick={onClose} aria-label="Close emergency workflow" className="rounded-lg p-2 text-[#607084] transition hover:bg-[#f5f9fc] hover:text-[#263a54]">
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+        <div className="space-y-3 px-5 py-5">
+          <p className="rounded-lg border border-[#f2b8b5] bg-[#fff6f5] px-4 py-3 text-sm leading-6 text-[#8c1d18]">
+            Use these shortcuts to find or create the appropriate clinic record for an urgent visit. No database record is created until you use the normal visit or patient workflow.
+          </p>
+          <Link href="/admin/visits" onClick={onClose} className="flex items-center gap-3 rounded-lg border border-[#d7e1e8] px-4 py-3 text-sm font-semibold text-[#263a54] transition hover:border-[#f2b8b5] hover:bg-[#fff6f5]">
+            <ClipboardList className="h-5 w-5 text-[#ba1a1a]" />
+            Go to Visits page
+          </Link>
+          <Link href="/admin/patients" onClick={onClose} className="flex items-center gap-3 rounded-lg border border-[#d7e1e8] px-4 py-3 text-sm font-semibold text-[#263a54] transition hover:border-[#f2b8b5] hover:bg-[#fff6f5]">
+            <UserRound className="h-5 w-5 text-[#ba1a1a]" />
+            Go to Patients page
+          </Link>
+        </div>
+        <div className="flex justify-end gap-3 border-t border-[#e1e9ef] px-5 py-4">
+          <button type="button" onClick={onClose} className="h-10 rounded-lg border border-[#d7e1e8] px-4 text-sm font-semibold text-[#263a54] transition hover:bg-[#f5f9fc]">
+            Cancel
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function TopbarIconButton({
+  label,
+  open,
+  badge = false,
+  onClick,
+  children,
+}: {
+  label: string;
+  open: boolean;
+  badge?: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      aria-label={label}
+      aria-haspopup="menu"
+      aria-expanded={open}
+      onClick={onClick}
+      className={cn(
+        "relative flex h-10 w-10 items-center justify-center rounded-full text-[#51647c] transition hover:bg-[#f0f4f7] hover:text-[#263a54] focus:outline-none focus:ring-2 focus:ring-[#00758d]/25",
+        open && "bg-[#e6f4f7] text-[#00647c]",
+      )}
+    >
+      {children}
+      {badge ? <span className="absolute right-2.5 top-2 h-2.5 w-2.5 rounded-full border border-white bg-[#ba1a1a]" /> : null}
+    </button>
+  );
+}
+
+function TopbarPanel({ className, children }: { className?: string; children: React.ReactNode }) {
+  return (
+    <div className={cn("absolute top-12 z-40 overflow-hidden rounded-xl border border-[#d7e1e8] bg-white text-left shadow-[0_18px_44px_rgba(15,23,42,0.14)]", className)}>
+      {children}
+    </div>
+  );
+}
+
+function StatusRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-start justify-between gap-4">
+      <span className="text-xs font-semibold uppercase tracking-[0.02em] text-[#7a8ca1]">{label}</span>
+      <span className="text-right text-sm font-semibold capitalize text-[#263a54]">{value}</span>
+    </div>
+  );
+}
+
+function useDismissibleLayer<T extends HTMLElement>(open: boolean, onClose: () => void) {
+  const ref = useRef<T | null>(null);
+
+  useEffect(() => {
+    if (!open) return;
+
+    function onPointerDown(event: PointerEvent) {
+      const target = event.target;
+      if (target instanceof Node && ref.current && !ref.current.contains(target)) onClose();
+    }
+
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") onClose();
+    }
+
+    document.addEventListener("pointerdown", onPointerDown);
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("pointerdown", onPointerDown);
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  }, [open, onClose]);
+
+  return ref;
 }
 
 function getRoleActiveHref(role: UserRole, segments: string[] | undefined, items: NavItem[]) {
