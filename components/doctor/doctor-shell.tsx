@@ -36,10 +36,13 @@ type VisitStatus = Database["public"]["Enums"]["visit_status"];
 type VisitPriority = Database["public"]["Enums"]["visit_priority"];
 type VisitRow = Tables<"visits">;
 type PatientRow = Pick<Tables<"patients">, "id" | "full_name" | "mrn" | "student_id" | "gender" | "birth_date" | "phone">;
+type VisitAction = "starting" | "saving" | "completing";
 
 type DoctorVisit = VisitRow & {
   patients: PatientRow | null;
 };
+
+type VisitFormState = Pick<DoctorVisit, "chief_complaint" | "symptoms" | "diagnosis" | "disease" | "doctor_instructions" | "notes" | "priority">;
 
 type QueryState<T> = {
   loading: boolean;
@@ -366,38 +369,47 @@ function VisitDetails({ profile, visitId }: { profile: AppProfile; visitId: stri
     status: "loading" | "ready" | "not-found" | "unauthorized" | "error";
   }>({ loading: true, data: null, error: null, status: "loading" });
 
+  const fetchVisit = useCallback(async () => {
+    const { data, error } = await supabase.from("visits").select(visitSelect).eq("id", visitId).maybeSingle();
+
+    if (error) {
+      return { loading: false, data: null, error: error.message, status: "error" as const };
+    }
+
+    if (!data) {
+      return { loading: false, data: null, error: null, status: "not-found" as const };
+    }
+
+    const visit = (data as unknown) as DoctorVisit;
+    if (visit.doctor_id !== profile.id) {
+      return { loading: false, data: null, error: null, status: "unauthorized" as const };
+    }
+
+    return { loading: false, data: visit, error: null, status: "ready" as const };
+  }, [profile.id, supabase, visitId]);
+
+  const refreshVisit = useCallback(async () => {
+    const nextState = await fetchVisit();
+    setState(nextState);
+    return nextState.data;
+  }, [fetchVisit]);
+
   useEffect(() => {
     let active = true;
 
     async function loadVisit() {
       setState({ loading: true, data: null, error: null, status: "loading" });
-      const { data, error } = await supabase.from("visits").select(visitSelect).eq("id", visitId).maybeSingle();
-      if (!active) return;
-
-      if (error) {
-        setState({ loading: false, data: null, error: error.message, status: "error" });
-        return;
+      const nextState = await fetchVisit();
+      if (active) {
+        setState(nextState);
       }
-
-      if (!data) {
-        setState({ loading: false, data: null, error: null, status: "not-found" });
-        return;
-      }
-
-      const visit = (data as unknown) as DoctorVisit;
-      if (visit.doctor_id !== profile.id) {
-        setState({ loading: false, data: null, error: null, status: "unauthorized" });
-        return;
-      }
-
-      setState({ loading: false, data: visit, error: null, status: "ready" });
     }
 
     void loadVisit();
     return () => {
       active = false;
     };
-  }, [profile.id, supabase, visitId]);
+  }, [fetchVisit]);
 
   return (
     <section className="px-5 py-7 lg:px-8">
@@ -415,21 +427,81 @@ function VisitDetails({ profile, visitId }: { profile: AppProfile; visitId: stri
       {state.status === "unauthorized" ? (
         <EmptyState title="Unauthorized" description="This visit is not assigned to your doctor profile." />
       ) : null}
-      {state.status === "ready" && state.data ? <VisitDetailCard visit={state.data} /> : null}
+      {state.status === "ready" && state.data ? <VisitDetailCard key={`${state.data.id}-${state.data.updated_at}`} visit={state.data} onRefresh={refreshVisit} /> : null}
     </section>
   );
 }
 
-function VisitDetailCard({ visit }: { visit: DoctorVisit }) {
+function VisitDetailCard({ visit, onRefresh }: { visit: DoctorVisit; onRefresh: () => Promise<DoctorVisit | null> }) {
   const patient = visit.patients;
+  const supabase = useMemo(() => createClient(), []);
+  const [form, setForm] = useState<VisitFormState>(() => visitToFormState(visit));
+  const [action, setAction] = useState<VisitAction | null>(null);
+  const [message, setMessage] = useState<string | null>(null);
+  const [formError, setFormError] = useState<string | null>(null);
+  const closed = visit.status === "completed" || visit.status === "cancelled";
+
+  function updateField<K extends keyof VisitFormState>(field: K, value: VisitFormState[K]) {
+    setForm((current) => ({ ...current, [field]: value }));
+  }
+
+  async function submitVisitUpdate(nextAction: VisitAction, body: Record<string, unknown>, successMessage: string) {
+    setAction(nextAction);
+    setMessage(null);
+    setFormError(null);
+
+    const { error } = await supabase.functions.invoke("update-visit", { body });
+
+    if (error) {
+      setFormError(error.message);
+      setAction(null);
+      return;
+    }
+
+    await onRefresh();
+    setMessage(successMessage);
+    setAction(null);
+  }
+
+  async function handleStartVisit() {
+    await submitVisitUpdate("starting", { visit_id: visit.id, status: "in_progress" }, "Visit started.");
+  }
+
+  async function handleSaveProgress() {
+    await submitVisitUpdate("saving", { visit_id: visit.id, ...formPayload(form) }, "Visit progress saved.");
+  }
+
+  async function handleCompleteVisit() {
+    if (!form.diagnosis?.trim()) {
+      setFormError("Diagnosis is required before completing the visit.");
+      setMessage(null);
+      return;
+    }
+    if (!form.doctor_instructions?.trim()) {
+      setFormError("Doctor instructions are required before completing the visit.");
+      setMessage(null);
+      return;
+    }
+
+    await submitVisitUpdate("completing", { visit_id: visit.id, ...formPayload(form), complete: true }, "Visit completed.");
+  }
 
   return (
     <div className="space-y-6">
       <PageHeading
         title={`Visit ${visit.visit_code}`}
-        description="Read-only clinical detail shell. Diagnosis editing is intentionally not enabled in this step."
+        description="Manage the clinical notes and completion workflow for this assigned visit."
         action={<StatusBadge value={visit.status} />}
       />
+
+      <div className="flex flex-wrap gap-3">
+        <Link href="/doctor/lab-orders" className="inline-flex h-10 items-center justify-center rounded-lg border border-[#cbd8e2] bg-white px-4 text-sm font-semibold text-[#006d86]">
+          Order Lab Tests
+        </Link>
+        <Link href="/doctor/medicine-orders" className="inline-flex h-10 items-center justify-center rounded-lg border border-[#cbd8e2] bg-white px-4 text-sm font-semibold text-[#006d86]">
+          Prescriptions
+        </Link>
+      </div>
 
       <div className="grid gap-5 xl:grid-cols-[0.9fr_1.4fr]">
         <DataPanel title="Patient Information">
@@ -459,15 +531,52 @@ function VisitDetailCard({ visit }: { visit: DoctorVisit }) {
         </DataPanel>
       </div>
 
-      <DataPanel title="Clinical Information">
+      <DataPanel title="Clinical Documentation">
+        {closed ? <InlineNotice tone="danger" message="This visit is closed and cannot be edited." /> : null}
+        {message ? <InlineNotice tone="success" message={message} /> : null}
+        {formError ? <InlineNotice tone="danger" message={formError} /> : null}
+
         <div className="grid gap-4 lg:grid-cols-2">
-          <InfoBlock label="Chief complaint" value={visit.chief_complaint} />
-          <InfoBlock label="Symptoms" value={visit.symptoms} />
-          <InfoBlock label="Diagnosis" value={visit.diagnosis} />
-          <InfoBlock label="Disease" value={visit.disease} />
-          <InfoBlock label="Doctor instructions" value={visit.doctor_instructions} wide />
-          <InfoBlock label="Notes" value={visit.notes} wide />
+          <ClinicalTextarea label="Chief complaint" value={form.chief_complaint ?? ""} disabled={closed || action !== null} onChange={(value) => updateField("chief_complaint", value)} />
+          <ClinicalTextarea label="Symptoms" value={form.symptoms ?? ""} disabled={closed || action !== null} onChange={(value) => updateField("symptoms", value)} />
+          <ClinicalTextarea label="Diagnosis" value={form.diagnosis ?? ""} disabled={closed || action !== null} required onChange={(value) => updateField("diagnosis", value)} />
+          <ClinicalInput label="Disease" value={form.disease ?? ""} disabled={closed || action !== null} onChange={(value) => updateField("disease", value)} />
+          <ClinicalTextarea label="Doctor instructions" value={form.doctor_instructions ?? ""} disabled={closed || action !== null} required wide onChange={(value) => updateField("doctor_instructions", value)} />
+          <ClinicalTextarea label="Notes" value={form.notes ?? ""} disabled={closed || action !== null} wide onChange={(value) => updateField("notes", value)} />
+          <label className="block">
+            <span className="text-sm font-semibold text-[#41546b]">Priority</span>
+            <select
+              value={form.priority}
+              disabled={closed || action !== null}
+              onChange={(event) => updateField("priority", event.target.value as VisitPriority)}
+              className="mt-2 h-11 w-full rounded-lg border border-[#cbd8e2] bg-white px-3 text-sm outline-none focus:border-[#00758d] disabled:bg-[#eef3f7]"
+            >
+              <option value="low">Low</option>
+              <option value="normal">Normal</option>
+              <option value="high">High</option>
+              <option value="urgent">Urgent</option>
+            </select>
+          </label>
         </div>
+
+        {!closed ? (
+          <div className="mt-6 flex flex-wrap items-center justify-end gap-3 border-t border-[#e1e9ef] pt-5">
+            {visit.status === "queued" ? (
+              <button type="button" onClick={handleStartVisit} disabled={action !== null} className="inline-flex h-10 items-center justify-center rounded-lg border border-[#006d86] bg-white px-4 text-sm font-semibold text-[#006d86] disabled:cursor-not-allowed disabled:opacity-60">
+                {action === "starting" ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Stethoscope className="mr-2 h-4 w-4" />}
+                Start Visit
+              </button>
+            ) : null}
+            <button type="button" onClick={handleSaveProgress} disabled={action !== null} className="inline-flex h-10 items-center justify-center rounded-lg border border-[#cbd8e2] bg-white px-4 text-sm font-semibold text-[#24364b] disabled:cursor-not-allowed disabled:opacity-60">
+              {action === "saving" ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+              Save Progress
+            </button>
+            <button type="button" onClick={handleCompleteVisit} disabled={action !== null} className="inline-flex h-10 items-center justify-center rounded-lg bg-[#006d86] px-4 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60">
+              {action === "completing" ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CheckCircle2 className="mr-2 h-4 w-4" />}
+              Complete Visit
+            </button>
+          </div>
+        ) : null}
       </DataPanel>
     </div>
   );
@@ -1082,13 +1191,88 @@ function InfoItem({ label, value }: { label: string; value?: string | null }) {
   );
 }
 
-function InfoBlock({ label, value, wide }: { label: string; value?: string | null; wide?: boolean }) {
+function ClinicalTextarea({
+  label,
+  value,
+  disabled,
+  required,
+  wide,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  disabled: boolean;
+  required?: boolean;
+  wide?: boolean;
+  onChange: (value: string) => void;
+}) {
   return (
-    <div className={cn("rounded-lg border border-[#e1e9ef] bg-[#f8fbfd] p-4", wide && "lg:col-span-2")}>
-      <p className="text-xs font-semibold uppercase tracking-wide text-[#607084]">{label}</p>
-      <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-[#17212f]">{value || "Not recorded"}</p>
-    </div>
+    <label className={cn("block", wide && "lg:col-span-2")}>
+      <span className="text-sm font-semibold text-[#41546b]">
+        {label}
+        {required ? <span className="text-[#b42318]"> *</span> : null}
+      </span>
+      <textarea
+        value={value}
+        disabled={disabled}
+        onChange={(event) => onChange(event.target.value)}
+        className="mt-2 min-h-[128px] w-full resize-y rounded-lg border border-[#cbd8e2] bg-white p-3 text-sm leading-6 outline-none focus:border-[#00758d] disabled:bg-[#eef3f7]"
+      />
+    </label>
   );
+}
+
+function ClinicalInput({
+  label,
+  value,
+  disabled,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  disabled: boolean;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <label className="block">
+      <span className="text-sm font-semibold text-[#41546b]">{label}</span>
+      <input
+        value={value}
+        disabled={disabled}
+        onChange={(event) => onChange(event.target.value)}
+        className="mt-2 h-11 w-full rounded-lg border border-[#cbd8e2] bg-white px-3 text-sm outline-none focus:border-[#00758d] disabled:bg-[#eef3f7]"
+      />
+    </label>
+  );
+}
+
+function visitToFormState(visit: DoctorVisit): VisitFormState {
+  return {
+    chief_complaint: visit.chief_complaint,
+    symptoms: visit.symptoms,
+    diagnosis: visit.diagnosis,
+    disease: visit.disease,
+    doctor_instructions: visit.doctor_instructions,
+    notes: visit.notes,
+    priority: visit.priority,
+  };
+}
+
+function nullableText(value: string | null) {
+  const trimmed = value?.trim() ?? "";
+  return trimmed.length > 0 ? trimmed : null;
+}
+
+function formPayload(form: VisitFormState) {
+  return {
+    chief_complaint: nullableText(form.chief_complaint),
+    symptoms: nullableText(form.symptoms),
+    diagnosis: nullableText(form.diagnosis),
+    disease: nullableText(form.disease),
+    doctor_instructions: nullableText(form.doctor_instructions),
+    notes: nullableText(form.notes),
+    priority: form.priority,
+  };
 }
 
 function patientIdentifier(patient: Pick<PatientRow, "mrn" | "student_id"> | null) {
