@@ -16,10 +16,23 @@ type RowLink = {
   label: string;
 };
 
-export function DataTable({ rows, rowLink }: { rows: ModuleRecord[]; rowLink?: RowLink }) {
-  const columns: ColumnDef<ModuleRecord>[] = Object.keys(rows[0] ?? { Empty: "No records" }).map((key) => ({
+export function DataTable({
+  rows,
+  rowLink,
+  hiddenColumns = [],
+  columnLabels = {},
+}: {
+  rows: ModuleRecord[];
+  rowLink?: RowLink;
+  hiddenColumns?: string[];
+  columnLabels?: Record<string, string>;
+}) {
+  const hidden = new Set(hiddenColumns);
+  const columns: ColumnDef<ModuleRecord>[] = Object.keys(rows[0] ?? { Empty: "No records" })
+    .filter((key) => !hidden.has(key))
+    .map((key) => ({
     accessorKey: key,
-    header: key,
+    header: columnLabels[key] ?? key,
     cell: ({ getValue }) => {
       const value = getValue<unknown>();
       const lower = String(value).toLowerCase();

@@ -45,6 +45,8 @@ export type WorkspaceConfig = {
     idField?: string;
     label: string;
   };
+  hiddenColumns?: string[];
+  columnLabels?: Record<string, string>;
   actionLabel: string;
   action: WorkspaceAction;
   fields: WorkspaceField[];
@@ -138,7 +140,7 @@ export function getWorkspaceConfig(role: UserRole, segments?: string[]): Workspa
   if (first === "dashboard") return base;
 
   const overrides: Record<string, WorkspaceConfig> = {
-    "admin/employees": { ...base, title: "Employees", table: "employees", select: employeeSelect(), detailSelect: employeeSelect(), orderBy: "created_at", mode: "list", rowLink: { hrefBase: "/admin/employees", idField: "id", label: "Open" }, actionLabel: "Create Employee", action: { kind: "function", name: "create-employee", success: "Employee account created" }, fields: employeeFields(), dashboard: false },
+    "admin/employees": { ...base, title: "Employees", table: "employees", select: employeeSelect(), detailSelect: employeeSelect(), orderBy: "created_at", mode: "list", rowLink: { hrefBase: "/admin/employees", idField: "id", label: "Open" }, hiddenColumns: ["id", "profile_id", "department_id"], columnLabels: employeeColumnLabels(), actionLabel: "Create Employee", action: { kind: "function", name: "create-employee", success: "Employee account created" }, fields: employeeFields(), dashboard: false },
     "admin/employees/new": { ...base, title: "Add Employee", table: "employees", select: employeeSelect(), detailSelect: employeeSelect(), mode: "create", actionLabel: "Create Employee", action: { kind: "function", name: "create-employee", success: "Employee account created" }, fields: employeeFields(), dashboard: false },
     "admin/departments": { ...base, title: "Departments", table: "departments", select: `id,name,description,status,created_at`, actionLabel: "Add Department", action: { kind: "insert", table: "departments", success: "Department added" }, fields: departmentFields(), dashboard: false },
     "admin/patients": { ...base, title: "Patients", table: "patients", select: "id,full_name,student_id,mrn,gender,birth_date,phone,status,created_at", actionLabel: "Register Patient", action: { kind: "function", name: "create-patient", success: "Patient registered" }, fields: patientFields(), dashboard: false },
@@ -227,6 +229,22 @@ export function getWorkspaceConfig(role: UserRole, segments?: string[]): Workspa
 
 function employeeSelect() {
   return "id,profile_id,department_id,job_title,employee_code,hire_date,status,created_at,profiles(full_name,email,phone,role,status),departments(name)";
+}
+
+function employeeColumnLabels() {
+  return {
+    full_name: "Full name",
+    email: "Email",
+    phone: "Phone",
+    role: "Role",
+    account_status: "Account status",
+    department: "Department",
+    job_title: "Job title",
+    employee_code: "Employee code",
+    hire_date: "Hire date",
+    employee_status: "Employee status",
+    created_at: "Created at",
+  };
 }
 
 function employeeFields(): WorkspaceField[] {

@@ -264,7 +264,16 @@ export function WorkspaceClient({ config }: { config: WorkspaceConfig }) {
           </CardHeader>
           <CardContent className="min-w-0">
             <DataToolbar search={search} setSearch={setSearch} quickFilter={quickFilter} setQuickFilter={setQuickFilter} />
-            {loading ? <LoadingState /> : <DataTable rows={visibleRows(rows, search, quickFilter).length ? visibleRows(rows, search, quickFilter) : [{ state: "No records visible for this role" }]} rowLink={config.rowLink} />}
+            {loading ? (
+              <LoadingState />
+            ) : (
+              <DataTable
+                rows={visibleRows(rows, search, quickFilter).length ? visibleRows(rows, search, quickFilter) : [{ state: "No records visible for this role" }]}
+                rowLink={config.rowLink}
+                hiddenColumns={config.hiddenColumns}
+                columnLabels={config.columnLabels}
+              />
+            )}
           </CardContent>
         </Card>
 
@@ -1122,9 +1131,9 @@ function flattenEmployee(row: Record<string, unknown>) {
   const department = relationObject(row.departments);
 
   return {
-    id: row.id,
     full_name: profile.full_name ?? "Not set",
     email: profile.email ?? "Not set",
+    phone: profile.phone ?? "Not set",
     role: profile.role ?? "Not set",
     account_status: profile.status ?? "Not set",
     department: department.name ?? "Not set",
@@ -1133,6 +1142,7 @@ function flattenEmployee(row: Record<string, unknown>) {
     hire_date: row.hire_date ?? "Not set",
     employee_status: row.status ?? "Not set",
     created_at: row.created_at,
+    id: row.id,
   };
 }
 
