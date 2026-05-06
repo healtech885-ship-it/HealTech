@@ -238,7 +238,7 @@ export function WorkspaceClient({ config }: { config: WorkspaceConfig }) {
 
     setSaving(false);
     if (result.error) {
-      setError(result.error.message ?? String(result.error));
+      setError(await getSupabaseErrorMessage(result.error));
       return;
     }
 
@@ -1779,6 +1779,51 @@ function extractCreateEmployeeSuccess(value: unknown): CreateEmployeeSuccess | n
   if (!employeeId || !profileId || !temporaryPassword) return null;
 
   return { employeeId, profileId, temporaryPassword };
+}
+
+async function getSupabaseErrorMessage(error: unknown) {
+  if (!error || typeof error !== "object") return String(error);
+
+  const response = "context" in error ? (error as { context?: unknown }).context : null;
+  if (response instanceof Response) {
+    const message = await readFunctionErrorResponse(response);
+    if (message) return message;
+  }
+
+  if ("message" in error && typeof (error as { message?: unknown }).message === "string") {
+    return (error as { message: string }).message;
+  }
+
+  return String(error);
+}
+
+async function readFunctionErrorResponse(response: Response) {
+  try {
+    const contentType = response.headers.get("content-type") ?? "";
+    if (contentType.includes("application/json")) {
+      const payload = await response.clone().json();
+      const message = extractErrorMessage(payload);
+      if (message) return message;
+    }
+
+    const text = await response.clone().text();
+    return text.trim() || null;
+  } catch {
+    return null;
+  }
+}
+
+function extractErrorMessage(value: unknown): string | null {
+  if (!value || typeof value !== "object") return null;
+
+  const record = value as Record<string, unknown>;
+  if (typeof record.error === "string") return record.error;
+  if (typeof record.message === "string") return record.message;
+
+  const nested = record.data;
+  if (nested && typeof nested === "object") return extractErrorMessage(nested);
+
+  return null;
 }
 
 function unwrapFunctionData(value: unknown): Record<string, unknown> | null {
