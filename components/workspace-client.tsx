@@ -48,6 +48,18 @@ type CreateEmployeeSuccess = {
   profileId: string;
   temporaryPassword: string;
 };
+type ClinicSettingsValues = {
+  clinic_name: string;
+  clinic_phone: string;
+  clinic_email: string;
+  clinic_address: string;
+  working_hours_start: string;
+  working_hours_end: string;
+  default_appointment_duration_minutes: number;
+  allow_patient_appointment_requests: boolean;
+  emergency_contact_number: string;
+  lab_results_visibility_mode: string;
+};
 type QueryBuilder = Promise<QueryResult> & {
   limit: (count: number) => QueryBuilder;
   order: (column: string, options?: { ascending?: boolean }) => QueryBuilder;
@@ -101,12 +113,14 @@ export function WorkspaceClient({ config }: { config: WorkspaceConfig }) {
 
     const client = supabase as unknown as SupabaseLike;
     const recordMode = Boolean(config.recordId && (config.mode === "details" || config.mode === "edit"));
+    const settingsMode = config.mode === "settings";
     let query = client.from(config.table).select(recordMode ? config.detailSelect ?? config.select : config.select).limit(recordMode ? 1 : 50);
     if (recordMode && config.recordId) {
       query = query.eq(config.recordIdField ?? "id", config.recordId);
     } else {
       for (const filter of config.filters ?? []) query = applyFilter(query, filter);
-      if (config.orderBy) query = query.order(config.orderBy, { ascending: false });
+      if (settingsMode) query = query.limit(1);
+      else if (config.orderBy) query = query.order(config.orderBy, { ascending: false });
     }
 
     const fieldReferenceKeys = uniqueReferenceKeys(config.fields);
@@ -127,13 +141,16 @@ export function WorkspaceClient({ config }: { config: WorkspaceConfig }) {
 
     if (tableError) setError(tableError.message);
     const rawRows = asArray(data);
-    const rawRecord = recordMode ? rawRows[0] as Record<string, unknown> | undefined : null;
+    const rawRecord = recordMode || settingsMode ? rawRows[0] as Record<string, unknown> | undefined : undefined;
     setRecord(rawRecord ?? null);
     setRows(normalizeRows(rawRows, config));
     setReferenceRows(normalizeRows(asArray(refs)));
     setReferences(Object.fromEntries(referenceResults));
     if (recordMode && config.mode === "edit" && rawRecord) {
       form.reset(employeeFormDefaults(rawRecord));
+    }
+    if (settingsMode) {
+      form.reset(clinicSettingsFormDefaults(rawRecord));
     }
     if (countersResult?.data && typeof countersResult.data === "object") setCounters(countersResult.data as Record<string, unknown>);
     setLoading(false);
@@ -213,6 +230,22 @@ export function WorkspaceClient({ config }: { config: WorkspaceConfig }) {
 
   const isAdminDashboard = config.dashboard && config.title === "Administration Dashboard";
   const isEmployeeRecordMode = config.table === "employees" && Boolean(config.recordId) && (config.mode === "details" || config.mode === "edit");
+
+  if (config.mode === "settings") {
+    return (
+      <ClinicSettingsView
+        loading={loading}
+        record={record}
+        config={config}
+        form={form}
+        watchedValues={watchedValues}
+        saving={saving}
+        error={error}
+        message={message}
+        onSubmit={onSubmit}
+      />
+    );
+  }
 
   if (isEmployeeRecordMode && config.mode === "details") {
     return <EmployeeDetailsView loading={loading} record={record} error={error} />;
@@ -330,6 +363,83 @@ export function WorkspaceClient({ config }: { config: WorkspaceConfig }) {
             </CardContent>
           </Card>
         </div>
+      </section>
+    </div>
+  );
+}
+
+function ClinicSettingsView({
+  loading,
+  record,
+  config,
+  form,
+  watchedValues,
+  saving,
+  error,
+  message,
+  onSubmit,
+}: {
+  loading: boolean;
+  record: Record<string, unknown> | null;
+  config: WorkspaceConfig;
+  form: ReturnType<typeof useForm<FormValues>>;
+  watchedValues: FormValues;
+  saving: boolean;
+  error: string | null;
+  message: string | null;
+  onSubmit: (values: FormValues) => Promise<void>;
+}) {
+  if (loading) return <LoadingState />;
+
+  const lastUpdated = clinicSettingsLastUpdated(record);
+
+  return (
+    <div className="min-w-0 space-y-6">
+      <div>
+        <h1 className="text-[30px] font-semibold leading-10 tracking-normal text-[#080d10]">Clinic Settings</h1>
+        <p className="text-[17px] leading-7 text-[#3d4950]">Manage general clinic configuration used across scheduling, portal, and emergency workflows.</p>
+      </div>
+
+      <section className="grid min-w-0 gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
+        <Card className="min-w-0 overflow-hidden">
+          <CardHeader>
+            <CardTitle>General Configuration</CardTitle>
+            <CardDescription>Settings are saved to `clinic_settings` with key `general`.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form className="space-y-4" onSubmit={form.handleSubmit(onSubmit)}>
+              {config.fields.map((field) => (
+                <FieldControl
+                  key={field.name}
+                  field={field}
+                  register={form.register}
+                  setValue={form.setValue}
+                  value={watchedValues?.[field.name]}
+                  error={form.formState.errors[field.name]?.message?.toString()}
+                  references={{}}
+                />
+              ))}
+              {error ? <Notice tone="danger" text={error} /> : null}
+              {message ? <Notice tone="success" text={message} /> : null}
+              <Button type="submit" className="w-full sm:w-auto" disabled={saving}>
+                {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                {config.actionLabel}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+
+        <Card className="min-w-0 overflow-hidden">
+          <CardHeader>
+            <CardTitle>Last Updated</CardTitle>
+            <CardDescription>Current persisted settings metadata.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3 text-sm">
+            <ReadOnlyLine label="Settings key" value="general" />
+            <ReadOnlyLine label="Updated at" value={lastUpdated.updatedAt} />
+            <ReadOnlyLine label="Updated by" value={lastUpdated.updatedBy} />
+          </CardContent>
+        </Card>
       </section>
     </div>
   );
@@ -1181,6 +1291,41 @@ function employeeFormDefaults(row: Record<string, unknown>): FormValues {
     hire_date: row.hire_date ?? "",
     employee_status: row.status ?? "active",
   };
+}
+
+function clinicSettingsFormDefaults(row?: Record<string, unknown>): FormValues {
+  const value = row && typeof row.value === "object" && row.value !== null && !Array.isArray(row.value)
+    ? row.value as Partial<ClinicSettingsValues>
+    : {};
+
+  return {
+    clinic_name: stringSetting(value.clinic_name, "HealTech Clinic"),
+    clinic_phone: stringSetting(value.clinic_phone),
+    clinic_email: stringSetting(value.clinic_email),
+    clinic_address: stringSetting(value.clinic_address),
+    working_hours_start: stringSetting(value.working_hours_start, "08:00"),
+    working_hours_end: stringSetting(value.working_hours_end, "17:00"),
+    default_appointment_duration_minutes: Number(value.default_appointment_duration_minutes ?? 30),
+    allow_patient_appointment_requests: Boolean(value.allow_patient_appointment_requests ?? true),
+    emergency_contact_number: stringSetting(value.emergency_contact_number),
+    lab_results_visibility_mode: stringSetting(value.lab_results_visibility_mode, "doctor_approved_only"),
+  };
+}
+
+function clinicSettingsLastUpdated(row: Record<string, unknown> | null) {
+  const updatedBy = relationObject(row?.profiles);
+  const updatedByLabel = updatedBy.full_name
+    ? `${updatedBy.full_name}${updatedBy.email ? ` / ${updatedBy.email}` : ""}`
+    : row?.updated_by;
+
+  return {
+    updatedAt: formatDateTime(row?.updated_at),
+    updatedBy: updatedByLabel ?? "Not set",
+  };
+}
+
+function stringSetting(value: unknown, fallback = "") {
+  return typeof value === "string" ? value : fallback;
 }
 
 function relationObject(value: unknown): Record<string, unknown> {

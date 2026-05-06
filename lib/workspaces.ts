@@ -1,6 +1,6 @@
 import type { UserRole } from "@/types/app.types";
 
-export type FieldType = "text" | "email" | "password" | "number" | "date" | "textarea" | "select" | "checkbox";
+export type FieldType = "text" | "email" | "password" | "number" | "date" | "time" | "textarea" | "select" | "checkbox";
 export type ReferenceKey = "patients" | "doctors" | "profiles" | "employees" | "departments" | "visits" | "labOrders" | "labTests" | "labOrderItems" | "medicineNames" | "medicineOrderItems" | "storeItems";
 export type WorkspaceFilterOperator = "eq" | "lte" | "lt";
 
@@ -27,7 +27,7 @@ export type WorkspaceAction =
   | { kind: "update"; table: string; idField: string; success: string }
   | { kind: "function"; name: string; success: string };
 
-export type WorkspaceMode = "list" | "create" | "details" | "edit";
+export type WorkspaceMode = "list" | "create" | "details" | "edit" | "settings";
 
 export type WorkspaceConfig = {
   title: string;
@@ -151,7 +151,7 @@ export function getWorkspaceConfig(role: UserRole, segments?: string[]): Workspa
     "admin/store/requests": { ...base, title: "Store Requests", table: "store_requests", select: "id,requested_by,store_item_id,quantity,reason,status,reviewed_by,reviewed_at,admin_comment,created_at", actionLabel: "Create Store Request", action: { kind: "function", name: "create-store-request", success: "Store request created" }, fields: storeRequestFields(), dashboard: false },
     "admin/reports": { ...base, title: "Reports", table: "audit_logs", select: "id,actor_id,action,entity_type,entity_id,metadata,created_at", actionLabel: "Reports are read-only", action: { kind: "none" }, fields: [], dashboard: false, readonly: true },
     "admin/audit-logs": { ...base, title: "Audit Logs", table: "audit_logs", select: "id,actor_id,action,entity_type,entity_id,metadata,created_at", actionLabel: "Audit logs are read-only", action: { kind: "none" }, fields: [], dashboard: false, readonly: true },
-    "admin/settings": { ...base, title: "Settings", table: "departments", select: "id,name,description,status,created_at", actionLabel: "Add Department", action: { kind: "insert", table: "departments", success: "Setting saved" }, fields: departmentFields(), dashboard: false },
+    "admin/settings": { ...base, title: "Clinic Settings", table: "clinic_settings", select: "key,value,updated_by,updated_at,profiles(full_name,email)", mode: "settings", actionLabel: "Save Settings", action: { kind: "function", name: "update-clinic-settings", success: "Clinic settings saved" }, fields: clinicSettingsFields(), filters: [{ column: "key", operator: "eq", value: "general" }], dashboard: false },
 
     "reception/patients": { ...defaultByRole.reception, title: "Patient Search and Registration", table: "patients", select: "id,full_name,student_id,mrn,gender,birth_date,phone,status,created_at", actionLabel: "Register Patient", action: { kind: "function", name: "create-patient", success: "Patient registered" }, fields: patientFields(), dashboard: false },
     "reception/patients/new": { ...defaultByRole.reception, title: "New Patient", table: "patients", select: "id,full_name,student_id,mrn,gender,birth_date,phone,status,created_at", actionLabel: "Register Patient", action: { kind: "function", name: "create-patient", success: "Patient registered" }, fields: patientFields(), dashboard: false },
@@ -271,6 +271,21 @@ function employeeEditFields(): WorkspaceField[] {
     { name: "employee_code", label: "Employee code" },
     { name: "hire_date", label: "Hire date", type: "date" },
     { name: "employee_status", label: "Employee status", type: "select", required: true, options: ["active", "inactive", "on_leave", "terminated"] },
+  ];
+}
+
+function clinicSettingsFields(): WorkspaceField[] {
+  return [
+    { name: "clinic_name", label: "Clinic name", required: true },
+    { name: "clinic_phone", label: "Clinic phone" },
+    { name: "clinic_email", label: "Clinic email", type: "email" },
+    { name: "clinic_address", label: "Clinic address", type: "textarea" },
+    { name: "working_hours_start", label: "Working hours start", type: "time", required: true },
+    { name: "working_hours_end", label: "Working hours end", type: "time", required: true },
+    { name: "default_appointment_duration_minutes", label: "Default appointment duration in minutes", type: "number", required: true },
+    { name: "allow_patient_appointment_requests", label: "Allow patient appointment requests", type: "checkbox" },
+    { name: "emergency_contact_number", label: "Emergency contact number" },
+    { name: "lab_results_visibility_mode", label: "Patient portal lab results visibility mode", type: "select", required: true, options: ["doctor_approved_only", "lab_submitted_visible", "admin_controlled"] },
   ];
 }
 
