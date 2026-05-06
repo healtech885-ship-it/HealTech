@@ -73,8 +73,10 @@ const defaultByRole: Record<UserRole, WorkspaceConfig> = {
     eyebrow: "Front desk workflow",
     description: "Register patients, search records, create visits, and manage the waiting queue.",
     table: "visits",
-    select: "id,visit_code,patient_id,doctor_id,status,priority,chief_complaint,created_at",
+    select: receptionVisitSelect(),
     orderBy: "created_at",
+    hiddenColumns: ["id", "patient_id", "doctor_id"],
+    columnLabels: receptionVisitColumnLabels(),
     actionLabel: "Create Visit",
     action: { kind: "function", name: "create-visit", success: "Visit created and assigned" },
     fields: visitFields(),
@@ -260,6 +262,25 @@ function employeeColumnLabels() {
     employee_code: "Employee code",
     hire_date: "Hire date",
     employee_status: "Employee status",
+    created_at: "Created at",
+  };
+}
+
+function receptionVisitSelect() {
+  return "id,visit_code,patient_id,doctor_id,status,priority,chief_complaint,created_at,patients(full_name,mrn,student_id,phone),doctor:profiles!visits_doctor_id_fkey(full_name,email)";
+}
+
+function receptionVisitColumnLabels() {
+  return {
+    visit_code: "Visit code",
+    patient_name: "Patient name",
+    mrn: "MRN",
+    student_id: "Student ID",
+    patient_phone: "Patient phone",
+    doctor_name: "Doctor name",
+    status: "Status",
+    priority: "Priority",
+    chief_complaint: "Chief complaint",
     created_at: "Created at",
   };
 }

@@ -1390,6 +1390,7 @@ function normalizeRows(rows: unknown[], config?: WorkspaceConfig): ModuleRecord[
   return rows.map((row) => {
     const record = row as Record<string, unknown>;
     if (config?.table === "employees") return flattenEmployee(record);
+    if (config?.table === "visits" && config.columnLabels?.patient_name) return flattenReceptionVisit(record);
     if (config?.table === "store_items") return flattenStoreItem(record);
     if (config?.table === "store_item_batches") return flattenStoreItemBatch(record);
     if (config?.table === "store_requests") return flattenStoreRequest(record);
@@ -1427,6 +1428,27 @@ function flattenEmployee(row: Record<string, unknown>) {
     employee_status: row.status ?? "Not set",
     created_at: row.created_at,
     id: row.id,
+  };
+}
+
+function flattenReceptionVisit(row: Record<string, unknown>) {
+  const patient = relationObject(row.patients);
+  const doctor = relationObject(row.doctor);
+
+  return {
+    visit_code: row.visit_code ?? "Not set",
+    patient_name: patient.full_name ?? "Not set",
+    mrn: patient.mrn ?? "Not set",
+    student_id: patient.student_id ?? "Not set",
+    patient_phone: patient.phone ?? "Not set",
+    doctor_name: doctor.full_name ?? "Not set",
+    status: row.status ?? "Not set",
+    priority: row.priority ?? "Not set",
+    chief_complaint: row.chief_complaint ?? "Not set",
+    created_at: row.created_at,
+    id: row.id,
+    patient_id: row.patient_id,
+    doctor_id: row.doctor_id,
   };
 }
 
