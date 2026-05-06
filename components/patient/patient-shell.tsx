@@ -92,6 +92,7 @@ type LabResultRecord = {
   visit_id: string;
   patient_id: string;
   doctor_id: string;
+  lab_test_id: string;
   result_value: string | null;
   result_notes: string | null;
   status: string;
@@ -105,6 +106,7 @@ type LabResultRecord = {
     code: string | null;
     unit: string | null;
     normal_range: string | null;
+    description: string | null;
   } | null;
   visits: {
     id: string;
@@ -112,6 +114,8 @@ type LabResultRecord = {
     chief_complaint: string | null;
     status: string;
     priority: string;
+    created_at: string;
+    completed_at: string | null;
   } | null;
   doctor: DoctorSummary | null;
 };
@@ -219,7 +223,7 @@ const visitSelect =
 const appointmentRequestSelect =
   "id,patient_id,requested_department_id,preferred_date,reason,status,admin_comment,reviewed_at,created_at,updated_at,requested_department:departments!appointment_requests_requested_department_id_fkey(name),reviewer:profiles!appointment_requests_reviewed_by_fkey(full_name,email)";
 const labResultSelect =
-  "id,visit_id,patient_id,doctor_id,result_value,result_notes,status,entered_at,reviewed_at,visible_to_patient,created_at,updated_at,lab_tests(name,code,unit,normal_range),visits(id,visit_code,chief_complaint,status,priority),doctor:profiles!lab_results_doctor_id_fkey(full_name,email)";
+  "id,visit_id,patient_id,doctor_id,lab_test_id,result_value,result_notes,status,entered_at,reviewed_at,visible_to_patient,created_at,updated_at,lab_tests(name,code,unit,normal_range,description),visits(id,visit_code,chief_complaint,status,priority,created_at,completed_at),doctor:profiles!lab_results_doctor_id_fkey(full_name,email)";
 const prescriptionSelect =
   "id,visit_id,patient_id,doctor_id,status,doctor_notes,created_at,completed_at,visits(id,visit_code,chief_complaint,status,priority),doctor:profiles!prescriptions_doctor_id_fkey(full_name,email),prescription_items(id,prescription_id,medicine_id,requested_quantity,dispensed_quantity,dosage_instructions,status,dispensed_at,medicines(id,name,category,description,status))";
 
@@ -523,6 +527,9 @@ function PatientVisitsPage({ supabase, patient }: { supabase: PatientPortalClien
 
 function PatientLabResultsPage({ supabase, patient }: { supabase: PatientPortalClient; patient: PatientRecord }) {
   const [state, setState] = useState<QueryState<LabResultRecord[]>>({ loading: true, data: [], error: null });
+  const [query, setQuery] = useState("");
+  const [filter, setFilter] = useState<"all" | "reviewed" | "recent">("all");
+  const [selectedResultId, setSelectedResultId] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -549,15 +556,51 @@ function PatientLabResultsPage({ supabase, patient }: { supabase: PatientPortalC
     };
   }, [patient.id, supabase]);
 
+  const filteredResults = useMemo(() => filterLabResults(state.data, query, filter), [filter, query, state.data]);
+  const selectedResult = filteredResults.find((result) => result.id === selectedResultId) ?? null;
+
   return (
     <PageFrame>
-      <PageHeader title="Lab Results" description="Lab results approved for patient visibility." />
+      <PageHeader title="Lab Results" description="Approved lab results released to your patient portal." />
       <DataCard title="Visible Lab Results">
+        <div className="mb-5 grid gap-3 lg:grid-cols-[1fr_auto]">
+          <SearchField value={query} onChange={setQuery} placeholder="Search by test name, visit code, result, or status" />
+          <div className="flex flex-wrap gap-2">
+            {[
+              ["all", "All visible"],
+              ["reviewed", "Reviewed"],
+              ["recent", "Recent"],
+            ].map(([value, label]) => (
+              <button
+                key={value}
+                onClick={() => setFilter(value as "all" | "reviewed" | "recent")}
+                className={cn(
+                  "h-10 rounded-lg border border-[#cbd8e2] px-4 text-sm font-semibold text-[#41546b]",
+                  filter === value && "border-[#00758d] bg-[#e3f7fa] text-[#006d86]",
+                )}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
         {state.loading ? <LoadingState label="Loading lab results" /> : null}
         {state.error ? <ErrorState message={state.error} /> : null}
-        {!state.loading && !state.error && state.data.length === 0 ? <EmptyState title="No visible lab results" description="Approved lab results will appear here when available." /> : null}
-        {!state.loading && !state.error && state.data.length > 0 ? <LabResultList results={state.data} /> : null}
+        {!state.loading && !state.error && state.data.length === 0 ? (
+          <EmptyState title="No visible lab results" description="Approved lab results will appear here after your doctor releases them to the patient portal." />
+        ) : null}
+        {!state.loading && !state.error && state.data.length > 0 && filteredResults.length === 0 ? (
+          <EmptyState title="No matching lab results" description="Try a different test name, visit code, result value, or status filter." />
+        ) : null}
+        {!state.loading && !state.error && filteredResults.length > 0 ? (
+          <LabResultList
+            results={filteredResults}
+            selectedResultId={selectedResultId}
+            onSelect={(result) => setSelectedResultId((current) => (current === result.id ? null : result.id))}
+          />
+        ) : null}
       </DataCard>
+      {selectedResult ? <LabResultDetail result={selectedResult} onClose={() => setSelectedResultId(null)} /> : null}
     </PageFrame>
   );
 }
@@ -712,24 +755,83 @@ function VisitList({ visits, compact = false }: { visits: VisitRecord[]; compact
   );
 }
 
-function LabResultList({ results }: { results: LabResultRecord[] }) {
+function LabResultList({
+  results,
+  selectedResultId,
+  onSelect,
+}: {
+  results: LabResultRecord[];
+  selectedResultId: string | null;
+  onSelect: (result: LabResultRecord) => void;
+}) {
   return (
-    <div className="divide-y divide-[#dce6ee]">
+    <div className="grid gap-4">
       {results.map((result) => (
-        <div key={result.id} className="grid gap-4 py-4 lg:grid-cols-[1.2fr_1fr_1fr_auto]">
+        <button
+          key={result.id}
+          onClick={() => onSelect(result)}
+          className={cn(
+            "grid gap-4 rounded-lg border border-[#d4e0e8] bg-white p-4 text-left transition hover:border-[#00758d] hover:bg-[#f8fbfd] lg:grid-cols-[1.2fr_1fr_1fr_auto]",
+            selectedResultId === result.id && "border-[#00758d] bg-[#eefaff]",
+          )}
+        >
           <div>
             <p className="font-semibold">{result.lab_tests?.name ?? "Lab result"}</p>
-            <p className="mt-1 text-sm text-[#607084]">{result.visits?.visit_code ?? result.visit_id}</p>
+            <p className="mt-1 text-sm text-[#607084]">
+              {[result.lab_tests?.code, result.visits?.visit_code ?? result.visit_id].filter(Boolean).join(" / ")}
+            </p>
           </div>
-          <InfoBlock label="Result" value={result.result_value ?? "Result not entered"} helper={result.lab_tests?.unit ?? result.lab_tests?.normal_range ?? undefined} />
-          <InfoBlock label="Doctor" value={result.doctor?.full_name ?? result.doctor_id} />
+          <InfoBlock label="Result" value={formatResultValue(result)} helper={result.lab_tests?.normal_range ? `Normal range: ${result.lab_tests.normal_range}` : undefined} />
+          <InfoBlock label="Doctor" value={result.doctor?.full_name ?? result.doctor_id} helper={result.visits?.chief_complaint ?? undefined} />
           <div>
             <Badge tone={badgeTone(result.status)}>{formatLabel(result.status)}</Badge>
-            <p className="mt-2 text-sm text-[#607084]">{formatDateTime(result.updated_at)}</p>
+            <p className="mt-2 text-sm text-[#607084]">{result.reviewed_at ? `Reviewed ${formatDateTime(result.reviewed_at)}` : "Not reviewed"}</p>
           </div>
-        </div>
+        </button>
       ))}
     </div>
+  );
+}
+
+function LabResultDetail({ result, onClose }: { result: LabResultRecord; onClose: () => void }) {
+  return (
+    <DataCard title="Lab Result Details">
+      <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h2 className="text-xl font-semibold">{result.lab_tests?.name ?? "Lab result"}</h2>
+          <p className="mt-1 text-sm text-[#607084]">{result.lab_tests?.description ?? "Detailed result context released to your patient portal."}</p>
+        </div>
+        <button onClick={onClose} className="h-10 rounded-lg border border-[#cbd8e2] px-4 text-sm font-semibold text-[#41546b]">
+          Close Details
+        </button>
+      </div>
+
+      <div className="grid gap-5 lg:grid-cols-3">
+        <InfoBlock label="Test Name" value={result.lab_tests?.name ?? "Lab result"} />
+        <InfoBlock label="Test Code" value={result.lab_tests?.code ?? "Not assigned"} />
+        <InfoBlock label="Status" value={formatLabel(result.status)} />
+        <InfoBlock label="Result Value" value={result.result_value ?? "Result not entered"} />
+        <InfoBlock label="Unit" value={result.lab_tests?.unit ?? "Not specified"} />
+        <InfoBlock label="Normal Range" value={result.lab_tests?.normal_range ?? "Not specified"} />
+        <InfoBlock label="Visible To Patient" value={result.visible_to_patient ? "Yes" : "No"} />
+        <InfoBlock label="Entered" value={result.entered_at ? formatDateTime(result.entered_at) : "Not entered"} />
+        <InfoBlock label="Reviewed" value={result.reviewed_at ? formatDateTime(result.reviewed_at) : "Not reviewed"} />
+        <InfoBlock label="Visit Code" value={result.visits?.visit_code ?? result.visit_id} />
+        <InfoBlock label="Visit Status" value={result.visits?.status ? formatLabel(result.visits.status) : "Not available"} />
+        <InfoBlock label="Visit Priority" value={result.visits?.priority ? formatLabel(result.visits.priority) : "Not available"} />
+        <InfoBlock label="Chief Complaint" value={result.visits?.chief_complaint ?? "No chief complaint recorded"} />
+        <InfoBlock label="Doctor" value={result.doctor?.full_name ?? result.doctor_id} helper={result.doctor?.email ?? undefined} />
+        <InfoBlock label="Created" value={formatDateTime(result.created_at)} />
+        <InfoBlock label="Updated" value={formatDateTime(result.updated_at)} />
+        <InfoBlock label="Visit Created" value={result.visits?.created_at ? formatDateTime(result.visits.created_at) : "Not available"} />
+        <InfoBlock label="Visit Completed" value={result.visits?.completed_at ? formatDateTime(result.visits.completed_at) : "Not completed"} />
+      </div>
+
+      <div className="mt-5 rounded-lg border border-[#d4e0e8] bg-[#f8fbfd] p-4">
+        <p className="text-xs font-semibold uppercase tracking-wide text-[#607084]">Result Notes</p>
+        <p className="mt-2 text-sm text-[#2d4058]">{result.result_notes ?? "No result notes were released with this lab result."}</p>
+      </div>
+    </DataCard>
   );
 }
 
@@ -862,6 +964,20 @@ function InfoGrid({ rows }: { rows: Array<[string, string]> }) {
   );
 }
 
+function SearchField({ value, onChange, placeholder }: { value: string; onChange: (value: string) => void; placeholder: string }) {
+  return (
+    <span className="relative block">
+      <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#7a8ca1]" />
+      <input
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        className="h-10 w-full rounded-lg border border-[#cbd8e2] bg-[#f4f8fb] pl-10 pr-3 text-sm outline-none focus:border-[#00758d]"
+        placeholder={placeholder}
+      />
+    </span>
+  );
+}
+
 function InfoBlock({ label, value, helper }: { label: string; value: string; helper?: string }) {
   return (
     <div>
@@ -913,6 +1029,32 @@ function countByPatient(client: PatientPortalClient, table: "visits" | "appointm
   if (table === "visits") return client.from("visits").select("id", { count: "exact", head: true }).eq("patient_id", patientId);
   if (table === "appointment_requests") return client.from("appointment_requests").select("id", { count: "exact", head: true }).eq("patient_id", patientId);
   return client.from("prescriptions").select("id", { count: "exact", head: true }).eq("patient_id", patientId);
+}
+
+function filterLabResults(results: LabResultRecord[], query: string, filter: "all" | "reviewed" | "recent") {
+  const text = query.trim().toLowerCase();
+  const recentCutoff = Date.now() - 30 * 24 * 60 * 60 * 1000;
+
+  return results.filter((result) => {
+    if (filter === "reviewed" && result.status !== "reviewed") return false;
+    if (filter === "recent" && new Date(result.reviewed_at ?? result.updated_at ?? result.created_at).getTime() < recentCutoff) return false;
+    if (!text) return true;
+
+    return [
+      result.lab_tests?.name,
+      result.lab_tests?.code,
+      result.result_value,
+      result.status,
+      result.visits?.visit_code,
+      result.visits?.chief_complaint,
+      result.doctor?.full_name,
+    ].some((value) => value?.toLowerCase().includes(text));
+  });
+}
+
+function formatResultValue(result: LabResultRecord) {
+  if (!result.result_value) return "Result not entered";
+  return [result.result_value, result.lab_tests?.unit].filter(Boolean).join(" ");
 }
 
 function patientIdentifier(patient: PatientRecord | null) {
