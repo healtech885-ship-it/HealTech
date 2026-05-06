@@ -157,7 +157,7 @@ export function getWorkspaceConfig(role: UserRole, segments?: string[]): Workspa
 
     "reception/patients": { ...defaultByRole.reception, title: "Patient Search and Registration", table: "patients", select: "id,full_name,student_id,mrn,gender,birth_date,phone,status,created_at", actionLabel: "Register Patient", action: { kind: "function", name: "create-patient", success: "Patient registered" }, fields: patientFields(), dashboard: false },
     "reception/patients/new": { ...defaultByRole.reception, title: "New Patient", table: "patients", select: "id,full_name,student_id,mrn,gender,birth_date,phone,status,created_at", actionLabel: "Register Patient", action: { kind: "function", name: "create-patient", success: "Patient registered" }, fields: patientFields(), dashboard: false },
-    "reception/visits": { ...defaultByRole.reception, title: "Queued Visits", table: "visits", select: defaultByRole.reception.select, actionLabel: "Create Visit", action: { kind: "function", name: "create-visit", success: "Visit created" }, fields: visitFields(), dashboard: false },
+    "reception/visits": { ...defaultByRole.reception, title: "Queued Visits", table: "visits", select: defaultByRole.reception.select, filters: [{ column: "status", operator: "eq", value: "queued" }], actionLabel: "Create Visit", action: { kind: "function", name: "create-visit", success: "Visit created" }, fields: visitFields(), dashboard: false },
     "reception/visits/new": { ...defaultByRole.reception, title: "New Visit", table: "visits", select: defaultByRole.reception.select, actionLabel: "Create Visit", action: { kind: "function", name: "create-visit", success: "Visit created" }, fields: visitFields(), dashboard: false },
 
     "doctor/visits": defaultByRole.doctor,
