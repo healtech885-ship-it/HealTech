@@ -366,12 +366,15 @@ function departmentFields(): WorkspaceField[] {
 function patientFields(): WorkspaceField[] {
   return [
     { name: "full_name", label: "Full name", required: true },
-    { name: "student_id", label: "Student ID" },
-    { name: "mrn", label: "MRN" },
+    { name: "student_id", label: "Student ID", placeholder: "Student ID or MRN is required" },
+    { name: "mrn", label: "MRN", placeholder: "Student ID or MRN is required" },
     { name: "gender", label: "Gender", type: "select", options: ["male", "female"] },
     { name: "birth_date", label: "Birth date", type: "date" },
+    { name: "department_id", label: "Department", reference: "departments" },
+    { name: "dorm_info", label: "Dorm info" },
     { name: "phone", label: "Phone" },
     { name: "emergency_phone", label: "Emergency phone" },
+    { name: "nationality", label: "Nationality" },
     { name: "blood_type", label: "Blood type" },
     { name: "address", label: "Address", type: "textarea" },
   ];

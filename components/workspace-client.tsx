@@ -1394,6 +1394,9 @@ function prepareActionPayload(config: WorkspaceConfig, payload: Record<string, u
       }],
     };
   }
+  if (config.action.kind === "function" && config.action.name === "create-patient" && !payload.student_id && !payload.mrn) {
+    throw new Error("Student ID or MRN is required");
+  }
   return payload;
 }
 
@@ -1450,6 +1453,7 @@ function normalizeReferenceOptions(key: ReferenceKey, rows: unknown[]) {
   return rows
     .filter((row) => row && typeof row === "object")
     .filter((row) => key !== "doctors" || (row as Record<string, unknown>).role === "doctor")
+    .filter((row) => key !== "departments" || (row as Record<string, unknown>).status === "active")
     .filter((row) => key !== "medicineOrderItems" || isDispensableMedicineItem(row as Record<string, unknown>))
     .map((row) => {
       const record = row as Record<string, unknown>;
