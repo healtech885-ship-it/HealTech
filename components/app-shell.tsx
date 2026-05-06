@@ -8,14 +8,10 @@ import {
   Clock3,
   ChevronsLeft,
   ChevronsRight,
-  FileCog,
-  Grid2X2,
   Menu,
   Plus,
   Search,
-  Settings,
   ShieldCheck,
-  WalletCards,
   X,
 } from "lucide-react";
 import { useState } from "react";
@@ -109,18 +105,13 @@ function AdminShell({
   segments?: string[];
   children: React.ReactNode;
 }) {
-  const path = (segments ?? ["dashboard"]).join("/");
-  const active = getAdminActive(path);
+  const path = segments?.length ? segments.join("/") : "dashboard";
+  const adminItems = navigationByRole.admin;
+  const activeHref = getAdminActiveHref(path, adminItems);
+  const adminPrimaryItems = adminItems.filter((item) => item.href !== "/admin/settings");
+  const settingsItem = adminItems.find((item) => item.href === "/admin/settings");
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const adminItems = [
-    { label: "Dashboard", href: "/admin/dashboard", icon: Grid2X2 },
-    { label: "Patients", href: "/admin/patients", icon: navigationByRole.admin[3].icon },
-    { label: "Appointments", href: "/admin/visits", icon: navigationByRole.admin[4].icon },
-    { label: "Medical Records", href: "/admin/employees", icon: FileCog },
-    { label: "Analytics", href: "/admin/reports", icon: navigationByRole.admin[9].icon },
-    { label: "Billing", href: "/admin/store/requests", icon: WalletCards },
-  ];
 
   return (
     <div className="min-h-screen overflow-x-clip bg-[#f6fafd] font-[Manrope,Inter,Segoe_UI,Arial,sans-serif] text-[#171c1e] lg:grid lg:grid-cols-[auto_minmax(0,1fr)]">
@@ -182,11 +173,11 @@ function AdminShell({
         </Link>
 
         <nav className={cn("mt-3 space-y-2", collapsed && "lg:flex lg:flex-col lg:items-center")}>
-          {adminItems.map((item) => {
-            const selected = item.label === active;
+          {adminPrimaryItems.map((item) => {
+            const selected = item.href === activeHref;
             return (
               <Link
-                key={item.label}
+                key={item.href}
                 href={item.href}
                 onClick={() => setMobileOpen(false)}
                 title={collapsed ? item.label : undefined}
@@ -206,19 +197,21 @@ function AdminShell({
         </nav>
 
         <div className={cn("mt-auto border-t border-[#d7e1e7] pt-5", collapsed && "lg:flex lg:flex-col lg:items-center")}>
-          <Link
-            href="/admin/settings"
-            onClick={() => setMobileOpen(false)}
-            title={collapsed ? "Settings" : undefined}
-            className={cn(
-              "flex h-[50px] items-center gap-5 overflow-hidden rounded-lg px-5 text-[16px] font-medium transition-all duration-300",
-              collapsed && "lg:h-[54px] lg:w-[54px] lg:justify-center lg:gap-0 lg:rounded-xl lg:px-0",
-              active === "Settings" ? "border border-[#d7e1e8] bg-white text-[#0089a8] shadow-sm" : "text-[#263a54]",
-            )}
-          >
-            <Settings className="h-[22px] w-[22px] shrink-0" />
-            <span className={cn("whitespace-nowrap transition-opacity duration-200", collapsed && "lg:hidden")}>Settings</span>
-          </Link>
+          {settingsItem ? (
+            <Link
+              href={settingsItem.href}
+              onClick={() => setMobileOpen(false)}
+              title={collapsed ? settingsItem.label : undefined}
+              className={cn(
+                "flex h-[50px] items-center gap-5 overflow-hidden rounded-lg px-5 text-[16px] font-medium transition-all duration-300",
+                collapsed && "lg:h-[54px] lg:w-[54px] lg:justify-center lg:gap-0 lg:rounded-xl lg:px-0",
+                settingsItem.href === activeHref ? "border border-[#d7e1e8] bg-white text-[#0089a8] shadow-sm" : "text-[#263a54]",
+              )}
+            >
+              <settingsItem.icon className="h-[22px] w-[22px] shrink-0" />
+              <span className={cn("whitespace-nowrap transition-opacity duration-200", collapsed && "lg:hidden")}>{settingsItem.label}</span>
+            </Link>
+          ) : null}
           <SignOutButton
             className={cn(
               "mt-2 !h-[50px] w-full justify-start gap-5 overflow-hidden border-0 bg-transparent px-5 text-[16px] font-medium text-[#263a54] transition-all duration-300 hover:bg-white",
@@ -284,14 +277,13 @@ function AdminShell({
   );
 }
 
-function getAdminActive(path: string) {
-  if (path === "patients") return "Patients";
-  if (path === "visits") return "Appointments";
-  if (path === "reports" || path === "audit-logs") return "Analytics";
-  if (path === "settings") return "Settings";
-  if (path.startsWith("store/")) return "Billing";
-  if (path.startsWith("employees") || path === "departments" || path.startsWith("leave-requests")) return "Medical Records";
-  return "Dashboard";
+function getAdminActiveHref(path: string, items: typeof navigationByRole.admin) {
+  const currentHref = `/admin/${path}`.replace(/\/+$/, "");
+  const activeItem = items
+    .filter((item) => currentHref === item.href || currentHref.startsWith(`${item.href}/`))
+    .sort((first, second) => second.href.length - first.href.length)[0];
+
+  return activeItem?.href ?? "/admin/dashboard";
 }
 
 function initials(name: string) {
