@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   BadgeCheck,
   Beaker,
@@ -14,6 +14,7 @@ import {
   LogOut,
   Search,
   Settings,
+  X,
 } from "lucide-react";
 import { Badge, badgeTone } from "@/components/ui/badge";
 import { navigationByRole } from "@/lib/constants/navigation";
@@ -124,6 +125,12 @@ type LabTestsClient = {
     select(columns: string): SupabaseQuery<LabTestRow>;
     select(columns: string, options: { count: "exact"; head: true }): SupabaseCountQuery;
   };
+};
+
+type SubmitResultPayload = {
+  lab_result_id: string;
+  result_value: string;
+  result_notes?: string;
 };
 
 const labResultSelect =
@@ -359,29 +366,30 @@ function LabResultsList({
   const supabase = useMemo(() => createClient(), []);
   const [query, setQuery] = useState("");
   const [state, setState] = useState<QueryState<LabResultRecord[]>>({ loading: true, data: [], error: null });
+  const [selectedResult, setSelectedResult] = useState<LabResultRecord | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
-  useEffect(() => {
-    let active = true;
+  const loadResults = useCallback(async () => {
     const client = supabase as unknown as CanonicalLabResultsClient;
 
-    async function loadResults() {
-      setState({ loading: true, data: [], error: null });
-      const base = client.from("lab_results").select(labResultSelect);
-      const result = statuses?.length ? await base.in("status", statuses).order("updated_at", { ascending: false }) : await base.order("updated_at", { ascending: false });
+    await Promise.resolve();
+    setState({ loading: true, data: [], error: null });
+    const base = client.from("lab_results").select(labResultSelect);
+    const result = statuses?.length ? await base.in("status", statuses).order("updated_at", { ascending: false }) : await base.order("updated_at", { ascending: false });
 
-      if (!active) return;
-      if (result.error) {
-        setState({ loading: false, data: [], error: result.error.message });
-        return;
-      }
-      setState({ loading: false, data: result.data ?? [], error: null });
+    if (result.error) {
+      setState({ loading: false, data: [], error: result.error.message });
+      return;
     }
-
-    void loadResults();
-    return () => {
-      active = false;
-    };
+    setState({ loading: false, data: result.data ?? [], error: null });
   }, [statuses, supabase]);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      void loadResults();
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, [loadResults]);
 
   const filtered = useMemo(() => {
     const needle = query.trim().toLowerCase();
@@ -408,6 +416,7 @@ function LabResultsList({
   return (
     <section className="px-5 py-8 lg:px-8">
       <PageHeader title={title} description={description} />
+      {successMessage ? <Notice message={successMessage} /> : null}
       <div className="mt-6 rounded-xl border border-[#d4e0e8] bg-white shadow-sm">
         <div className="flex flex-col gap-3 border-b border-[#d4e0e8] p-4 md:flex-row md:items-center md:justify-between">
           <SearchBox value={query} onChange={setQuery} placeholder="Filter by patient, visit, test, doctor, or result value" />
@@ -421,13 +430,22 @@ function LabResultsList({
         {!state.loading && !state.error && state.data.length > 0 && filtered.length === 0 ? (
           <EmptyState title="No matching results" description="Try a different patient, visit, doctor, or lab test search." />
         ) : null}
-        {!state.loading && !state.error && filtered.length > 0 ? <LabResultsTable results={filtered} /> : null}
+        {!state.loading && !state.error && filtered.length > 0 ? <LabResultsTable results={filtered} onEditResult={setSelectedResult} /> : null}
       </div>
+      <ResultEntryDialog
+        result={selectedResult}
+        onClose={() => setSelectedResult(null)}
+        onSubmitted={async (result) => {
+          setSuccessMessage(`${result.lab_tests?.name ?? "Lab result"} submitted successfully.`);
+          setSelectedResult(null);
+          await loadResults();
+        }}
+      />
     </section>
   );
 }
 
-function LabResultsTable({ results, compact = false }: { results: LabResultRecord[]; compact?: boolean }) {
+function LabResultsTable({ results, compact = false, onEditResult }: { results: LabResultRecord[]; compact?: boolean; onEditResult?: (result: LabResultRecord) => void }) {
   return (
     <div className="overflow-x-auto">
       <table className="min-w-full divide-y divide-[#d4e0e8] text-sm">
@@ -478,12 +496,174 @@ function LabResultsTable({ results, compact = false }: { results: LabResultRecor
               </td>
               <td className="px-4 py-4 text-[#41546b]">{formatDate(result.created_at)}</td>
               <td className="px-4 py-4 text-right">
-                <span className="inline-flex rounded-lg border border-[#cbd8e2] px-3 py-2 text-xs font-semibold text-[#607084]">Entry workflow next</span>
+                <LabResultAction result={result} onEditResult={onEditResult} />
               </td>
             </tr>
           ))}
         </tbody>
       </table>
+    </div>
+  );
+}
+
+function LabResultAction({ result, onEditResult }: { result: LabResultRecord; onEditResult?: (result: LabResultRecord) => void }) {
+  if (result.status === "submitted" || result.status === "reviewed") {
+    return <span className="inline-flex rounded-lg border border-[#cbd8e2] px-3 py-2 text-xs font-semibold text-[#607084]">{formatLabel(result.status)}</span>;
+  }
+
+  const label = result.status === "entered" || result.result_value ? "Edit Result" : "Enter Result";
+  if (!onEditResult) {
+    return (
+      <Link href="/lab/orders/pending" className="inline-flex rounded-lg bg-[#006d86] px-3 py-2 text-xs font-semibold text-white hover:bg-[#005f75]">
+        {label}
+      </Link>
+    );
+  }
+
+  return (
+    <button onClick={() => onEditResult(result)} className="inline-flex rounded-lg bg-[#006d86] px-3 py-2 text-xs font-semibold text-white hover:bg-[#005f75]">
+      {label}
+    </button>
+  );
+}
+
+function ResultEntryDialog({
+  result,
+  onClose,
+  onSubmitted,
+}: {
+  result: LabResultRecord | null;
+  onClose: () => void;
+  onSubmitted: (result: LabResultRecord) => Promise<void>;
+}) {
+  if (!result) return null;
+  return <ResultEntryForm key={result.id} result={result} onClose={onClose} onSubmitted={onSubmitted} />;
+}
+
+function ResultEntryForm({
+  result,
+  onClose,
+  onSubmitted,
+}: {
+  result: LabResultRecord;
+  onClose: () => void;
+  onSubmitted: (result: LabResultRecord) => Promise<void>;
+}) {
+  const supabase = useMemo(() => createClient(), []);
+  const [resultValue, setResultValue] = useState(result.result_value ?? "");
+  const [resultNotes, setResultNotes] = useState(result.result_notes ?? "");
+  const [submitting, setSubmitting] = useState(false);
+  const [validationError, setValidationError] = useState<string | null>(null);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+
+  const readOnly = result.status === "submitted" || result.status === "reviewed";
+
+  async function handleSubmit() {
+    if (readOnly) {
+      setValidationError("Submitted or reviewed lab results cannot be edited.");
+      return;
+    }
+
+    const trimmedValue = resultValue.trim();
+    if (!trimmedValue) {
+      setValidationError("Result value is required.");
+      return;
+    }
+
+    setSubmitting(true);
+    setValidationError(null);
+    setSubmitError(null);
+
+    const payload: SubmitResultPayload = {
+      lab_result_id: result.id,
+      result_value: trimmedValue,
+    };
+    const trimmedNotes = resultNotes.trim();
+    if (trimmedNotes) payload.result_notes = trimmedNotes;
+
+    const { error } = await supabase.functions.invoke("submit-lab-results", {
+      body: { results: [payload] },
+    });
+
+    if (error) {
+      setSubmitError(error.message);
+      setSubmitting(false);
+      return;
+    }
+
+    await onSubmitted(result);
+    setSubmitting(false);
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/35 p-4">
+      <div className="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-xl border border-[#d4e0e8] bg-white shadow-xl">
+        <div className="flex items-start justify-between border-b border-[#d4e0e8] px-5 py-4">
+          <div>
+            <h2 className="text-xl font-semibold">{result.result_value ? "Edit Lab Result" : "Enter Lab Result"}</h2>
+            <p className="mt-1 text-sm text-[#607084]">Submit canonical lab result values for this visit.</p>
+          </div>
+          <button onClick={onClose} disabled={submitting} className="rounded-lg p-2 text-[#607084] hover:bg-[#f4f8fb] disabled:opacity-60" aria-label="Close result entry">
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+
+        <div className="space-y-5 p-5">
+          <div className="grid gap-4 rounded-lg border border-[#d4e0e8] bg-[#f8fbfd] p-4 md:grid-cols-2">
+            <InfoBlock label="Patient" value={result.patients?.full_name ?? "Unknown patient"} helper={patientIdentifier(result.patients)} />
+            <InfoBlock label="Visit" value={result.visits?.visit_code ?? "No visit code"} helper={result.visits?.chief_complaint ?? "No chief complaint"} />
+            <InfoBlock label="Doctor" value={result.doctor?.full_name ?? "Assigned doctor"} helper={result.doctor?.email ?? result.doctor_id} />
+            <InfoBlock label="Lab Test" value={result.lab_tests?.name ?? "Lab test"} helper={labTestHelper(result.lab_tests)} />
+            <InfoBlock label="Unit" value={result.lab_tests?.unit ?? "Not set"} helper="Result unit" />
+            <InfoBlock label="Normal Range" value={result.lab_tests?.normal_range ?? "Not set"} helper="Reference range" />
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wide text-[#607084]">Current Status</p>
+              <Badge tone={badgeTone(result.status)} className="mt-2">{formatLabel(result.status)}</Badge>
+            </div>
+          </div>
+
+          {readOnly ? <Notice message={`${formatLabel(result.status)} lab results are read-only in this workflow.`} /> : null}
+          {validationError ? <div className="rounded-lg border border-[#e6ca83] bg-[var(--warning-container)] p-3 text-sm text-[var(--warning)]">{validationError}</div> : null}
+          {submitError ? <ErrorState message={submitError} /> : null}
+
+          <div className="grid gap-4">
+            <label className="grid gap-2 text-sm font-medium">
+              Result Value *
+              <input
+                value={resultValue}
+                onChange={(event) => setResultValue(event.target.value)}
+                disabled={readOnly || submitting}
+                className="h-11 rounded-lg border border-[#cbd8e2] px-3 outline-none focus:border-[#00758d] disabled:bg-[#eef3f7]"
+                placeholder="Enter result value"
+              />
+            </label>
+            <label className="grid gap-2 text-sm font-medium">
+              Result Notes
+              <textarea
+                value={resultNotes}
+                onChange={(event) => setResultNotes(event.target.value)}
+                disabled={readOnly || submitting}
+                className="min-h-28 resize-y rounded-lg border border-[#cbd8e2] p-3 outline-none focus:border-[#00758d] disabled:bg-[#eef3f7]"
+                placeholder="Optional notes for this result"
+              />
+            </label>
+          </div>
+        </div>
+
+        <div className="flex justify-end gap-3 border-t border-[#d4e0e8] px-5 py-4">
+          <button onClick={onClose} disabled={submitting} className="rounded-lg border border-[#cbd8e2] px-4 py-2 text-sm font-semibold text-[#41546b] disabled:opacity-60">
+            Cancel
+          </button>
+          <button
+            onClick={handleSubmit}
+            disabled={readOnly || submitting}
+            className="inline-flex items-center gap-2 rounded-lg bg-[#006d86] px-4 py-2 text-sm font-semibold text-white hover:bg-[#005f75] disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+            {submitting ? "Submitting" : "Submit Result"}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
@@ -643,6 +823,16 @@ function Notice({ message }: { message: string }) {
   return <div className="m-4 rounded-lg border border-[#e6ca83] bg-[var(--warning-container)] p-4 text-sm text-[var(--warning)]">{message}</div>;
 }
 
+function InfoBlock({ label, value, helper }: { label: string; value: string; helper?: string }) {
+  return (
+    <div>
+      <p className="text-xs font-semibold uppercase tracking-wide text-[#607084]">{label}</p>
+      <p className="mt-1 font-semibold">{value}</p>
+      {helper ? <p className="mt-1 text-xs text-[#607084]">{helper}</p> : null}
+    </div>
+  );
+}
+
 function Avatar({ name, small = false }: { name: string; small?: boolean }) {
   const initials = name
     .split(" ")
@@ -667,6 +857,11 @@ function patientIdentifier(patient: PatientSummary | null) {
 function formatResultValue(result: LabResultRecord) {
   if (!result.result_value) return "No value entered";
   return `${result.result_value}${result.lab_tests?.unit ? ` ${result.lab_tests.unit}` : ""}`;
+}
+
+function labTestHelper(test: LabTestSummary | null) {
+  if (!test) return "No test metadata";
+  return [test.code ? `Code: ${test.code}` : "No code", test.normal_range ? `Range: ${test.normal_range}` : null].filter(Boolean).join(" / ");
 }
 
 function formatDate(value: string | null) {
