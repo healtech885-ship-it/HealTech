@@ -34,6 +34,7 @@ type PrescriptionStatus = "ordered" | "partially_dispensed" | "dispensed" | "can
 type PrescriptionItemStatus = "pending" | "dispensed" | "unavailable" | "cancelled";
 type MedicineStatus = "active" | "inactive" | string;
 type BatchStatus = "in_stock" | "out_of_stock" | "expired" | string;
+type BatchFormStatus = "in_stock" | "out_of_stock" | "expired" | "inactive";
 type FilterValue = string | number | boolean;
 
 type PatientSummary = {
@@ -113,6 +114,16 @@ type DispenseContext = {
   prescription: PrescriptionRecord;
   item: PrescriptionItemRecord;
 };
+type StockBatchFormValues = {
+  medicine_id: string;
+  batch_number: string;
+  receipt_number: string;
+  manufacturer: string;
+  quantity: string;
+  unit_price: string;
+  expiry_date: string;
+  status: BatchFormStatus;
+};
 
 type QueryState<T> = {
   loading: boolean;
@@ -162,6 +173,16 @@ type SupabaseCountQuery = PromiseLike<CountResult> & {
 };
 
 type InsertMedicinePayload = Pick<MedicineRecord, "name" | "category" | "description" | "status">;
+type InsertBatchPayload = {
+  medicine_id: string;
+  batch_number?: string | null;
+  receipt_number?: string | null;
+  manufacturer?: string | null;
+  quantity: number;
+  unit_price?: number | null;
+  expiry_date?: string | null;
+  status: BatchFormStatus;
+};
 type InsertQuery<T> = {
   select(columns: string): {
     single(): PromiseLike<SingleResult<T>>;
@@ -192,6 +213,7 @@ type CanonicalPharmacyClient = {
   from(table: "medicine_batches"): {
     select(columns: string): SupabaseQuery<BatchRecord>;
     select(columns: string, options: CountOptions): SupabaseCountQuery;
+    insert(payload: InsertBatchPayload): InsertQuery<BatchRecord>;
   };
   functions: {
     invoke(name: "dispense-medicine", options: { body: DispenseMedicinePayload }): PromiseLike<FunctionResult>;
@@ -216,6 +238,7 @@ const prescriptionSelect =
 const medicineSelect = "id,name,category,description,status,created_at,updated_at";
 const batchStockSelect = "id,medicine_id,quantity,status,expiry_date";
 const batchSelect = "id,medicine_id,batch_number,receipt_number,manufacturer,quantity,unit_price,expiry_date,status,created_at,medicines(id,name,category,description,status)";
+const batchStatusOptions: BatchFormStatus[] = ["in_stock", "out_of_stock", "expired", "inactive"];
 
 export function PharmacyShell({ profile, segments = [] }: PharmacyShellProps) {
   const pathname = usePathname();
@@ -498,33 +521,43 @@ function MedicineCatalog() {
   const [query, setQuery] = useState("");
   const [stock, setStock] = useState<Record<string, MedicineStockSummary>>({});
   const [state, setState] = useState<QueryState<MedicineRecord[]>>({ loading: true, data: [], error: null });
+  const [showBatchForm, setShowBatchForm] = useState(false);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
-  useEffect(() => {
-    let active = true;
-
-    async function loadMedicines() {
-      setState((current) => ({ ...current, loading: true, error: null }));
+  const loadCatalog = useCallback(
+    async ({ silent = false }: { silent?: boolean } = {}) => {
+      if (!silent) setState((current) => ({ ...current, loading: true, error: null }));
       const [medicinesResult, batchesResult] = await Promise.all([
         supabase.from("medicines").select(medicineSelect).order("name", { ascending: true }),
         supabase.from("medicine_batches").select(batchStockSelect).order("created_at", { ascending: false }),
       ]);
 
-      if (!active) return;
       const error = medicinesResult.error ?? batchesResult.error;
       if (error) {
-        setState({ loading: false, data: [], error: error.message });
-        return;
+        setState((current) => ({ loading: false, data: silent ? current.data : [], error: error.message }));
+        return false;
       }
 
       setStock(buildStockSummary((batchesResult.data ?? []) as BatchStockRecord[]));
       setState({ loading: false, data: medicinesResult.data ?? [], error: null });
+      return true;
+    },
+    [supabase],
+  );
+
+  useEffect(() => {
+    let active = true;
+
+    async function initialLoad() {
+      const ok = await loadCatalog();
+      if (!active || !ok) return;
     }
 
-    void loadMedicines();
+    void initialLoad();
     return () => {
       active = false;
     };
-  }, [supabase]);
+  }, [loadCatalog]);
 
   const filtered = useMemo(() => {
     const text = query.trim().toLowerCase();
@@ -538,12 +571,30 @@ function MedicineCatalog() {
         title="Medicine Catalog"
         description="Canonical medicines available to doctor prescriptions and pharmacy stock."
         action={
-          <Link href="/pharmacy/medicines/new" className="inline-flex h-10 items-center gap-2 rounded-lg bg-[#006d86] px-4 text-sm font-semibold text-white">
-            <PackagePlus className="h-4 w-4" />
-            Add Medicine
-          </Link>
+          <div className="flex flex-wrap gap-3">
+            <button onClick={() => setShowBatchForm((current) => !current)} className="inline-flex h-10 items-center gap-2 rounded-lg border border-[#00758d] bg-white px-4 text-sm font-semibold text-[#006d86]">
+              <PackagePlus className="h-4 w-4" />
+              Add Stock Batch
+            </button>
+            <Link href="/pharmacy/medicines/new" className="inline-flex h-10 items-center gap-2 rounded-lg bg-[#006d86] px-4 text-sm font-semibold text-white">
+              <Pill className="h-4 w-4" />
+              Add Medicine
+            </Link>
+          </div>
         }
       />
+
+      {successMessage ? <SuccessState message={successMessage} /> : null}
+      {showBatchForm ? (
+        <AddStockBatchPanel
+          supabase={supabase}
+          onCancel={() => setShowBatchForm(false)}
+          onSaved={async (medicineName) => {
+            await loadCatalog({ silent: true });
+            setSuccessMessage(`Stock batch received for ${medicineName}. Catalog stock summary refreshed.`);
+          }}
+        />
+      ) : null}
 
       <DataCard title="Medicines">
         <div className="mb-4 max-w-md">
@@ -556,6 +607,189 @@ function MedicineCatalog() {
         {!state.loading && !state.error && filtered.length > 0 ? <MedicineTable medicines={filtered} stock={stock} /> : null}
       </DataCard>
     </section>
+  );
+}
+
+function AddStockBatchPanel({
+  supabase,
+  onCancel,
+  onSaved,
+}: {
+  supabase: CanonicalPharmacyClient;
+  onCancel: () => void;
+  onSaved: (medicineName: string) => Promise<void>;
+}) {
+  const [medicines, setMedicines] = useState<QueryState<MedicineRecord[]>>({ loading: true, data: [], error: null });
+  const [values, setValues] = useState<StockBatchFormValues>({
+    medicine_id: "",
+    batch_number: "",
+    receipt_number: "",
+    manufacturer: "",
+    quantity: "",
+    unit_price: "",
+    expiry_date: "",
+    status: "in_stock",
+  });
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadActiveMedicines() {
+      setMedicines({ loading: true, data: [], error: null });
+      const result = await supabase.from("medicines").select(medicineSelect).eq("status", "active").order("name", { ascending: true });
+      if (!active) return;
+      if (result.error) {
+        setMedicines({ loading: false, data: [], error: result.error.message });
+        return;
+      }
+      setMedicines({ loading: false, data: result.data ?? [], error: null });
+    }
+
+    void loadActiveMedicines();
+    return () => {
+      active = false;
+    };
+  }, [supabase]);
+
+  function updateField<K extends keyof StockBatchFormValues>(field: K, value: StockBatchFormValues[K]) {
+    setValues((current) => ({ ...current, [field]: value }));
+    setError(null);
+  }
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setError(null);
+
+    const selectedMedicine = medicines.data.find((medicine) => medicine.id === values.medicine_id);
+    const validation = buildStockBatchPayload(values, new Set(medicines.data.map((medicine) => medicine.id)));
+    if (validation.payload === null) {
+      setError(validation.error);
+      return;
+    }
+
+    setSaving(true);
+    const result = await supabase.from("medicine_batches").insert(validation.payload).select("id").single();
+    setSaving(false);
+
+    if (result.error) {
+      setError(`Could not add stock batch. ${result.error.message}`);
+      return;
+    }
+
+    setValues({
+      medicine_id: "",
+      batch_number: "",
+      receipt_number: "",
+      manufacturer: "",
+      quantity: "",
+      unit_price: "",
+      expiry_date: "",
+      status: "in_stock",
+    });
+    await onSaved(selectedMedicine?.name ?? "selected medicine");
+  }
+
+  return (
+    <DataCard title="Add Stock Batch">
+      <form onSubmit={handleSubmit} className="grid gap-5">
+        <p className="text-sm text-[#607084]">Receive stock for an existing active canonical medicine. This creates a `medicine_batches` row linked by `medicine_id`.</p>
+        {error ? <ErrorState message={error} /> : null}
+        {medicines.error ? <ErrorState message={`Could not load active medicines. ${medicines.error}`} /> : null}
+        {medicines.loading ? <LoadingState label="Loading active medicines" /> : null}
+        {!medicines.loading && !medicines.error && medicines.data.length === 0 ? (
+          <EmptyState title="No active medicines available" description="Create or activate a medicine before receiving stock batches." />
+        ) : null}
+
+        {!medicines.loading && !medicines.error && medicines.data.length > 0 ? (
+          <>
+            <div className="grid gap-5 lg:grid-cols-3">
+              <label className="grid gap-2 text-sm font-medium lg:col-span-2">
+                Medicine
+                <select
+                  value={values.medicine_id}
+                  onChange={(event) => updateField("medicine_id", event.target.value)}
+                  className="h-11 rounded-lg border border-[#cbd8e2] px-3 outline-none focus:border-[#00758d]"
+                >
+                  <option value="">Select active medicine</option>
+                  {medicines.data.map((medicine) => (
+                    <option key={medicine.id} value={medicine.id}>
+                      {medicine.name}{medicine.category ? ` - ${medicine.category}` : ""}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="grid gap-2 text-sm font-medium">
+                Status
+                <select
+                  value={values.status}
+                  onChange={(event) => updateField("status", event.target.value as BatchFormStatus)}
+                  className="h-11 rounded-lg border border-[#cbd8e2] px-3 outline-none focus:border-[#00758d]"
+                >
+                  {batchStatusOptions.map((status) => (
+                    <option key={status} value={status}>
+                      {formatLabel(status)}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="grid gap-2 text-sm font-medium">
+                Quantity
+                <input
+                  value={values.quantity}
+                  onChange={(event) => updateField("quantity", event.target.value)}
+                  inputMode="numeric"
+                  className="h-11 rounded-lg border border-[#cbd8e2] px-3 outline-none focus:border-[#00758d]"
+                  placeholder="Required"
+                />
+              </label>
+              <label className="grid gap-2 text-sm font-medium">
+                Unit Price
+                <input
+                  value={values.unit_price}
+                  onChange={(event) => updateField("unit_price", event.target.value)}
+                  inputMode="decimal"
+                  className="h-11 rounded-lg border border-[#cbd8e2] px-3 outline-none focus:border-[#00758d]"
+                  placeholder="Optional"
+                />
+              </label>
+              <label className="grid gap-2 text-sm font-medium">
+                Expiry Date
+                <input
+                  type="date"
+                  value={values.expiry_date}
+                  onChange={(event) => updateField("expiry_date", event.target.value)}
+                  className="h-11 rounded-lg border border-[#cbd8e2] px-3 outline-none focus:border-[#00758d]"
+                />
+              </label>
+              <label className="grid gap-2 text-sm font-medium">
+                Batch Number
+                <input value={values.batch_number} onChange={(event) => updateField("batch_number", event.target.value)} className="h-11 rounded-lg border border-[#cbd8e2] px-3 outline-none focus:border-[#00758d]" placeholder="Optional" />
+              </label>
+              <label className="grid gap-2 text-sm font-medium">
+                Receipt Number
+                <input value={values.receipt_number} onChange={(event) => updateField("receipt_number", event.target.value)} className="h-11 rounded-lg border border-[#cbd8e2] px-3 outline-none focus:border-[#00758d]" placeholder="Optional" />
+              </label>
+              <label className="grid gap-2 text-sm font-medium">
+                Manufacturer
+                <input value={values.manufacturer} onChange={(event) => updateField("manufacturer", event.target.value)} className="h-11 rounded-lg border border-[#cbd8e2] px-3 outline-none focus:border-[#00758d]" placeholder="Optional" />
+              </label>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-3 border-t border-[#d4e0e8] pt-5">
+              <button disabled={saving} className="inline-flex h-11 items-center gap-2 rounded-lg bg-[#006d86] px-5 text-sm font-semibold text-white disabled:opacity-60">
+                {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <PackagePlus className="h-4 w-4" />}
+                Save Stock Batch
+              </button>
+              <button type="button" onClick={onCancel} disabled={saving} className="h-11 rounded-lg border border-[#cbd8e2] px-5 text-sm font-semibold text-[#41546b] disabled:opacity-60">
+                Cancel
+              </button>
+            </div>
+          </>
+        ) : null}
+      </form>
+    </DataCard>
   );
 }
 
@@ -1147,6 +1381,39 @@ function validateDispenseQuantity(value: string, item: PrescriptionItemRecord) {
   if (!Number.isInteger(quantity) || quantity <= 0) return "Quantity must be a positive whole number.";
   if (quantity > remaining) return `Quantity cannot exceed the remaining quantity of ${remaining}.`;
   return null;
+}
+
+function buildStockBatchPayload(values: StockBatchFormValues, activeMedicineIds: Set<string>): { payload: InsertBatchPayload; error: null } | { payload: null; error: string } {
+  const quantityText = values.quantity.trim();
+  const unitPriceText = values.unit_price.trim();
+  const quantity = Number(quantityText);
+  const unitPrice = unitPriceText ? Number(unitPriceText) : null;
+
+  if (!values.medicine_id) return { payload: null, error: "Medicine is required." };
+  if (!activeMedicineIds.has(values.medicine_id)) return { payload: null, error: "Select an active medicine from the list." };
+  if (!quantityText) return { payload: null, error: "Quantity is required." };
+  if (!Number.isInteger(quantity) || quantity <= 0) return { payload: null, error: "Quantity must be a positive whole number." };
+  if (!batchStatusOptions.includes(values.status)) return { payload: null, error: "Batch status is invalid." };
+  if (unitPriceText && (!Number.isFinite(unitPrice) || unitPrice === null || unitPrice < 0)) return { payload: null, error: "Unit price must be zero or greater." };
+
+  return {
+    error: null,
+    payload: {
+      medicine_id: values.medicine_id,
+      batch_number: optionalText(values.batch_number),
+      receipt_number: optionalText(values.receipt_number),
+      manufacturer: optionalText(values.manufacturer),
+      quantity,
+      unit_price: unitPrice,
+      expiry_date: optionalText(values.expiry_date),
+      status: values.status,
+    },
+  };
+}
+
+function optionalText(value: string) {
+  const trimmed = value.trim();
+  return trimmed ? trimmed : null;
 }
 
 function batchPageMeta(mode: "low-stock" | "out-of-stock" | "expired") {
