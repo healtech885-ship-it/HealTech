@@ -455,6 +455,7 @@ function VisitDetailCard({ visit, onRefresh }: { visit: DoctorVisit; onRefresh: 
   const [action, setAction] = useState<VisitAction | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
+  const [historyRefreshKey, setHistoryRefreshKey] = useState(0);
   const closed = visit.status === "completed" || visit.status === "cancelled";
 
   function updateField<K extends keyof VisitFormState>(field: K, value: VisitFormState[K]) {
@@ -595,13 +596,24 @@ function VisitDetailCard({ visit, onRefresh }: { visit: DoctorVisit; onRefresh: 
         ) : null}
       </DataPanel>
 
-      <LabOrderPanel visit={visit} closed={closed} onRefresh={onRefresh} />
-      <PrescriptionCreationPanel visit={visit} closed={closed} onRefresh={onRefresh} />
+      <LabOrderPanel visit={visit} closed={closed} onRefresh={onRefresh} onCreated={() => setHistoryRefreshKey((current) => current + 1)} />
+      <PrescriptionCreationPanel visit={visit} closed={closed} onRefresh={onRefresh} onCreated={() => setHistoryRefreshKey((current) => current + 1)} />
+      <VisitHistoryPanel visit={visit} refreshKey={historyRefreshKey} />
     </div>
   );
 }
 
-function LabOrderPanel({ visit, closed, onRefresh }: { visit: DoctorVisit; closed: boolean; onRefresh: () => Promise<DoctorVisit | null> }) {
+function LabOrderPanel({
+  visit,
+  closed,
+  onRefresh,
+  onCreated,
+}: {
+  visit: DoctorVisit;
+  closed: boolean;
+  onRefresh: () => Promise<DoctorVisit | null>;
+  onCreated: () => void;
+}) {
   const supabase = useMemo(() => createClient(), []);
   const [tests, setTests] = useState<LabTestRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -688,6 +700,7 @@ function LabOrderPanel({ visit, closed, onRefresh }: { visit: DoctorVisit; close
     setQuery("");
     setSuccess("Lab tests ordered successfully.");
     await onRefresh();
+    onCreated();
     setSubmitting(false);
   }
 
@@ -781,7 +794,17 @@ function LabOrderPanel({ visit, closed, onRefresh }: { visit: DoctorVisit; close
   );
 }
 
-function PrescriptionCreationPanel({ visit, closed, onRefresh }: { visit: DoctorVisit; closed: boolean; onRefresh: () => Promise<DoctorVisit | null> }) {
+function PrescriptionCreationPanel({
+  visit,
+  closed,
+  onRefresh,
+  onCreated,
+}: {
+  visit: DoctorVisit;
+  closed: boolean;
+  onRefresh: () => Promise<DoctorVisit | null>;
+  onCreated: () => void;
+}) {
   const supabase = useMemo(() => createClient(), []);
   const [medicines, setMedicines] = useState<MedicineRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -904,6 +927,7 @@ function PrescriptionCreationPanel({ visit, closed, onRefresh }: { visit: Doctor
     setQuery("");
     setSuccess("Prescription created successfully.");
     await onRefresh();
+    onCreated();
     setSubmitting(false);
   }
 
@@ -1038,6 +1062,198 @@ function PrescriptionCreationPanel({ visit, closed, onRefresh }: { visit: Doctor
               Create Prescription
             </button>
           </div>
+        </div>
+      ) : null}
+    </DataPanel>
+  );
+}
+
+function VisitHistoryPanel({ visit, refreshKey }: { visit: DoctorVisit; refreshKey: number }) {
+  const supabase = useMemo(() => createClient(), []);
+  const [state, setState] = useState<QueryState<VisitHistoryData>>({
+    loading: true,
+    data: { labOrders: [], labResults: [], prescriptions: [] },
+    error: null,
+  });
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadHistory() {
+      setState((current) => ({ ...current, loading: true, error: null }));
+
+      const [labOrdersResult, labResultsResult, prescriptionsResult] = await Promise.all([
+        supabase
+          .from("lab_orders")
+          .select("id,visit_id,patient_id,doctor_id,status,doctor_notes,created_at,completed_at")
+          .eq("visit_id", visit.id)
+          .order("created_at", { ascending: false }),
+        (supabase as unknown as CanonicalVisitLabResultsClient)
+          .from("lab_results")
+          .select(
+            "id,visit_id,patient_id,doctor_id,lab_test_id,result_value,result_notes,status,entered_at,reviewed_at,visible_to_patient,created_at,updated_at,lab_tests(name,code,unit,normal_range)",
+          )
+          .eq("visit_id", visit.id)
+          .order("created_at", { ascending: false }),
+        (supabase as unknown as CanonicalPrescriptionsByVisitClient)
+          .from("prescriptions")
+          .select(
+            "id,visit_id,patient_id,doctor_id,status,doctor_notes,created_at,updated_at,completed_at,prescription_items(id,prescription_id,medicine_id,requested_quantity,dispensed_quantity,dosage_instructions,status,dispensed_at,created_at,medicines(id,name,category,description,status))",
+          )
+          .eq("visit_id", visit.id)
+          .order("created_at", { ascending: false }),
+      ]);
+
+      if (!active) return;
+
+      const error = labOrdersResult.error ?? labResultsResult.error ?? prescriptionsResult.error;
+      if (error) {
+        setState({
+          loading: false,
+          data: { labOrders: [], labResults: [], prescriptions: [] },
+          error: error.message,
+        });
+        return;
+      }
+
+      setState({
+        loading: false,
+        data: {
+          labOrders: ((labOrdersResult.data ?? []) as unknown) as VisitLabOrder[],
+          labResults: ((labResultsResult.data ?? []) as unknown) as VisitLabResult[],
+          prescriptions: ((prescriptionsResult.data ?? []) as unknown) as PrescriptionRecord[],
+        },
+        error: null,
+      });
+    }
+
+    void loadHistory();
+    return () => {
+      active = false;
+    };
+  }, [refreshKey, supabase, visit.id]);
+
+  return (
+    <DataPanel title="Current Visit History" description="Read-only lab and prescription context for this visit.">
+      {state.loading ? <LoadingState label="Loading visit history" /> : null}
+      {state.error ? <ErrorState message={state.error} /> : null}
+      {!state.loading && !state.error ? (
+        <div className="space-y-6">
+          <section>
+            <HistoryHeading title="Lab Orders" count={state.data.labOrders.length} />
+            {state.data.labOrders.length === 0 ? (
+              <CompactEmpty message="No lab orders for this visit." />
+            ) : (
+              <div className="mt-3 grid gap-3 lg:grid-cols-2">
+                {state.data.labOrders.map((order) => (
+                  <article key={order.id} className="rounded-lg border border-[#d4e0e8] bg-[#f8fbfd] p-4">
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <StatusBadge value={order.status} />
+                      <span className="text-xs text-[#607084]">Created {formatDateTime(order.created_at)}</span>
+                    </div>
+                    {order.doctor_notes ? <p className="mt-3 whitespace-pre-wrap text-sm text-[#41546b]">{order.doctor_notes}</p> : <p className="mt-3 text-sm text-[#607084]">No doctor notes.</p>}
+                    {order.completed_at ? <p className="mt-3 text-xs text-[#607084]">Completed {formatDateTime(order.completed_at)}</p> : null}
+                  </article>
+                ))}
+              </div>
+            )}
+          </section>
+
+          <section>
+            <HistoryHeading title="Lab Results" count={state.data.labResults.length} />
+            {state.data.labResults.length === 0 ? (
+              <CompactEmpty message="No lab results for this visit." />
+            ) : (
+              <div className="mt-3 space-y-3">
+                {state.data.labResults.map((result) => (
+                  <article key={result.id} className="rounded-lg border border-[#d4e0e8] bg-white p-4">
+                    <div className="grid gap-4 lg:grid-cols-[1fr_0.75fr_0.8fr_0.8fr] lg:items-start">
+                      <div>
+                        <p className="font-semibold">{result.lab_tests?.name ?? "Lab test"}</p>
+                        <p className="mt-1 text-sm text-[#607084]">
+                          {result.lab_tests?.code ? `Code: ${result.lab_tests.code}` : "No code"}
+                          {result.lab_tests?.normal_range ? ` / Range: ${result.lab_tests.normal_range}` : ""}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xs font-semibold uppercase tracking-wide text-[#607084]">Result</p>
+                        <p className="mt-1 text-sm text-[#41546b]">{result.result_value ? `${result.result_value}${result.lab_tests?.unit ? ` ${result.lab_tests.unit}` : ""}` : "No value entered"}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs font-semibold uppercase tracking-wide text-[#607084]">Status</p>
+                        <div className="mt-2 space-y-2">
+                          <StatusBadge value={result.status} />
+                          <p className="text-xs text-[#607084]">{result.visible_to_patient ? "Visible to patient" : "Not visible to patient"}</p>
+                        </div>
+                      </div>
+                      <div>
+                        <p className="text-xs font-semibold uppercase tracking-wide text-[#607084]">Dates</p>
+                        <p className="mt-1 text-xs text-[#607084]">Entered: {result.entered_at ? formatDateTime(result.entered_at) : "Not entered"}</p>
+                        <p className="mt-1 text-xs text-[#607084]">Reviewed: {result.reviewed_at ? formatDateTime(result.reviewed_at) : "Not reviewed"}</p>
+                      </div>
+                    </div>
+                    {result.result_notes ? <p className="mt-3 whitespace-pre-wrap rounded-lg bg-[#f8fbfd] p-3 text-sm text-[#41546b]">{result.result_notes}</p> : null}
+                  </article>
+                ))}
+              </div>
+            )}
+          </section>
+
+          <section>
+            <HistoryHeading title="Prescriptions" count={state.data.prescriptions.length} />
+            {state.data.prescriptions.length === 0 ? (
+              <CompactEmpty message="No prescriptions for this visit." />
+            ) : (
+              <div className="mt-3 space-y-4">
+                {state.data.prescriptions.map((prescription) => (
+                  <article key={prescription.id} className="rounded-lg border border-[#d4e0e8] bg-white p-4">
+                    <div className="flex flex-wrap items-start justify-between gap-3">
+                      <div>
+                        <StatusBadge value={prescription.status} />
+                        <p className="mt-2 text-xs text-[#607084]">Created {formatDateTime(prescription.created_at)}</p>
+                        {prescription.completed_at ? <p className="mt-1 text-xs text-[#607084]">Completed {formatDateTime(prescription.completed_at)}</p> : null}
+                      </div>
+                      {prescription.doctor_notes ? <p className="max-w-xl whitespace-pre-wrap text-sm text-[#41546b]">{prescription.doctor_notes}</p> : <p className="text-sm text-[#607084]">No doctor notes.</p>}
+                    </div>
+
+                    {prescription.prescription_items.length === 0 ? (
+                      <CompactEmpty message="No medicine items for this prescription." />
+                    ) : (
+                      <div className="mt-4 overflow-x-auto">
+                        <table className="min-w-full divide-y divide-[#e1e9ef] text-left text-sm">
+                          <thead className="bg-[#f4f8fb] text-xs uppercase tracking-wide text-[#607084]">
+                            <tr>
+                              <th className="px-3 py-3 font-semibold">Medicine</th>
+                              <th className="px-3 py-3 font-semibold">Requested</th>
+                              <th className="px-3 py-3 font-semibold">Dispensed</th>
+                              <th className="px-3 py-3 font-semibold">Dosage</th>
+                              <th className="px-3 py-3 font-semibold">Status</th>
+                              <th className="px-3 py-3 font-semibold">Dispensed At</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-[#e1e9ef]">
+                            {prescription.prescription_items.map((item) => (
+                              <tr key={item.id}>
+                                <td className="px-3 py-3">
+                                  <p className="font-medium">{item.medicines?.name ?? "Medicine unavailable"}</p>
+                                  <p className="text-xs text-[#607084]">{item.medicines?.category ?? "No category"}</p>
+                                </td>
+                                <td className="px-3 py-3 text-[#41546b]">{item.requested_quantity}</td>
+                                <td className="px-3 py-3 text-[#41546b]">{item.dispensed_quantity}</td>
+                                <td className="min-w-[220px] px-3 py-3 text-[#41546b]">{item.dosage_instructions ?? "Not recorded"}</td>
+                                <td className="px-3 py-3"><StatusBadge value={item.status} /></td>
+                                <td className="px-3 py-3 text-[#607084]">{item.dispensed_at ? formatDateTime(item.dispensed_at) : "Not dispensed"}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </article>
+                ))}
+              </div>
+            )}
+          </section>
         </div>
       ) : null}
     </DataPanel>
@@ -1238,6 +1454,17 @@ type RelatedOrder = {
   visits: Pick<DoctorVisit, "id" | "visit_code" | "chief_complaint" | "status" | "priority"> | null;
 };
 
+type VisitLabOrder = {
+  id: string;
+  visit_id: string;
+  patient_id: string;
+  doctor_id: string;
+  status: string;
+  doctor_notes: string | null;
+  created_at: string;
+  completed_at: string | null;
+};
+
 type LabResultItem = {
   id: string;
   visit_id: string;
@@ -1257,6 +1484,10 @@ type LabResultItem = {
   patients: Pick<PatientRow, "full_name" | "mrn" | "student_id"> | null;
   visits: Pick<DoctorVisit, "id" | "visit_code" | "chief_complaint" | "status" | "priority"> | null;
   lab_tests: { name: string; code: string | null; unit: string | null; normal_range: string | null } | null;
+};
+
+type VisitLabResult = Omit<LabResultItem, "entered_by" | "reviewed_by" | "patients" | "updated_at"> & {
+  updated_at: string;
 };
 
 type PrescriptionStatus = "ordered" | "partially_dispensed" | "dispensed" | "cancelled";
@@ -1298,6 +1529,12 @@ type PrescriptionRecord = {
   prescription_items: PrescriptionItemRecord[];
 };
 
+type VisitHistoryData = {
+  labOrders: VisitLabOrder[];
+  labResults: VisitLabResult[];
+  prescriptions: PrescriptionRecord[];
+};
+
 type CanonicalLabResultsClient = {
   from(table: "lab_results"): {
     select(columns: string): {
@@ -1308,10 +1545,30 @@ type CanonicalLabResultsClient = {
   };
 };
 
+type CanonicalVisitLabResultsClient = {
+  from(table: "lab_results"): {
+    select(columns: string): {
+      eq(column: "visit_id", value: string): {
+        order(column: "created_at", options: { ascending: boolean }): Promise<{ data: unknown[] | null; error: { message: string } | null }>;
+      };
+    };
+  };
+};
+
 type CanonicalPrescriptionsClient = {
   from(table: "prescriptions"): {
     select(columns: string): {
       eq(column: "doctor_id", value: string): {
+        order(column: "created_at", options: { ascending: boolean }): Promise<{ data: unknown[] | null; error: { message: string } | null }>;
+      };
+    };
+  };
+};
+
+type CanonicalPrescriptionsByVisitClient = {
+  from(table: "prescriptions"): {
+    select(columns: string): {
+      eq(column: "visit_id", value: string): {
         order(column: "created_at", options: { ascending: boolean }): Promise<{ data: unknown[] | null; error: { message: string } | null }>;
       };
     };
@@ -1361,6 +1618,19 @@ function InlineNotice({ tone, message }: { tone: "success" | "danger"; message: 
       {message}
     </div>
   );
+}
+
+function HistoryHeading({ title, count }: { title: string; count: number }) {
+  return (
+    <div className="flex items-center justify-between gap-3 border-b border-[#e1e9ef] pb-2">
+      <h3 className="font-semibold">{title}</h3>
+      <span className="rounded-full bg-[#eef3f7] px-2.5 py-1 text-xs font-semibold text-[#607084]">{count}</span>
+    </div>
+  );
+}
+
+function CompactEmpty({ message }: { message: string }) {
+  return <p className="mt-3 rounded-lg border border-dashed border-[#cbd8e2] bg-[#f8fbfd] p-3 text-sm text-[#607084]">{message}</p>;
 }
 
 function PrescriptionList({ prescriptions }: { prescriptions: PrescriptionRecord[] }) {
