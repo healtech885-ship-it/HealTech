@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { SignOutButton } from "@/components/auth/sign-out-button";
-import { navigationByRole, roleLabels } from "@/lib/constants/navigation";
+import { navigationByRole, roleLabels, type NavItem } from "@/lib/constants/navigation";
 import { cn } from "@/lib/utils";
 import type { AppProfile, UserRole } from "@/types/app.types";
 
@@ -40,6 +40,7 @@ export function AppShell({
   }
 
   const navItems = navigationByRole[role];
+  const activeHref = getRoleActiveHref(role, segments, navItems);
 
   return (
     <div className="min-h-screen bg-background">
@@ -54,18 +55,25 @@ export function AppShell({
           </div>
         </div>
         <nav className="space-y-1 px-3 py-4">
-          {navItems.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={cn(
-                "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-[var(--on-surface-variant)] transition hover:bg-muted hover:text-[var(--on-surface)]",
-              )}
-            >
-              <item.icon className="h-4 w-4" />
-              {item.label}
-            </Link>
-          ))}
+          {navItems.map((item) => {
+            const selected = item.href === activeHref;
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                aria-current={selected ? "page" : undefined}
+                className={cn(
+                  "flex items-center gap-3 rounded-lg border border-transparent px-3 py-2.5 text-sm font-medium transition",
+                  selected
+                    ? "border-border bg-muted text-primary shadow-sm"
+                    : "text-[var(--on-surface-variant)] hover:bg-muted hover:text-[var(--on-surface)]",
+                )}
+              >
+                <item.icon className={cn("h-4 w-4", selected && "text-primary")} />
+                {item.label}
+              </Link>
+            );
+          })}
         </nav>
       </aside>
 
@@ -82,12 +90,25 @@ export function AppShell({
             </div>
           </div>
           <nav className="flex gap-2 overflow-x-auto border-t border-border px-4 py-2 lg:hidden">
-            {navItems.slice(0, 8).map((item) => (
-              <Link key={item.href} href={item.href} className="inline-flex shrink-0 items-center gap-2 rounded-full border border-border bg-white px-3 py-2 text-xs font-semibold text-[var(--on-surface-variant)]">
-                <item.icon className="h-3.5 w-3.5" />
-                {item.label}
-              </Link>
-            ))}
+            {navItems.slice(0, 8).map((item) => {
+              const selected = item.href === activeHref;
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  aria-current={selected ? "page" : undefined}
+                  className={cn(
+                    "inline-flex shrink-0 items-center gap-2 rounded-full border px-3 py-2 text-xs font-semibold transition",
+                    selected
+                      ? "border-primary bg-muted text-primary"
+                      : "border-border bg-white text-[var(--on-surface-variant)] hover:bg-muted hover:text-[var(--on-surface)]",
+                  )}
+                >
+                  <item.icon className={cn("h-3.5 w-3.5", selected && "text-primary")} />
+                  {item.label}
+                </Link>
+              );
+            })}
           </nav>
         </header>
         <div className="mx-auto max-w-[1440px] px-4 py-6 lg:px-8">{children}</div>
@@ -105,9 +126,8 @@ function AdminShell({
   segments?: string[];
   children: React.ReactNode;
 }) {
-  const path = segments?.length ? segments.join("/") : "dashboard";
   const adminItems = navigationByRole.admin;
-  const activeHref = getAdminActiveHref(path, adminItems);
+  const activeHref = getRoleActiveHref("admin", segments, adminItems);
   const adminPrimaryItems = adminItems.filter((item) => item.href !== "/admin/settings");
   const settingsItem = adminItems.find((item) => item.href === "/admin/settings");
   const [collapsed, setCollapsed] = useState(false);
@@ -277,13 +297,14 @@ function AdminShell({
   );
 }
 
-function getAdminActiveHref(path: string, items: typeof navigationByRole.admin) {
-  const currentHref = `/admin/${path}`.replace(/\/+$/, "");
+function getRoleActiveHref(role: UserRole, segments: string[] | undefined, items: NavItem[]) {
+  const path = segments?.length ? segments.join("/") : "dashboard";
+  const currentHref = `/${role}/${path}`.replace(/\/+$/, "");
   const activeItem = items
     .filter((item) => currentHref === item.href || currentHref.startsWith(`${item.href}/`))
     .sort((first, second) => second.href.length - first.href.length)[0];
 
-  return activeItem?.href ?? "/admin/dashboard";
+  return activeItem?.href ?? `/${role}/dashboard`;
 }
 
 function initials(name: string) {
