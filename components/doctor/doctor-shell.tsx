@@ -37,6 +37,13 @@ type VisitPriority = Database["public"]["Enums"]["visit_priority"];
 type VisitRow = Tables<"visits">;
 type PatientRow = Pick<Tables<"patients">, "id" | "full_name" | "mrn" | "student_id" | "gender" | "birth_date" | "phone">;
 type LabTestRow = Pick<Tables<"lab_tests">, "id" | "name" | "code" | "description" | "normal_range" | "unit" | "status">;
+type MedicineRow = {
+  id: string;
+  name: string;
+  category: string | null;
+  description: string | null;
+  status: string;
+};
 type VisitAction = "starting" | "saving" | "completing";
 
 type DoctorVisit = VisitRow & {
@@ -44,6 +51,14 @@ type DoctorVisit = VisitRow & {
 };
 
 type VisitFormState = Pick<DoctorVisit, "chief_complaint" | "symptoms" | "diagnosis" | "disease" | "doctor_instructions" | "notes" | "priority">;
+
+type PrescriptionDraftItem = {
+  draftId: string;
+  medicine_id: string;
+  medicine: MedicineRow;
+  requested_quantity: number;
+  dosage_instructions: string;
+};
 
 type QueryState<T> = {
   loading: boolean;
@@ -581,6 +596,7 @@ function VisitDetailCard({ visit, onRefresh }: { visit: DoctorVisit; onRefresh: 
       </DataPanel>
 
       <LabOrderPanel visit={visit} closed={closed} onRefresh={onRefresh} />
+      <PrescriptionCreationPanel visit={visit} closed={closed} onRefresh={onRefresh} />
     </div>
   );
 }
@@ -757,6 +773,269 @@ function LabOrderPanel({ visit, closed, onRefresh }: { visit: DoctorVisit; close
             >
               {submitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Beaker className="mr-2 h-4 w-4" />}
               Order Selected Tests
+            </button>
+          </div>
+        </div>
+      ) : null}
+    </DataPanel>
+  );
+}
+
+function PrescriptionCreationPanel({ visit, closed, onRefresh }: { visit: DoctorVisit; closed: boolean; onRefresh: () => Promise<DoctorVisit | null> }) {
+  const supabase = useMemo(() => createClient(), []);
+  const [medicines, setMedicines] = useState<MedicineRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [items, setItems] = useState<PrescriptionDraftItem[]>([]);
+  const [doctorNotes, setDoctorNotes] = useState("");
+  const [query, setQuery] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadMedicines() {
+      setLoading(true);
+      setLoadError(null);
+      const { data, error } = await (supabase as unknown as CanonicalMedicinesClient)
+        .from("medicines")
+        .select("id,name,category,description,status")
+        .eq("status", "active")
+        .order("name", { ascending: true });
+
+      if (!active) return;
+      if (error) {
+        setLoadError(error.message);
+        setMedicines([]);
+      } else {
+        setMedicines(((data ?? []) as unknown) as MedicineRow[]);
+      }
+      setLoading(false);
+    }
+
+    void loadMedicines();
+    return () => {
+      active = false;
+    };
+  }, [supabase]);
+
+  const filteredMedicines = medicines.filter((medicine) => {
+    const needle = query.trim().toLowerCase();
+    if (!needle) return true;
+    return `${medicine.name} ${medicine.category ?? ""} ${medicine.description ?? ""}`.toLowerCase().includes(needle);
+  });
+
+  function addMedicine(medicine: MedicineRow) {
+    setSubmitError(null);
+    setSuccess(null);
+    setItems((current) => {
+      if (current.some((item) => item.medicine_id === medicine.id)) return current;
+      return [
+        ...current,
+        {
+          draftId: crypto.randomUUID(),
+          medicine_id: medicine.id,
+          medicine,
+          requested_quantity: 1,
+          dosage_instructions: "",
+        },
+      ];
+    });
+  }
+
+  function updateDraftItem(draftId: string, patch: Partial<Pick<PrescriptionDraftItem, "requested_quantity" | "dosage_instructions">>) {
+    setItems((current) => current.map((item) => (item.draftId === draftId ? { ...item, ...patch } : item)));
+  }
+
+  function removeDraftItem(draftId: string) {
+    setItems((current) => current.filter((item) => item.draftId !== draftId));
+  }
+
+  function validatePrescription() {
+    if (closed) return "Prescriptions cannot be created for a closed visit.";
+    if (!visit.id) return "No visit is loaded.";
+    if (items.length === 0) return "Add at least one medicine before creating a prescription.";
+
+    const missingMedicine = items.find((item) => !item.medicine_id);
+    if (missingMedicine) return "Each prescription item must have a medicine selected.";
+
+    const invalidQuantity = items.find((item) => !Number.isInteger(item.requested_quantity) || item.requested_quantity <= 0);
+    if (invalidQuantity) return "Requested quantity must be a positive whole number for every medicine.";
+
+    const missingInstructions = items.find((item) => !item.dosage_instructions.trim());
+    if (missingInstructions) return "Dosage instructions are required for every medicine.";
+
+    return null;
+  }
+
+  async function handleSubmit() {
+    setSubmitError(null);
+    setSuccess(null);
+
+    const validationError = validatePrescription();
+    if (validationError) {
+      setSubmitError(validationError);
+      return;
+    }
+
+    setSubmitting(true);
+    const { error } = await supabase.functions.invoke("order-medicines", {
+      body: {
+        visit_id: visit.id,
+        items: items.map((item) => ({
+          medicine_id: item.medicine_id,
+          requested_quantity: item.requested_quantity,
+          dosage_instructions: item.dosage_instructions.trim(),
+        })),
+        doctor_notes: doctorNotes.trim() || undefined,
+      },
+    });
+
+    if (error) {
+      setSubmitError(error.message);
+      setSubmitting(false);
+      return;
+    }
+
+    setItems([]);
+    setDoctorNotes("");
+    setQuery("");
+    setSuccess("Prescription created successfully.");
+    await onRefresh();
+    setSubmitting(false);
+  }
+
+  return (
+    <DataPanel
+      title="Create Prescription"
+      description="Create a canonical prescription for this visit."
+      action={success ? <Link href="/doctor/medicine-orders" className="text-sm font-semibold text-[#006d86]">View prescriptions</Link> : null}
+    >
+      {closed ? <InlineNotice tone="danger" message="Prescriptions cannot be created for a closed visit." /> : null}
+      {success ? <InlineNotice tone="success" message={success} /> : null}
+      {submitError ? <InlineNotice tone="danger" message={submitError} /> : null}
+      {loadError ? <ErrorState message={loadError} /> : null}
+
+      {!closed ? (
+        <div className="space-y-6">
+          <div>
+            <label className="text-sm font-semibold text-[#41546b]" htmlFor="medicine-search">Search Medicines</label>
+            <div className="relative mt-2">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#7a8ca1]" />
+              <input
+                id="medicine-search"
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                disabled={loading || submitting}
+                className="h-11 w-full rounded-lg border border-[#cbd8e2] bg-white pl-10 pr-3 text-sm outline-none focus:border-[#00758d] disabled:bg-[#eef3f7]"
+                placeholder="Search by medicine name, category, or description"
+              />
+            </div>
+          </div>
+
+          {loading ? <LoadingState label="Loading active medicines" /> : null}
+          {!loading && !loadError && medicines.length === 0 ? <EmptyState title="No active medicines" description="There are no active medicines available to prescribe." /> : null}
+          {!loading && !loadError && medicines.length > 0 ? (
+            <div className="max-h-[300px] overflow-y-auto rounded-lg border border-[#d4e0e8]">
+              {filteredMedicines.length === 0 ? (
+                <p className="p-4 text-sm text-[#607084]">No medicines match your search.</p>
+              ) : (
+                <div className="divide-y divide-[#e1e9ef]">
+                  {filteredMedicines.map((medicine) => {
+                    const added = items.some((item) => item.medicine_id === medicine.id);
+                    return (
+                      <div key={medicine.id} className="flex flex-col gap-3 p-4 hover:bg-[#f8fbfd] sm:flex-row sm:items-start sm:justify-between">
+                        <div>
+                          <p className="font-semibold">{medicine.name}</p>
+                          <p className="mt-1 text-sm text-[#607084]">{medicine.category ?? "No category"}</p>
+                          {medicine.description ? <p className="mt-1 text-sm text-[#41546b]">{medicine.description}</p> : null}
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => addMedicine(medicine)}
+                          disabled={added || submitting}
+                          className="inline-flex h-9 shrink-0 items-center justify-center rounded-lg border border-[#006d86] px-3 text-sm font-semibold text-[#006d86] disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          {added ? "Added" : "Add"}
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          ) : null}
+
+          <div>
+            <h3 className="text-sm font-semibold text-[#41546b]">Prescription Items</h3>
+            {items.length === 0 ? (
+              <p className="mt-2 rounded-lg border border-dashed border-[#cbd8e2] bg-[#f8fbfd] p-3 text-sm text-[#607084]">No medicines selected yet.</p>
+            ) : (
+              <div className="mt-3 space-y-3">
+                {items.map((item) => (
+                  <div key={item.draftId} className="rounded-lg border border-[#d4e0e8] bg-[#f8fbfd] p-4">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                      <div>
+                        <p className="font-semibold">{item.medicine.name}</p>
+                        <p className="text-sm text-[#607084]">{item.medicine.category ?? "No category"}</p>
+                      </div>
+                      <button type="button" onClick={() => removeDraftItem(item.draftId)} disabled={submitting} className="text-sm font-semibold text-[#b42318] disabled:cursor-not-allowed disabled:opacity-60">
+                        Remove
+                      </button>
+                    </div>
+                    <div className="mt-4 grid gap-4 lg:grid-cols-[180px_1fr]">
+                      <label className="block">
+                        <span className="text-sm font-semibold text-[#41546b]">Requested Quantity</span>
+                        <input
+                          type="number"
+                          min={1}
+                          step={1}
+                          value={item.requested_quantity}
+                          disabled={submitting}
+                          onChange={(event) => updateDraftItem(item.draftId, { requested_quantity: Number(event.target.value) })}
+                          className="mt-2 h-11 w-full rounded-lg border border-[#cbd8e2] bg-white px-3 text-sm outline-none focus:border-[#00758d] disabled:bg-[#eef3f7]"
+                        />
+                      </label>
+                      <label className="block">
+                        <span className="text-sm font-semibold text-[#41546b]">Dosage Instructions</span>
+                        <textarea
+                          value={item.dosage_instructions}
+                          disabled={submitting}
+                          onChange={(event) => updateDraftItem(item.draftId, { dosage_instructions: event.target.value })}
+                          className="mt-2 min-h-[92px] w-full resize-y rounded-lg border border-[#cbd8e2] bg-white p-3 text-sm leading-6 outline-none focus:border-[#00758d] disabled:bg-[#eef3f7]"
+                          placeholder="Example: One tablet twice daily after meals"
+                        />
+                      </label>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <label className="block">
+            <span className="text-sm font-semibold text-[#41546b]">Doctor Notes</span>
+            <textarea
+              value={doctorNotes}
+              disabled={submitting}
+              onChange={(event) => setDoctorNotes(event.target.value)}
+              className="mt-2 min-h-[110px] w-full resize-y rounded-lg border border-[#cbd8e2] bg-white p-3 text-sm leading-6 outline-none focus:border-[#00758d] disabled:bg-[#eef3f7]"
+              placeholder="Optional notes for the pharmacy team"
+            />
+          </label>
+
+          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[#e1e9ef] pt-5">
+            <p className="text-sm text-[#607084]">{items.length} medicine item{items.length === 1 ? "" : "s"}</p>
+            <button
+              type="button"
+              onClick={handleSubmit}
+              disabled={submitting || loading}
+              className="inline-flex h-10 items-center justify-center rounded-lg bg-[#006d86] px-4 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {submitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Pill className="mr-2 h-4 w-4" />}
+              Create Prescription
             </button>
           </div>
         </div>
@@ -1034,6 +1313,16 @@ type CanonicalPrescriptionsClient = {
     select(columns: string): {
       eq(column: "doctor_id", value: string): {
         order(column: "created_at", options: { ascending: boolean }): Promise<{ data: unknown[] | null; error: { message: string } | null }>;
+      };
+    };
+  };
+};
+
+type CanonicalMedicinesClient = {
+  from(table: "medicines"): {
+    select(columns: string): {
+      eq(column: "status", value: "active"): {
+        order(column: "name", options: { ascending: boolean }): Promise<{ data: unknown[] | null; error: { message: string } | null }>;
       };
     };
   };
