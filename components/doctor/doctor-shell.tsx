@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   AlertTriangle,
   Beaker,
@@ -508,53 +508,101 @@ function DoctorLabOrders({ profile }: { profile: AppProfile }) {
 function DoctorLabResults({ profile }: { profile: AppProfile }) {
   const supabase = useMemo(() => createClient(), []);
   const [state, setState] = useState<QueryState<LabResultItem[]>>({ loading: true, data: [], error: null });
+  const [approvingId, setApprovingId] = useState<string | null>(null);
+  const [approvalMessage, setApprovalMessage] = useState<string | null>(null);
+  const [approvalError, setApprovalError] = useState<string | null>(null);
+
+  const fetchResults = useCallback(async () => {
+    const { data, error } = await (supabase as unknown as CanonicalLabResultsClient)
+      .from("lab_results")
+      .select(
+        "id,visit_id,patient_id,doctor_id,lab_test_id,result_value,result_notes,status,entered_by,entered_at,reviewed_by,reviewed_at,visible_to_patient,created_at,updated_at,patients(full_name,mrn,student_id),visits(id,visit_code,chief_complaint,status,priority),lab_tests(name,code,unit,normal_range)",
+      )
+      .eq("doctor_id", profile.id)
+      .order("updated_at", { ascending: false });
+
+    return { data: ((data ?? []) as unknown) as LabResultItem[], error };
+  }, [profile.id, supabase]);
 
   useEffect(() => {
     let active = true;
 
     async function loadResults() {
       setState((current) => ({ ...current, loading: true, error: null }));
-      const { data, error } = await supabase
-        .from("lab_order_items")
-        .select("id,status,result_value,result_notes,created_at,updated_at,lab_tests(name,code,unit,normal_range),lab_orders!inner(id,visit_id,doctor_id,patients(id,full_name,mrn,student_id),visits(id,visit_code,chief_complaint,status,priority))")
-        .eq("lab_orders.doctor_id", profile.id)
-        .order("updated_at", { ascending: false });
-
+      const { data, error } = await fetchResults();
       if (!active) return;
       if (error) {
         setState({ loading: false, data: [], error: error.message });
         return;
       }
-      setState({ loading: false, data: ((data ?? []) as unknown) as LabResultItem[], error: null });
+      setState({ loading: false, data, error: null });
     }
 
     void loadResults();
     return () => {
       active = false;
     };
-  }, [profile.id, supabase]);
+  }, [fetchResults]);
+
+  async function handleApprove(result: LabResultItem) {
+    setApprovingId(result.id);
+    setApprovalMessage(null);
+    setApprovalError(null);
+
+    const { error } = await supabase.functions.invoke("approve-lab-result-for-patient", {
+      body: { lab_result_ids: [result.id] },
+    });
+
+    if (error) {
+      setApprovalError(error.message);
+      setApprovingId(null);
+      return;
+    }
+
+    setApprovalMessage(`${result.lab_tests?.name ?? "Lab result"} approved for patient portal.`);
+    setState((current) => ({ ...current, loading: true, error: null }));
+    const refreshed = await fetchResults();
+    if (refreshed.error) {
+      setState({ loading: false, data: [], error: refreshed.error.message });
+    } else {
+      setState({ loading: false, data: refreshed.data, error: null });
+    }
+    setApprovingId(null);
+  }
 
   return (
     <section className="px-5 py-7 lg:px-8">
-      <PageHeading title="Lab Results" description="Result items connected to lab orders for your assigned visits." />
-      <DataPanel className="mt-6" title="Results Awaiting Review">
+      <PageHeading title="Lab Results" description="Lab results created for visits assigned to your doctor profile." />
+      <DataPanel className="mt-6" title="Canonical Lab Results">
+        {approvalMessage ? <InlineNotice tone="success" message={approvalMessage} /> : null}
+        {approvalError ? <InlineNotice tone="danger" message={approvalError} /> : null}
         {state.loading ? <LoadingState label="Loading lab results" /> : null}
         {state.error ? <ErrorState message={state.error} /> : null}
-        {!state.loading && !state.error && state.data.length === 0 ? <EmptyState title="No lab results" description="There are no lab result items visible for your doctor profile." /> : null}
+        {!state.loading && !state.error && state.data.length === 0 ? <EmptyState title="No lab results" description="There are no canonical lab results visible for your doctor profile." /> : null}
         {!state.loading && !state.error && state.data.length > 0 ? (
           <div className="divide-y divide-[#e1e9ef]">
             {state.data.map((item) => (
-              <div key={item.id} className="grid gap-4 py-4 lg:grid-cols-[1.1fr_1fr_0.8fr_0.7fr_0.4fr] lg:items-center">
+              <div key={item.id} className="grid gap-4 py-4 lg:grid-cols-[1.1fr_1fr_0.85fr_0.75fr_0.9fr] lg:items-center">
                 <div>
                   <p className="font-semibold">{item.lab_tests?.name ?? "Lab test"}</p>
-                  <p className="text-sm text-[#607084]">{item.lab_orders?.visits?.visit_code ?? "Visit"} / {item.lab_orders?.patients?.full_name ?? "Patient unavailable"}</p>
+                  <p className="text-sm text-[#607084]">{item.visits?.visit_code ?? "Visit"} / {item.patients?.full_name ?? "Patient unavailable"}</p>
+                  <p className="text-xs text-[#7a8ca1]">{item.lab_tests?.code ?? "No code"}{item.lab_tests?.normal_range ? ` / Range: ${item.lab_tests.normal_range}` : ""}</p>
                 </div>
-                <p className="text-sm text-[#41546b]">{item.lab_orders?.visits?.chief_complaint ?? "No complaint recorded"}</p>
-                <p className="text-sm">{item.result_value ?? "No value entered"}</p>
-                <StatusBadge value={item.status} />
-                <Link href={`/doctor/visits/${item.lab_orders?.visit_id ?? ""}`} className="inline-flex items-center text-sm font-semibold text-[#006d86]">
-                  Open <ChevronRight className="h-4 w-4" />
-                </Link>
+                <p className="text-sm text-[#41546b]">{item.visits?.chief_complaint ?? "No complaint recorded"}</p>
+                <div className="text-sm">
+                  <p>{item.result_value ? `${item.result_value}${item.lab_tests?.unit ? ` ${item.lab_tests.unit}` : ""}` : "No value entered"}</p>
+                  {item.result_notes ? <p className="mt-1 text-xs text-[#607084]">{item.result_notes}</p> : null}
+                </div>
+                <div className="space-y-2">
+                  <StatusBadge value={item.status} />
+                  {item.visible_to_patient ? <p className="text-xs font-medium text-[#0b7a3b]">Visible to patient</p> : <p className="text-xs text-[#607084]">Not visible to patient</p>}
+                </div>
+                <div className="flex flex-wrap items-center gap-3">
+                  <LabResultApprovalAction result={item} approving={approvingId === item.id} onApprove={handleApprove} />
+                  <Link href={`/doctor/visits/${item.visit_id}`} className="inline-flex items-center text-sm font-semibold text-[#006d86]">
+                    Open <ChevronRight className="h-4 w-4" />
+                  </Link>
+                </div>
               </div>
             ))}
           </div>
@@ -609,20 +657,69 @@ type RelatedOrder = {
 
 type LabResultItem = {
   id: string;
-  status: string;
+  visit_id: string;
+  patient_id: string;
+  doctor_id: string;
+  lab_test_id: string;
   result_value: string | null;
   result_notes: string | null;
+  status: Database["public"]["Enums"]["lab_result_status"];
+  entered_by: string | null;
+  entered_at: string | null;
+  reviewed_by: string | null;
+  reviewed_at: string | null;
+  visible_to_patient: boolean;
   created_at: string;
   updated_at: string;
+  patients: Pick<PatientRow, "full_name" | "mrn" | "student_id"> | null;
+  visits: Pick<DoctorVisit, "id" | "visit_code" | "chief_complaint" | "status" | "priority"> | null;
   lab_tests: { name: string; code: string | null; unit: string | null; normal_range: string | null } | null;
-  lab_orders: {
-    id: string;
-    visit_id: string;
-    doctor_id: string;
-    patients: Pick<PatientRow, "id" | "full_name" | "mrn" | "student_id"> | null;
-    visits: Pick<DoctorVisit, "id" | "visit_code" | "chief_complaint" | "status" | "priority"> | null;
-  } | null;
 };
+
+type CanonicalLabResultsClient = {
+  from(table: "lab_results"): {
+    select(columns: string): {
+      eq(column: "doctor_id", value: string): {
+        order(column: "updated_at", options: { ascending: boolean }): Promise<{ data: unknown[] | null; error: { message: string } | null }>;
+      };
+    };
+  };
+};
+
+function LabResultApprovalAction({
+  result,
+  approving,
+  onApprove,
+}: {
+  result: LabResultItem;
+  approving: boolean;
+  onApprove: (result: LabResultItem) => void;
+}) {
+  if (result.visible_to_patient) return <p className="text-xs font-medium text-[#0b7a3b]">Already visible to patient</p>;
+  if (result.status === "reviewed") return <p className="text-xs font-medium text-[#41546b]">Reviewed</p>;
+  if (!result.result_value) return <p className="text-xs font-medium text-[#8a5a00]">Waiting for lab result</p>;
+  if (result.status !== "submitted" && result.status !== "entered") return <p className="text-xs font-medium text-[#607084]">Waiting for lab submission</p>;
+
+  return (
+    <button
+      type="button"
+      onClick={() => onApprove(result)}
+      disabled={approving}
+      className="inline-flex h-9 items-center justify-center rounded-lg bg-[#006d86] px-3 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
+    >
+      {approving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CheckCircle2 className="mr-2 h-4 w-4" />}
+      Approve for Patient
+    </button>
+  );
+}
+
+function InlineNotice({ tone, message }: { tone: "success" | "danger"; message: string }) {
+  return (
+    <div className={cn("mb-4 rounded-lg border p-3 text-sm", tone === "success" ? "border-[#a7dfb7] bg-[#f1fbf4] text-[#0b7a3b]" : "border-[#f0b7b2] bg-[#fff6f5] text-[#9f1f17]")}>
+      {message}
+    </div>
+  );
+}
 
 function OrderPage({
   title,
