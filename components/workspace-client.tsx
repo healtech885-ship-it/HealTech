@@ -14,6 +14,7 @@ import {
   Check,
   ChevronDown,
   ClipboardPlus,
+  Copy,
   Edit,
   FileText,
   Filter,
@@ -42,6 +43,11 @@ import type { ReferenceKey, WorkspaceConfig, WorkspaceField, WorkspaceFilter } f
 
 type FormValues = Record<string, unknown>;
 type QueryResult = { data: unknown[] | Record<string, unknown> | null; error: { message: string } | null };
+type CreateEmployeeSuccess = {
+  employeeId: string;
+  profileId: string;
+  temporaryPassword: string;
+};
 type QueryBuilder = Promise<QueryResult> & {
   limit: (count: number) => QueryBuilder;
   order: (column: string, options?: { ascending?: boolean }) => QueryBuilder;
@@ -77,6 +83,8 @@ export function WorkspaceClient({ config }: { config: WorkspaceConfig }) {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [createEmployeeResult, setCreateEmployeeResult] = useState<CreateEmployeeSuccess | null>(null);
+  const [passwordCopied, setPasswordCopied] = useState(false);
   const [search, setSearch] = useState("");
   const [quickFilter, setQuickFilter] = useState<QuickFilter>("All");
 
@@ -147,6 +155,8 @@ export function WorkspaceClient({ config }: { config: WorkspaceConfig }) {
     setSaving(true);
     setError(null);
     setMessage(null);
+    setCreateEmployeeResult(null);
+    setPasswordCopied(false);
 
     let payload: Record<string, unknown>;
     try {
@@ -183,7 +193,15 @@ export function WorkspaceClient({ config }: { config: WorkspaceConfig }) {
       return;
     }
 
-    setMessage(config.action.success);
+    const employeeResult = config.action.kind === "function" && config.action.name === "create-employee"
+      ? extractCreateEmployeeSuccess(result.data)
+      : null;
+
+    if (employeeResult) {
+      setCreateEmployeeResult(employeeResult);
+    } else {
+      setMessage(config.action.success);
+    }
     form.reset();
     if (config.action.kind === "function" && config.action.name === "update-employee" && config.recordId) {
       router.push(`/admin/employees/${config.recordId}`);
@@ -273,6 +291,16 @@ export function WorkspaceClient({ config }: { config: WorkspaceConfig }) {
                     />
                   ))}
                   {error ? <Notice tone="danger" text={error} /> : null}
+                  {createEmployeeResult ? (
+                    <CreateEmployeeSuccessPanel
+                      result={createEmployeeResult}
+                      copied={passwordCopied}
+                      onCopy={async () => {
+                        await navigator.clipboard.writeText(createEmployeeResult.temporaryPassword);
+                        setPasswordCopied(true);
+                      }}
+                    />
+                  ) : null}
                   {message ? <Notice tone="success" text={message} /> : null}
                   <Button type="submit" className="w-full" disabled={saving}>
                     {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
@@ -466,6 +494,58 @@ function ReadOnlyLine({ label, value }: { label: string; value: unknown }) {
     <div className="rounded-lg border border-border bg-muted p-3">
       <p className="text-xs font-semibold uppercase tracking-[0.02em] text-[var(--on-surface-variant)]">{label}</p>
       <p className="mt-1 break-words font-semibold text-[var(--on-surface)]">{formatDetailValue(value)}</p>
+    </div>
+  );
+}
+
+function CreateEmployeeSuccessPanel({
+  result,
+  copied,
+  onCopy,
+}: {
+  result: CreateEmployeeSuccess;
+  copied: boolean;
+  onCopy: () => Promise<void>;
+}) {
+  return (
+    <div className="space-y-4 rounded-lg border border-[var(--success-container)] bg-[var(--success-container)]/35 p-4 text-sm text-[var(--on-surface)]">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <p className="text-base font-bold text-[var(--success)]">Employee account created</p>
+          <p className="mt-1 text-[var(--on-surface-variant)]">Save these sign-in details before leaving this page.</p>
+        </div>
+        <Link href={`/admin/employees/${result.employeeId}`} className="inline-flex h-9 shrink-0 items-center justify-center rounded-lg border border-border bg-white px-3 text-xs font-semibold text-primary hover:bg-muted">
+          Open employee details
+        </Link>
+      </div>
+
+      <div className="grid gap-3">
+        <ReadOnlyLine label="Employee ID" value={result.employeeId} />
+        <ReadOnlyLine label="Profile ID" value={result.profileId} />
+      </div>
+
+      <div className="space-y-2">
+        <p className="text-xs font-semibold uppercase tracking-[0.02em] text-[var(--on-surface-variant)]">Temporary password</p>
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <code className="min-w-0 flex-1 break-all rounded-lg border border-[#bdc8ce] bg-white px-3 py-2 font-mono text-sm font-semibold text-[#080d10]">
+            {result.temporaryPassword}
+          </code>
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={() => {
+              void onCopy();
+            }}
+            className="shrink-0"
+          >
+            {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+            {copied ? "Copied" : "Copy"}
+          </Button>
+        </div>
+        <p className="rounded-lg border border-[var(--warning-container)] bg-[var(--warning-container)] px-3 py-2 text-xs font-medium text-[var(--warning)]">
+          Share this temporary password securely. The employee should change it after first sign-in.
+        </p>
+      </div>
     </div>
   );
 }
@@ -916,6 +996,31 @@ function prepareActionPayload(config: WorkspaceConfig, payload: Record<string, u
     };
   }
   return payload;
+}
+
+function extractCreateEmployeeSuccess(value: unknown): CreateEmployeeSuccess | null {
+  const payload = unwrapFunctionData(value);
+  if (!payload) return null;
+
+  const employeeId = typeof payload.employee_id === "string" ? payload.employee_id : "";
+  const profileId = typeof payload.profile_id === "string" ? payload.profile_id : "";
+  const temporaryPassword = typeof payload.temporary_password === "string" ? payload.temporary_password : "";
+
+  if (!employeeId || !profileId || !temporaryPassword) return null;
+
+  return { employeeId, profileId, temporaryPassword };
+}
+
+function unwrapFunctionData(value: unknown): Record<string, unknown> | null {
+  if (!value || typeof value !== "object") return null;
+
+  const record = value as Record<string, unknown>;
+  if ("employee_id" in record || "profile_id" in record || "temporary_password" in record) return record;
+
+  const nested = record.data;
+  if (nested && typeof nested === "object" && !Array.isArray(nested)) return nested as Record<string, unknown>;
+
+  return null;
 }
 
 type ReferenceOption = {
