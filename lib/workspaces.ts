@@ -146,7 +146,8 @@ export function getWorkspaceConfig(role: UserRole, segments?: string[]): Workspa
     "admin/patients": { ...base, title: "Patients", table: "patients", select: "id,full_name,student_id,mrn,gender,birth_date,phone,status,created_at", actionLabel: "Register Patient", action: { kind: "function", name: "create-patient", success: "Patient registered" }, fields: patientFields(), dashboard: false },
     "admin/visits": { ...base, title: "Visits", table: "visits", select: defaultByRole.doctor.select, actionLabel: "Create Visit", action: { kind: "function", name: "create-visit", success: "Visit created" }, fields: visitFields(), dashboard: false },
     "admin/leave-requests": { ...base, title: "Leave Requests", table: "leave_requests", select: "id,employee_profile_id,leave_type,start_date,end_date,reason,status,admin_comment,reviewed_by,reviewed_at,created_at", actionLabel: "Review Leave Request", action: { kind: "function", name: "review-leave-request", success: "Leave request reviewed" }, fields: reviewLeaveFields(), dashboard: false },
-    "admin/store/items": { ...base, title: "Store Items", table: "store_items", select: "id,name,category,manufacturer,description,status,created_at", actionLabel: "Add Store Item", action: { kind: "insert", table: "store_items", success: "Store item added" }, fields: storeItemFields(), dashboard: false },
+    "admin/store/items": { ...base, title: "Store Items", table: "store_items", select: "id,name,category,manufacturer,description,status,created_at", actionLabel: "Add Store Item", action: { kind: "insert", table: "store_items", success: "Store item added" }, fields: storeItemFields(), hiddenColumns: ["id"], columnLabels: storeItemColumnLabels(), dashboard: false },
+    "admin/store/batches": { ...base, title: "Store Stock", table: "store_item_batches", select: "id,store_item_id,quantity,unit_price,receipt_number,created_by,created_at,store_items(name,category,status),profiles(full_name,email)", orderBy: "created_at", actionLabel: "Add Stock Batch", action: { kind: "function", name: "add-store-item-batch", success: "Store stock batch added" }, fields: storeBatchFields(), hiddenColumns: ["id", "store_item_id", "created_by"], columnLabels: storeBatchColumnLabels(), dashboard: false },
     "admin/store/assignments": { ...base, title: "Store Assignments", table: "store_assignments", select: "id,store_item_id,assigned_to,assigned_by,quantity,status,notes,assigned_at,returned_at,created_at", actionLabel: "Assign Store Item", action: { kind: "function", name: "assign-store-item", success: "Store item assigned" }, fields: assignStoreFields(), dashboard: false },
     "admin/store/requests": { ...base, title: "Store Requests", table: "store_requests", select: "id,requested_by,store_item_id,quantity,reason,status,reviewed_by,reviewed_at,admin_comment,created_at", actionLabel: "Create Store Request", action: { kind: "function", name: "create-store-request", success: "Store request created" }, fields: storeRequestFields(), dashboard: false },
     "admin/reports": { ...base, title: "Reports", table: "audit_logs", select: "id,actor_id,action,entity_type,entity_id,metadata,created_at", actionLabel: "Reports are read-only", action: { kind: "none" }, fields: [], dashboard: false, readonly: true },
@@ -353,6 +354,39 @@ function reviewLeaveFields(): WorkspaceField[] {
 
 function storeItemFields(): WorkspaceField[] {
   return [{ name: "name", label: "Name", required: true }, { name: "category", label: "Category" }, { name: "manufacturer", label: "Manufacturer" }, { name: "description", label: "Description", type: "textarea" }];
+}
+
+function storeBatchFields(): WorkspaceField[] {
+  return [
+    { name: "store_item_id", label: "Store item", required: true, reference: "storeItems" },
+    { name: "quantity", label: "Quantity", type: "number", required: true },
+    { name: "unit_price", label: "Unit price", type: "number", step: "0.01" },
+    { name: "receipt_number", label: "Receipt number" },
+  ];
+}
+
+function storeItemColumnLabels() {
+  return {
+    name: "Item name",
+    category: "Category",
+    manufacturer: "Manufacturer",
+    description: "Description",
+    status: "Status",
+    available_stock: "Available stock",
+    created_at: "Created at",
+  };
+}
+
+function storeBatchColumnLabels() {
+  return {
+    store_item: "Store item",
+    category: "Category",
+    quantity: "Quantity",
+    unit_price: "Unit price",
+    receipt_number: "Receipt number",
+    created_by_name: "Created by",
+    created_at: "Created at",
+  };
 }
 
 function assignStoreFields(): WorkspaceField[] {

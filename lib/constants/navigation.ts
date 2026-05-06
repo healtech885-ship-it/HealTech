@@ -16,6 +16,7 @@ import {
   Settings,
   Stethoscope,
   Store,
+  PackagePlus,
   UserRound,
   Users,
 } from "lucide-react";
@@ -48,6 +49,7 @@ export const navigationByRole: Record<UserRole, NavItem[]> = {
     { label: "Visits", href: "/admin/visits", icon: ClipboardList },
     { label: "Leave Requests", href: "/admin/leave-requests", icon: CalendarClock },
     { label: "Store Items", href: "/admin/store/items", icon: Store },
+    { label: "Store Stock", href: "/admin/store/batches", icon: PackagePlus },
     { label: "Store Assignments", href: "/admin/store/assignments", icon: Boxes },
     { label: "Store Requests", href: "/admin/store/requests", icon: BadgeCheck },
     { label: "Reports", href: "/admin/reports", icon: FileBarChart },

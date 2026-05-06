@@ -42,7 +42,7 @@ import type { ModuleRecord } from "@/types/app.types";
 import type { ReferenceKey, WorkspaceConfig, WorkspaceField, WorkspaceFilter } from "@/lib/workspaces";
 
 type FormValues = Record<string, unknown>;
-type QueryResult = { data: unknown[] | Record<string, unknown> | null; error: { message: string } | null };
+type QueryResult = { data: unknown; error: { message: string } | null };
 type CreateEmployeeSuccess = {
   employeeId: string;
   profileId: string;
@@ -140,7 +140,10 @@ export function WorkspaceClient({ config }: { config: WorkspaceConfig }) {
     ]);
 
     if (tableError) setError(tableError.message);
-    const rawRows = asArray(data);
+    let rawRows = asArray(data);
+    if (config.table === "store_items") {
+      rawRows = await enrichStoreItemsWithStock(client, rawRows);
+    }
     const rawRecord = recordMode || settingsMode ? rawRows[0] as Record<string, unknown> | undefined : undefined;
     setRecord(rawRecord ?? null);
     setRows(normalizeRows(rawRows, config));
@@ -1061,7 +1064,9 @@ function buildSchema(fields: WorkspaceField[]) {
   const shape: Record<string, z.ZodTypeAny> = {};
   for (const field of fields) {
     let schema: z.ZodTypeAny;
-    if (field.type === "number") schema = z.coerce.number();
+    if (field.type === "number") {
+      schema = z.preprocess((value) => value === "" ? undefined : value, field.required ? z.coerce.number() : z.coerce.number().optional());
+    }
     else if (field.type === "checkbox") schema = z.coerce.boolean();
     else schema = z.string();
     if (!field.required && field.type !== "checkbox") schema = schema.optional().or(z.literal(""));
@@ -1220,10 +1225,16 @@ function matchesQuickFilter(row: ModuleRecord, quickFilter: QuickFilter) {
 }
 
 function normalizeRows(rows: unknown[], config?: WorkspaceConfig): ModuleRecord[] {
-  return rows.map((row) => config?.table === "employees" ? flattenEmployee(row as Record<string, unknown>) : flatten(row as Record<string, unknown>));
+  return rows.map((row) => {
+    const record = row as Record<string, unknown>;
+    if (config?.table === "employees") return flattenEmployee(record);
+    if (config?.table === "store_items") return flattenStoreItem(record);
+    if (config?.table === "store_item_batches") return flattenStoreItemBatch(record);
+    return flatten(record);
+  });
 }
 
-function asArray(value: unknown[] | Record<string, unknown> | null): unknown[] {
+function asArray(value: unknown): unknown[] {
   if (!value) return [];
   return Array.isArray(value) ? value : [value];
 }
@@ -1254,6 +1265,48 @@ function flattenEmployee(row: Record<string, unknown>) {
     created_at: row.created_at,
     id: row.id,
   };
+}
+
+function flattenStoreItem(row: Record<string, unknown>) {
+  return {
+    id: row.id,
+    name: row.name ?? "Not set",
+    category: row.category ?? "Not set",
+    manufacturer: row.manufacturer ?? "Not set",
+    description: row.description ?? "Not set",
+    status: row.status ?? "Not set",
+    available_stock: row.available_stock ?? 0,
+    created_at: row.created_at,
+  };
+}
+
+function flattenStoreItemBatch(row: Record<string, unknown>) {
+  const storeItem = relationObject(row.store_items);
+  const createdBy = relationObject(row.profiles);
+
+  return {
+    id: row.id,
+    store_item_id: row.store_item_id,
+    store_item: storeItem.name ?? "Not set",
+    category: storeItem.category ?? "Not set",
+    quantity: row.quantity ?? 0,
+    unit_price: row.unit_price ?? "Not set",
+    receipt_number: row.receipt_number ?? "Not set",
+    created_by: row.created_by,
+    created_by_name: createdBy.full_name ?? "Not set",
+    created_at: row.created_at,
+  };
+}
+
+async function enrichStoreItemsWithStock(client: SupabaseLike, rows: unknown[]) {
+  return Promise.all(rows.map(async (row) => {
+    const record = row as Record<string, unknown>;
+    const id = typeof record.id === "string" ? record.id : null;
+    if (!id) return record;
+
+    const { data } = await client.rpc("get_available_store_stock", { target_store_item_id: id });
+    return { ...record, available_stock: typeof data === "number" ? data : Number(data ?? 0) };
+  }));
 }
 
 function employeeSummary(row: Record<string, unknown>) {
