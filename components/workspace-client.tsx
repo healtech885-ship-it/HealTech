@@ -32,6 +32,7 @@ import { useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
 import { DataTable } from "@/components/data-table";
 import { StatCard } from "@/components/dashboard/stat-card";
+import { StatusBadge } from "@/components/status-badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -112,7 +113,7 @@ export function WorkspaceClient({ config }: { config: WorkspaceConfig }) {
     setError(null);
 
     const client = supabase as unknown as SupabaseLike;
-    const recordMode = Boolean(config.recordId && (config.mode === "details" || config.mode === "edit"));
+    const recordMode = Boolean(config.recordId && (config.mode === "details" || config.mode === "edit" || config.mode === "store-request-details"));
     const settingsMode = config.mode === "settings";
     let query = client.from(config.table).select(recordMode ? config.detailSelect ?? config.select : config.select).limit(recordMode ? 1 : 50);
     if (recordMode && config.recordId) {
@@ -143,6 +144,9 @@ export function WorkspaceClient({ config }: { config: WorkspaceConfig }) {
     let rawRows = asArray(data);
     if (config.table === "store_items") {
       rawRows = await enrichStoreItemsWithStock(client, rawRows);
+    }
+    if (config.table === "store_requests") {
+      rawRows = await enrichStoreRequestsWithStock(client, rawRows);
     }
     const rawRecord = recordMode || settingsMode ? rawRows[0] as Record<string, unknown> | undefined : undefined;
     setRecord(rawRecord ?? null);
@@ -248,6 +252,10 @@ export function WorkspaceClient({ config }: { config: WorkspaceConfig }) {
         onSubmit={onSubmit}
       />
     );
+  }
+
+  if (config.mode === "store-request-details") {
+    return <StoreRequestDetailsView loading={loading} record={record} error={error} onReload={loadData} />;
   }
 
   if (isEmployeeRecordMode && config.mode === "details") {
@@ -441,6 +449,160 @@ function ClinicSettingsView({
             <ReadOnlyLine label="Settings key" value="general" />
             <ReadOnlyLine label="Updated at" value={lastUpdated.updatedAt} />
             <ReadOnlyLine label="Updated by" value={lastUpdated.updatedBy} />
+          </CardContent>
+        </Card>
+      </section>
+    </div>
+  );
+}
+
+function StoreRequestDetailsView({
+  loading,
+  record,
+  error,
+  onReload,
+}: {
+  loading: boolean;
+  record: Record<string, unknown> | null;
+  error: string | null;
+  onReload: () => Promise<void>;
+}) {
+  const supabase = useMemo(() => createClient(), []);
+  const [adminComment, setAdminComment] = useState("");
+  const [fulfillmentNotes, setFulfillmentNotes] = useState("");
+  const [actionLoading, setActionLoading] = useState<"approved" | "rejected" | "fulfilled" | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [actionMessage, setActionMessage] = useState<string | null>(null);
+
+  if (loading) return <LoadingState />;
+  if (error) return <Notice tone="danger" text={error} />;
+  if (!record) return <Notice tone="warning" text="Store request not found." />;
+
+  const request = storeRequestSummary(record);
+
+  async function review(decision: "approved" | "rejected" | "fulfilled") {
+    setActionLoading(decision);
+    setActionError(null);
+    setActionMessage(null);
+
+    const { error: reviewError } = await supabase.functions.invoke("review-store-request", {
+      body: {
+        store_request_id: request.id,
+        decision,
+        admin_comment: decision === "fulfilled" ? undefined : adminComment,
+        notes: decision === "fulfilled" ? fulfillmentNotes : undefined,
+      },
+    });
+
+    setActionLoading(null);
+    if (reviewError) {
+      setActionError(reviewError.message ?? String(reviewError));
+      return;
+    }
+
+    setActionMessage(decision === "fulfilled" ? "Store request fulfilled" : `Store request ${decision}`);
+    setAdminComment("");
+    setFulfillmentNotes("");
+    await onReload();
+  }
+
+  const details = [
+    ["Request ID", request.id],
+    ["Requester", request.requesterName],
+    ["Requester email", request.requesterEmail],
+    ["Store item", request.storeItem],
+    ["Category", request.category],
+    ["Quantity", request.quantity],
+    ["Reason", request.reason],
+    ["Status", request.status],
+    ["Reviewed by", request.reviewedByName],
+    ["Reviewed at", request.reviewedAt],
+    ["Admin comment", request.adminComment],
+    ["Created", request.createdAt],
+    ["Available stock", request.availableStock],
+  ];
+
+  return (
+    <div className="min-w-0 space-y-6">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <Link href="/admin/store/requests" className="inline-flex items-center gap-2 text-sm font-semibold text-primary hover:underline">
+            <ArrowLeft className="h-4 w-4" />
+            Store requests
+          </Link>
+          <div className="mt-2 flex flex-wrap items-center gap-3">
+            <h1 className="text-[30px] font-semibold leading-10 tracking-normal text-[#080d10]">{request.storeItem}</h1>
+            <StatusBadge value={request.status} />
+          </div>
+          <p className="text-[17px] leading-7 text-[#3d4950]">Requested by {request.requesterName} for quantity {request.quantity}.</p>
+        </div>
+      </div>
+
+      <section className="grid min-w-0 gap-6 xl:grid-cols-[minmax(0,1fr)_380px]">
+        <Card className="min-w-0 overflow-hidden">
+          <CardHeader>
+            <CardTitle>Request Details</CardTitle>
+            <CardDescription>Review the request and current stock before changing status.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <dl className="grid gap-4 md:grid-cols-2">
+              {details.map(([label, value]) => (
+                <div key={label} className="rounded-lg border border-border bg-white p-4">
+                  <dt className="text-xs font-semibold uppercase tracking-[0.02em] text-[var(--on-surface-variant)]">{label}</dt>
+                  <dd className="mt-2 break-words text-sm font-semibold text-[var(--on-surface)]">{formatDetailValue(value)}</dd>
+                </div>
+              ))}
+            </dl>
+          </CardContent>
+        </Card>
+
+        <Card className="min-w-0 overflow-hidden">
+          <CardHeader>
+            <CardTitle>Admin Action</CardTitle>
+            <CardDescription>Allowed actions depend on the current request status.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {request.status === "pending" ? (
+              <>
+                <div className="space-y-2">
+                  <Label htmlFor="admin_comment">Admin comment</Label>
+                  <Textarea id="admin_comment" value={adminComment} onChange={(event) => setAdminComment(event.target.value)} placeholder="Optional review note" />
+                </div>
+                <div className="grid gap-2 sm:grid-cols-2">
+                  <Button type="button" onClick={() => void review("approved")} disabled={Boolean(actionLoading)}>
+                    {actionLoading === "approved" ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                    Approve
+                  </Button>
+                  <Button type="button" variant="destructive" onClick={() => void review("rejected")} disabled={Boolean(actionLoading)}>
+                    {actionLoading === "rejected" ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                    Reject
+                  </Button>
+                </div>
+              </>
+            ) : null}
+
+            {request.status === "approved" ? (
+              <>
+                <div className="rounded-lg border border-border bg-muted p-3 text-sm">
+                  <p className="font-semibold text-[var(--on-surface)]">Available stock: {request.availableStock}</p>
+                  <p className="mt-1 text-[var(--on-surface-variant)]">Fulfilling assigns {request.quantity} item(s) to {request.requesterName}.</p>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="fulfillment_notes">Fulfillment notes</Label>
+                  <Textarea id="fulfillment_notes" value={fulfillmentNotes} onChange={(event) => setFulfillmentNotes(event.target.value)} placeholder="Optional assignment note" />
+                </div>
+                <Button type="button" className="w-full" onClick={() => void review("fulfilled")} disabled={Boolean(actionLoading)}>
+                  {actionLoading === "fulfilled" ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                  Fulfill request
+                </Button>
+              </>
+            ) : null}
+
+            {["rejected", "fulfilled", "cancelled"].includes(request.status) ? (
+              <ReadOnlyNotice />
+            ) : null}
+            {actionError ? <Notice tone="danger" text={actionError} /> : null}
+            {actionMessage ? <Notice tone="success" text={actionMessage} /> : null}
           </CardContent>
         </Card>
       </section>
@@ -1230,6 +1392,7 @@ function normalizeRows(rows: unknown[], config?: WorkspaceConfig): ModuleRecord[
     if (config?.table === "employees") return flattenEmployee(record);
     if (config?.table === "store_items") return flattenStoreItem(record);
     if (config?.table === "store_item_batches") return flattenStoreItemBatch(record);
+    if (config?.table === "store_requests") return flattenStoreRequest(record);
     return flatten(record);
   });
 }
@@ -1298,6 +1461,30 @@ function flattenStoreItemBatch(row: Record<string, unknown>) {
   };
 }
 
+function flattenStoreRequest(row: Record<string, unknown>) {
+  const requester = relationObject(row.requester);
+  const reviewer = relationObject(row.reviewer);
+  const storeItem = relationObject(row.store_items);
+
+  return {
+    requester_name: requester.full_name ?? "Not set",
+    requester_email: requester.email ?? "Not set",
+    store_item: storeItem.name ?? "Not set",
+    category: storeItem.category ?? "Not set",
+    quantity: row.quantity ?? 0,
+    reason: row.reason ?? "Not set",
+    status: row.status ?? "Not set",
+    reviewed_by_name: reviewer.full_name ?? "Not set",
+    reviewed_at: row.reviewed_at ?? "Not set",
+    admin_comment: row.admin_comment ?? "Not set",
+    created_at: row.created_at,
+    id: row.id,
+    requested_by: row.requested_by,
+    store_item_id: row.store_item_id,
+    reviewed_by: row.reviewed_by,
+  };
+}
+
 async function enrichStoreItemsWithStock(client: SupabaseLike, rows: unknown[]) {
   return Promise.all(rows.map(async (row) => {
     const record = row as Record<string, unknown>;
@@ -1307,6 +1494,41 @@ async function enrichStoreItemsWithStock(client: SupabaseLike, rows: unknown[]) 
     const { data } = await client.rpc("get_available_store_stock", { target_store_item_id: id });
     return { ...record, available_stock: typeof data === "number" ? data : Number(data ?? 0) };
   }));
+}
+
+async function enrichStoreRequestsWithStock(client: SupabaseLike, rows: unknown[]) {
+  return Promise.all(rows.map(async (row) => {
+    const record = row as Record<string, unknown>;
+    const storeItemId = typeof record.store_item_id === "string" ? record.store_item_id : null;
+    if (!storeItemId) return record;
+
+    const { data } = await client.rpc("get_available_store_stock", { target_store_item_id: storeItemId });
+    return { ...record, available_stock: typeof data === "number" ? data : Number(data ?? 0) };
+  }));
+}
+
+function storeRequestSummary(row: Record<string, unknown>) {
+  const requester = relationObject(row.requester);
+  const reviewer = relationObject(row.reviewer);
+  const storeItem = relationObject(row.store_items);
+
+  return {
+    id: String(row.id ?? ""),
+    requestedBy: String(row.requested_by ?? ""),
+    requesterName: String(requester.full_name ?? "Not set"),
+    requesterEmail: String(requester.email ?? "Not set"),
+    storeItemId: String(row.store_item_id ?? ""),
+    storeItem: String(storeItem.name ?? "Not set"),
+    category: String(storeItem.category ?? "Not set"),
+    quantity: Number(row.quantity ?? 0),
+    reason: String(row.reason ?? "Not set"),
+    status: String(row.status ?? "Not set"),
+    reviewedByName: String(reviewer.full_name ?? "Not set"),
+    reviewedAt: formatDateTime(row.reviewed_at),
+    adminComment: String(row.admin_comment ?? "Not set"),
+    createdAt: formatDateTime(row.created_at),
+    availableStock: Number(row.available_stock ?? 0),
+  };
 }
 
 function employeeSummary(row: Record<string, unknown>) {

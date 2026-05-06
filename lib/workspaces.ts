@@ -27,7 +27,7 @@ export type WorkspaceAction =
   | { kind: "update"; table: string; idField: string; success: string }
   | { kind: "function"; name: string; success: string };
 
-export type WorkspaceMode = "list" | "create" | "details" | "edit" | "settings";
+export type WorkspaceMode = "list" | "create" | "details" | "edit" | "settings" | "store-request-details";
 
 export type WorkspaceConfig = {
   title: string;
@@ -136,6 +136,7 @@ export function getWorkspaceConfig(role: UserRole, segments?: string[]): Workspa
   const first = segments?.[0] ?? "dashboard";
   const employeeId = role === "admin" && segments?.[0] === "employees" && segments[1] !== "new" && segments[1] !== "edit" ? segments[1] : undefined;
   const editEmployeeId = role === "admin" && segments?.[0] === "employees" && segments[1] === "edit" ? segments[2] : undefined;
+  const storeRequestId = role === "admin" && segments?.[0] === "store" && segments[1] === "requests" ? segments[2] : undefined;
 
   if (first === "dashboard") return base;
 
@@ -149,7 +150,7 @@ export function getWorkspaceConfig(role: UserRole, segments?: string[]): Workspa
     "admin/store/items": { ...base, title: "Store Items", table: "store_items", select: "id,name,category,manufacturer,description,status,created_at", actionLabel: "Add Store Item", action: { kind: "insert", table: "store_items", success: "Store item added" }, fields: storeItemFields(), hiddenColumns: ["id"], columnLabels: storeItemColumnLabels(), dashboard: false },
     "admin/store/batches": { ...base, title: "Store Stock", table: "store_item_batches", select: "id,store_item_id,quantity,unit_price,receipt_number,created_by,created_at,store_items(name,category,status),profiles(full_name,email)", orderBy: "created_at", actionLabel: "Add Stock Batch", action: { kind: "function", name: "add-store-item-batch", success: "Store stock batch added" }, fields: storeBatchFields(), hiddenColumns: ["id", "store_item_id", "created_by"], columnLabels: storeBatchColumnLabels(), dashboard: false },
     "admin/store/assignments": { ...base, title: "Store Assignments", table: "store_assignments", select: "id,store_item_id,assigned_to,assigned_by,quantity,status,notes,assigned_at,returned_at,created_at", actionLabel: "Assign Store Item", action: { kind: "function", name: "assign-store-item", success: "Store item assigned" }, fields: assignStoreFields(), dashboard: false },
-    "admin/store/requests": { ...base, title: "Store Requests", table: "store_requests", select: "id,requested_by,store_item_id,quantity,reason,status,reviewed_by,reviewed_at,admin_comment,created_at", actionLabel: "Create Store Request", action: { kind: "function", name: "create-store-request", success: "Store request created" }, fields: storeRequestFields(), dashboard: false },
+    "admin/store/requests": { ...base, title: "Store Requests", table: "store_requests", select: storeRequestSelect(), detailSelect: storeRequestSelect(), orderBy: "created_at", rowLink: { hrefBase: "/admin/store/requests", idField: "id", label: "Open" }, hiddenColumns: ["id", "requested_by", "store_item_id", "reviewed_by"], columnLabels: storeRequestColumnLabels(), actionLabel: "Create Store Request", action: { kind: "function", name: "create-store-request", success: "Store request created" }, fields: storeRequestFields(), dashboard: false },
     "admin/reports": { ...base, title: "Reports", table: "audit_logs", select: "id,actor_id,action,entity_type,entity_id,metadata,created_at", actionLabel: "Reports are read-only", action: { kind: "none" }, fields: [], dashboard: false, readonly: true },
     "admin/audit-logs": { ...base, title: "Audit Logs", table: "audit_logs", select: "id,actor_id,action,entity_type,entity_id,metadata,created_at", actionLabel: "Audit logs are read-only", action: { kind: "none" }, fields: [], dashboard: false, readonly: true },
     "admin/settings": { ...base, title: "Clinic Settings", table: "clinic_settings", select: "key,value,updated_by,updated_at,profiles(full_name,email)", mode: "settings", actionLabel: "Save Settings", action: { kind: "function", name: "update-clinic-settings", success: "Clinic settings saved" }, fields: clinicSettingsFields(), filters: [{ column: "key", operator: "eq", value: "general" }], dashboard: false },
@@ -212,6 +213,21 @@ export function getWorkspaceConfig(role: UserRole, segments?: string[]): Workspa
       action: { kind: "function", name: "update-employee", success: "Employee updated" },
       fields: employeeEditFields(),
       readonly: false,
+      dashboard: false,
+    };
+  }
+
+  if (storeRequestId) {
+    return {
+      ...overrides["admin/store/requests"],
+      title: "Store Request Details",
+      mode: "store-request-details",
+      recordId: storeRequestId,
+      recordIdField: "id",
+      actionLabel: "Store request details are read-only",
+      action: { kind: "none" },
+      fields: [],
+      readonly: true,
       dashboard: false,
     };
   }
@@ -385,6 +401,26 @@ function storeBatchColumnLabels() {
     unit_price: "Unit price",
     receipt_number: "Receipt number",
     created_by_name: "Created by",
+    created_at: "Created at",
+  };
+}
+
+function storeRequestSelect() {
+  return "id,requested_by,store_item_id,quantity,reason,status,reviewed_by,reviewed_at,admin_comment,created_at,requester:profiles!store_requests_requested_by_fkey(full_name,email),reviewer:profiles!store_requests_reviewed_by_fkey(full_name,email),store_items(name,category,status)";
+}
+
+function storeRequestColumnLabels() {
+  return {
+    requester_name: "Requester",
+    requester_email: "Requester email",
+    store_item: "Store item",
+    category: "Category",
+    quantity: "Quantity",
+    reason: "Reason",
+    status: "Status",
+    reviewed_by_name: "Reviewed by",
+    reviewed_at: "Reviewed at",
+    admin_comment: "Admin comment",
     created_at: "Created at",
   };
 }
