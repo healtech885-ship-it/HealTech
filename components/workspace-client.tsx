@@ -12,7 +12,6 @@ import {
   Calendar,
   CalendarDays,
   Check,
-  ChevronDown,
   ClipboardPlus,
   Copy,
   Edit,
@@ -37,6 +36,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { createClient } from "@/lib/supabase/client";
 import type { ModuleRecord } from "@/types/app.types";
@@ -1009,26 +1009,24 @@ function AppointmentRequestDetailsView({
                 </Link>
                 <div className="space-y-2">
                   <Label htmlFor="appointment_doctor">Doctor *</Label>
-                  <select
+                  <Select
                     id="appointment_doctor"
                     value={doctorId}
-                    onChange={(event) => setDoctorId(event.target.value)}
-                    className="h-12 w-full rounded-lg border border-[#bdc8ce] bg-white px-4 text-[15px] text-[#171c1e] outline-none transition focus:border-[#00647c] focus:ring-3 focus:ring-[#00647c]/15"
-                  >
-                    <option value="">Select doctor</option>
-                    {doctors.map((doctor) => <option key={doctor.value} value={doctor.value}>{doctor.label}</option>)}
-                  </select>
+                    onValueChange={setDoctorId}
+                    placeholder="Select doctor"
+                    options={doctors}
+                    triggerClassName="h-12 border-[#bdc8ce] bg-white px-4 text-[#171c1e]"
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="appointment_priority">Priority</Label>
-                  <select
+                  <Select
                     id="appointment_priority"
                     value={priority}
-                    onChange={(event) => setPriority(event.target.value)}
-                    className="h-12 w-full rounded-lg border border-[#bdc8ce] bg-white px-4 text-[15px] text-[#171c1e] outline-none transition focus:border-[#00647c] focus:ring-3 focus:ring-[#00647c]/15"
-                  >
-                    {["low", "normal", "high", "urgent"].map((option) => <option key={option} value={option}>{option}</option>)}
-                  </select>
+                    onValueChange={setPriority}
+                    options={["low", "normal", "high", "urgent"].map((option) => ({ value: option, label: option }))}
+                    triggerClassName="h-12 border-[#bdc8ce] bg-white px-4 text-[#171c1e]"
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="appointment_chief_complaint">Chief complaint</Label>
@@ -1604,65 +1602,18 @@ function CustomSelect({
   registration: ReturnType<ReturnType<typeof useForm<FormValues>>["register"]>;
   onChange: (value: string) => void;
 }) {
-  const [open, setOpen] = useState(false);
-  const selected = options.find((option) => option.value === value);
-
   return (
     <div className="relative">
       <input {...registration} value={value} readOnly className="sr-only" tabIndex={-1} />
-      <button
+      <Select
         id={id}
-        type="button"
-        aria-haspopup="listbox"
-        aria-expanded={open}
-        onClick={() => setOpen((current) => !current)}
-        onBlur={() => window.setTimeout(() => setOpen(false), 120)}
-        className="flex h-12 w-full items-center justify-between rounded-lg border border-[#bdc8ce] bg-white px-4 text-left text-[15px] text-[#171c1e] shadow-none outline-none transition hover:border-[#8fa4ae] focus:border-[#00647c] focus:ring-3 focus:ring-[#00647c]/15"
-      >
-        <span className={selected ? "truncate" : "truncate text-[#7b8990]"}>{selected?.label ?? placeholder}</span>
-        <ChevronDown className={`h-5 w-5 shrink-0 text-[#526168] transition-transform ${open ? "rotate-180" : ""}`} />
-      </button>
-
-      {open ? (
-        <div className="absolute left-0 right-0 top-[calc(100%+6px)] z-50 overflow-hidden rounded-lg border border-[#bdc8ce] bg-white p-1 shadow-[0_16px_34px_rgba(15,23,42,0.14)]">
-          <div role="listbox" aria-labelledby={id} className="max-h-64 overflow-auto">
-            <button
-              type="button"
-              role="option"
-              aria-selected={!value}
-              onMouseDown={(event) => event.preventDefault()}
-              onClick={() => {
-                onChange("");
-                setOpen(false);
-              }}
-              className={`flex h-10 w-full items-center justify-between rounded-md px-3 text-left text-sm transition ${!value ? "bg-[#e5f4f7] font-semibold text-[#00647c]" : "text-[#3e484d] hover:bg-[#f0f4f7]"}`}
-            >
-              {placeholder}
-              {!value ? <Check className="h-4 w-4" /> : null}
-            </button>
-            {options.map((option) => {
-              const active = option.value === value;
-              return (
-                <button
-                  key={option.value}
-                  type="button"
-                  role="option"
-                  aria-selected={active}
-                  onMouseDown={(event) => event.preventDefault()}
-                  onClick={() => {
-                    onChange(option.value);
-                    setOpen(false);
-                  }}
-                  className={`flex min-h-10 w-full items-center justify-between gap-3 rounded-md px-3 py-2 text-left text-sm transition ${active ? "bg-[#e5f4f7] font-semibold text-[#00647c]" : "text-[#171c1e] hover:bg-[#f0f4f7]"}`}
-                >
-                  <span className="min-w-0 break-words">{option.label}</span>
-                  {active ? <Check className="h-4 w-4 shrink-0" /> : null}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      ) : null}
+        value={value}
+        placeholder={placeholder}
+        options={options}
+        allowEmptyOption
+        onValueChange={onChange}
+        triggerClassName="h-12 border-[#bdc8ce] bg-white px-4 text-[#171c1e]"
+      />
     </div>
   );
 }

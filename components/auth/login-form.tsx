@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { AlertCircle, ArrowRight, Eye, EyeOff, Loader2, LockKeyhole, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { getDashboardRouteForRole } from "@/lib/auth/roles";
@@ -149,10 +150,7 @@ export function LoginForm() {
         </div>
 
         <div className="login-actions-row flex items-center justify-between gap-3">
-          <label className="flex items-center gap-3 text-[#4d585e]">
-            <input type="checkbox" className="login-checkbox rounded-md border-[#bdc8ce] text-[#00647c] focus:ring-[#00647c]" />
-            Remember me
-          </label>
+          <Checkbox className="text-[#4d585e]">Remember me</Checkbox>
           <Link href="/forgot-password" className="font-semibold text-[#00647c] transition hover:text-[#004e61]">
             Forgot password?
           </Link>

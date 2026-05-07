@@ -21,6 +21,8 @@ import {
   UserRound,
 } from "lucide-react";
 import { Badge, badgeTone } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Select } from "@/components/ui/select";
 import { navigationByRole } from "@/lib/constants/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
@@ -560,20 +562,20 @@ function VisitDetailCard({ visit, onRefresh }: { visit: DoctorVisit; onRefresh: 
           <ClinicalInput label="Disease" value={form.disease ?? ""} disabled={closed || action !== null} onChange={(value) => updateField("disease", value)} />
           <ClinicalTextarea label="Doctor instructions" value={form.doctor_instructions ?? ""} disabled={closed || action !== null} required wide onChange={(value) => updateField("doctor_instructions", value)} />
           <ClinicalTextarea label="Notes" value={form.notes ?? ""} disabled={closed || action !== null} wide onChange={(value) => updateField("notes", value)} />
-          <label className="block">
+          <div className="grid gap-2">
             <span className="text-sm font-semibold text-[#41546b]">Priority</span>
-            <select
+            <Select
               value={form.priority}
               disabled={closed || action !== null}
-              onChange={(event) => updateField("priority", event.target.value as VisitPriority)}
-              className="mt-2 h-11 w-full rounded-lg border border-[#cbd8e2] bg-white px-3 text-sm outline-none focus:border-[#00758d] disabled:bg-[#eef3f7]"
-            >
-              <option value="low">Low</option>
-              <option value="normal">Normal</option>
-              <option value="high">High</option>
-              <option value="urgent">Urgent</option>
-            </select>
-          </label>
+              onValueChange={(value) => updateField("priority", value as VisitPriority)}
+              options={[
+                { value: "low", label: "Low" },
+                { value: "normal", label: "Normal" },
+                { value: "high", label: "High" },
+                { value: "urgent", label: "Urgent" },
+              ]}
+            />
+          </div>
         </div>
 
         {!closed ? (
@@ -741,14 +743,13 @@ function LabOrderPanel({
               ) : (
                 <div className="divide-y divide-[#e1e9ef]">
                   {filteredTests.map((test) => (
-                    <label key={test.id} className="flex cursor-pointer gap-3 p-4 hover:bg-[#f8fbfd]">
-                      <input
-                        type="checkbox"
+                    <Checkbox
+                      key={test.id}
                         checked={selectedIds.includes(test.id)}
                         disabled={submitting}
-                        onChange={() => toggleTest(test.id)}
-                        className="mt-1 h-4 w-4 rounded border-[#cbd8e2]"
-                      />
+                      onCheckedChange={() => toggleTest(test.id)}
+                      className="cursor-pointer p-4 hover:bg-[#f8fbfd]"
+                    >
                       <span className="min-w-0 flex-1">
                         <span className="block font-semibold">{test.name}</span>
                         <span className="mt-1 block text-sm text-[#607084]">
@@ -758,7 +759,7 @@ function LabOrderPanel({
                         </span>
                         {test.description ? <span className="mt-1 block text-sm text-[#41546b]">{test.description}</span> : null}
                       </span>
-                    </label>
+                    </Checkbox>
                   ))}
                 </div>
               )}

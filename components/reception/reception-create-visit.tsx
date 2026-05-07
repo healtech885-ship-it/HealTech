@@ -2,6 +2,7 @@ import Link from "next/link";
 import { AlertCircle, Calendar, Clock3, Info, Search, Stethoscope, UserPlus } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { AvatarCircle } from "./reception-shell";
 
@@ -166,9 +167,7 @@ function FormField({ label, required, type = "text", placeholder, defaultValue, 
     <div className="grid gap-1.5">
       <Label htmlFor={id}>{label}{required && <span className="text-[#d32f2f]"> *</span>}</Label>
       {type === "select" ? (
-        <select id={id} className="h-11 w-full rounded-lg border border-[#c8d5de] bg-white px-3 text-sm outline-none focus:border-[#0b9ab5] focus:ring-3 focus:ring-[#00758d]/15" defaultValue={defaultValue}>
-          {(options ?? []).map((o) => <option key={o}>{o}</option>)}
-        </select>
+        <Select id={id} defaultValue={defaultValue} options={(options ?? []).map((option) => ({ value: option, label: option }))} />
       ) : (
         <Input id={id} type={type} placeholder={placeholder} defaultValue={defaultValue} />
       )}

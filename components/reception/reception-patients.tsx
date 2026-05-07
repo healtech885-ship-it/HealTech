@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ChevronLeft, ChevronRight, Eye, Calendar, Search, UserPlus, SlidersHorizontal } from "lucide-react";
+import { Select } from "@/components/ui/select";
 import { AvatarCircle } from "./reception-shell";
 
 const patients = [
@@ -36,12 +37,20 @@ export function ReceptionPatientsView() {
           <span className="flex items-center gap-2 text-sm font-medium text-[#51647c]">
             <SlidersHorizontal className="h-4 w-4" /> Filters:
           </span>
-          <select className="h-9 rounded-lg border border-[#c8d5de] bg-white px-3 text-sm outline-none">
-            <option>Gender (All)</option><option>Male</option><option>Female</option>
-          </select>
-          <select className="h-9 rounded-lg border border-[#c8d5de] bg-white px-3 text-sm outline-none">
-            <option>Department (All)</option><option>Cardiology</option><option>General Practice</option><option>Neurology</option>
-          </select>
+          <Select
+            aria-label="Filter patients by gender"
+            defaultValue="Gender (All)"
+            options={["Gender (All)", "Male", "Female"]}
+            className="w-36"
+            triggerClassName="h-9 min-h-9"
+          />
+          <Select
+            aria-label="Filter patients by department"
+            defaultValue="Department (All)"
+            options={["Department (All)", "Cardiology", "General Practice", "Neurology"]}
+            className="w-48"
+            triggerClassName="h-9 min-h-9"
+          />
           <div className="relative">
             <Calendar className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8293a8]" />
             <input type="date" className="h-9 rounded-lg border border-[#c8d5de] bg-white pl-9 pr-3 text-sm outline-none" />

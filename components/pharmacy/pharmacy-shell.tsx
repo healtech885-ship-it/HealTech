@@ -21,6 +21,7 @@ import {
 import { Badge, badgeTone } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { navigationByRole } from "@/lib/constants/navigation";
 import { createClient } from "@/lib/supabase/client";
@@ -710,34 +711,25 @@ function AddStockBatchPanel({
             <div className="grid gap-5 lg:grid-cols-3">
               <div className="grid gap-2 lg:col-span-2">
                 <Label htmlFor="stock_medicine">Medicine</Label>
-                <select
+                <Select
                   id="stock_medicine"
                   value={values.medicine_id}
-                  onChange={(event) => updateField("medicine_id", event.target.value)}
-                  className="h-11 rounded-lg border border-[#cbd8e2] px-3 outline-none focus:border-[#00758d] focus:ring-3 focus:ring-[#00758d]/15"
-                >
-                  <option value="">Select active medicine</option>
-                  {medicines.data.map((medicine) => (
-                    <option key={medicine.id} value={medicine.id}>
-                      {medicine.name}{medicine.category ? ` - ${medicine.category}` : ""}
-                    </option>
-                  ))}
-                </select>
+                  onValueChange={(value) => updateField("medicine_id", value)}
+                  placeholder="Select active medicine"
+                  options={medicines.data.map((medicine) => ({
+                    value: medicine.id,
+                    label: `${medicine.name}${medicine.category ? ` - ${medicine.category}` : ""}`,
+                  }))}
+                />
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="stock_status">Status</Label>
-                <select
+                <Select
                   id="stock_status"
                   value={values.status}
-                  onChange={(event) => updateField("status", event.target.value as BatchFormStatus)}
-                  className="h-11 rounded-lg border border-[#cbd8e2] px-3 outline-none focus:border-[#00758d] focus:ring-3 focus:ring-[#00758d]/15"
-                >
-                  {batchStatusOptions.map((status) => (
-                    <option key={status} value={status}>
-                      {formatLabel(status)}
-                    </option>
-                  ))}
-                </select>
+                  onValueChange={(value) => updateField("status", value as BatchFormStatus)}
+                  options={batchStatusOptions.map((status) => ({ value: status, label: formatLabel(status) }))}
+                />
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="stock_quantity">Quantity</Label>
@@ -868,10 +860,15 @@ function NewMedicineForm({ profile }: { profile: AppProfile }) {
           </div>
           <div className="grid gap-2">
             <Label htmlFor="medicine_status">Status</Label>
-            <select id="medicine_status" value={status} onChange={(event) => setStatus(event.target.value)} className="h-11 rounded-lg border border-[#cbd8e2] px-3 outline-none focus:border-[#00758d] focus:ring-3 focus:ring-[#00758d]/15">
-              <option value="active">Active</option>
-              <option value="inactive">Inactive</option>
-            </select>
+            <Select
+              id="medicine_status"
+              value={status}
+              onValueChange={(value) => setStatus(value)}
+              options={[
+                { value: "active", label: "Active" },
+                { value: "inactive", label: "Inactive" },
+              ]}
+            />
           </div>
           <div className="flex items-center gap-3">
             <button disabled={saving} className="inline-flex h-11 items-center gap-2 rounded-lg bg-[#006d86] px-5 text-sm font-semibold text-white disabled:opacity-60">

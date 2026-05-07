@@ -2,6 +2,8 @@ import Link from "next/link";
 import { AlertTriangle, Info, UserPlus } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { RadioGroup } from "@/components/ui/radio-group";
+import { Select } from "@/components/ui/select";
 
 export function ReceptionAddPatientView() {
   return (
@@ -52,13 +54,12 @@ export function ReceptionAddPatientView() {
             </div>
             <div className="mt-4">
               <p className="mb-2 text-sm font-medium">Blood Type</p>
-              <div className="flex gap-3">
-                {["A+", "A-", "B+", "O+", "Unknown"].map((bt) => (
-                  <label key={bt} className={`flex items-center gap-2 rounded-lg border px-4 py-2 text-sm ${bt === "O+" ? "border-[#0b9ab5] bg-[#e0f7fa]" : "border-[#d7e1e7]"}`}>
-                    <input type="radio" name="blood_type" defaultChecked={bt === "O+"} className="accent-[#0b9ab5]" /> {bt}
-                  </label>
-                ))}
-              </div>
+              <RadioGroup
+                name="blood_type"
+                defaultValue="O+"
+                orientation="horizontal"
+                options={["A+", "A-", "B+", "O+", "Unknown"].map((bt) => ({ value: bt, label: bt }))}
+              />
             </div>
           </fieldset>
 
@@ -98,13 +99,13 @@ export function ReceptionAddPatientView() {
             </div>
             <div className="mt-4">
               <p className="text-sm font-medium">Patient Type <span className="text-[#d32f2f]">*</span></p>
-              <div className="mt-2 flex gap-4">
-                {["Student", "Staff/Faculty", "Visitor"].map((t) => (
-                  <label key={t} className="flex items-center gap-2 text-sm">
-                    <input type="radio" name="patient_type" defaultChecked={t === "Staff/Faculty"} className="accent-[#0b9ab5]" /> {t}
-                  </label>
-                ))}
-              </div>
+              <RadioGroup
+                className="mt-2"
+                name="patient_type"
+                defaultValue="Staff/Faculty"
+                orientation="horizontal"
+                options={["Student", "Staff/Faculty", "Visitor"].map((type) => ({ value: type, label: type }))}
+              />
             </div>
             <div className="mt-4">
               <FormField label="University ID / Employee ID" placeholder="e.g. 800123456" />
@@ -151,9 +152,7 @@ function FormField({ label, required, type = "text", placeholder, defaultValue, 
     <div className="grid gap-1.5">
       <Label htmlFor={id}>{label}{required && <span className="text-[#d32f2f]"> *</span>}</Label>
       {type === "select" ? (
-        <select id={id} className="h-11 w-full rounded-lg border border-[#c8d5de] bg-white px-3 text-sm outline-none focus:border-[#0b9ab5] focus:ring-3 focus:ring-[#00758d]/15" defaultValue={defaultValue}>
-          {(options ?? []).map((o) => <option key={o}>{o}</option>)}
-        </select>
+        <Select id={id} defaultValue={defaultValue} options={(options ?? []).map((option) => ({ value: option, label: option }))} />
       ) : (
         <Input id={id} type={type} placeholder={placeholder} defaultValue={defaultValue} />
       )}

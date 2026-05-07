@@ -18,6 +18,7 @@ import {
 import { Badge, badgeTone } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { navigationByRole } from "@/lib/constants/navigation";
 import { createClient } from "@/lib/supabase/client";
@@ -952,20 +953,16 @@ function PatientAppointmentRequestsPage({ supabase, patient }: { supabase: Patie
           <div className="grid gap-4 lg:grid-cols-2">
             <div className="grid gap-2">
               <Label htmlFor="appointment_department">Department</Label>
-              <select
+              <Select
                 id="appointment_department"
                 value={form.requested_department_id}
-                onChange={(event) => setForm((current) => ({ ...current, requested_department_id: event.target.value }))}
-                className="h-11 rounded-lg border border-[#cbd8e2] bg-[#f4f8fb] px-3 text-sm text-[#17212f] outline-none focus:border-[#00758d] focus:ring-3 focus:ring-[#00758d]/15"
+                onValueChange={(value) => setForm((current) => ({ ...current, requested_department_id: value }))}
+                triggerClassName="bg-[#f4f8fb] text-[#17212f]"
                 disabled={saving || departmentsState.loading}
-              >
-                <option value="">No department preference</option>
-                {departmentsState.data.map((department) => (
-                  <option key={department.id} value={department.id}>
-                    {department.name}
-                  </option>
-                ))}
-              </select>
+                placeholder="No department preference"
+                allowEmptyOption
+                options={departmentsState.data.map((department) => ({ value: department.id, label: department.name }))}
+              />
               {departmentsState.loading ? <span className="text-xs text-[#607084]">Loading departments...</span> : null}
               {departmentsState.error ? <span className="text-xs text-[#b42318]">Departments could not be loaded: {departmentsState.error}</span> : null}
               {!departmentsState.loading && !departmentsState.error && departmentsState.data.length === 0 ? (

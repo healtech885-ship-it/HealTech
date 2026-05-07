@@ -2,6 +2,7 @@ import {
   Calendar, CheckCircle2, ChevronLeft, ChevronRight, Clock3, Download,
   Eye, Filter, MoreVertical, Search, TrendingUp, Users,
 } from "lucide-react";
+import { Select } from "@/components/ui/select";
 import { AvatarCircle } from "./reception-shell";
 
 const completedVisits = [
@@ -44,12 +45,20 @@ export function ReceptionCompletedVisitsView() {
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8293a8]" />
             <input className="h-9 w-full rounded-lg border border-[#c8d5de] bg-white pl-9 pr-3 text-sm outline-none" placeholder="Search by patient, visit ID..." />
           </div>
-          <select className="h-9 rounded-lg border border-[#c8d5de] bg-white px-3 text-sm outline-none">
-            <option>All Doctors</option><option>Dr. Vance</option><option>Dr. Smith</option><option>Dr. Patel</option><option>Dr. Lee</option>
-          </select>
-          <select className="h-9 rounded-lg border border-[#c8d5de] bg-white px-3 text-sm outline-none">
-            <option>All Departments</option><option>General Practice</option><option>Internal Medicine</option><option>Pediatrics</option>
-          </select>
+          <Select
+            aria-label="Filter completed visits by doctor"
+            defaultValue="All Doctors"
+            options={["All Doctors", "Dr. Vance", "Dr. Smith", "Dr. Patel", "Dr. Lee"]}
+            className="w-40"
+            triggerClassName="h-9 min-h-9"
+          />
+          <Select
+            aria-label="Filter completed visits by department"
+            defaultValue="All Departments"
+            options={["All Departments", "General Practice", "Internal Medicine", "Pediatrics"]}
+            className="w-48"
+            triggerClassName="h-9 min-h-9"
+          />
           <div className="relative">
             <Calendar className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8293a8]" />
             <input type="date" className="h-9 rounded-lg border border-[#c8d5de] bg-white pl-9 pr-3 text-sm outline-none" />
