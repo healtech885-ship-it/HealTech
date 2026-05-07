@@ -313,22 +313,35 @@ textarea {
 }
 
 .login-home-link-inline {
-  position: fixed;
-  top: 24px;
-  right: 24px;
+  position: absolute;
+  top: 32px;
+  left: 28px;
   z-index: 50;
-  min-height: 42px;
-  padding: 0 18px;
-  border-color: color-mix(in srgb, var(--primary) 72%, var(--border));
-  background: var(--primary);
+  width: 38px;
+  min-width: 38px;
+  height: 38px;
+  min-height: 38px;
+  justify-content: center;
+  padding: 0;
+  border-color: color-mix(in srgb, var(--primary) 42%, var(--border));
+  background: color-mix(in srgb, var(--surface-elevated) 88%, transparent);
   color: var(--primary-foreground);
-  box-shadow: 0 16px 34px rgba(12, 116, 110, 0.22);
+  box-shadow: 0 12px 28px rgba(11, 19, 32, 0.12);
+}
+
+.login-home-link-inline svg {
+  width: 17px;
+  height: 17px;
+  color: var(--primary);
 }
 
 .login-home-link-inline:hover {
-  border-color: var(--primary-container);
-  background: var(--primary-container);
-  color: var(--primary-foreground);
+  border-color: var(--primary);
+  background: color-mix(in srgb, var(--primary) 10%, var(--surface-elevated));
+}
+
+.login-home-link-inline:hover svg {
+  color: var(--primary-container);
 }
 
 .login-panel {
@@ -619,6 +632,11 @@ textarea {
   .login-home-link {
     top: 32px;
     left: clamp(36px, 5vw, 72px);
+  }
+
+  .login-home-link-inline {
+    top: 48px;
+    left: 48px;
   }
 
   .login-visual {

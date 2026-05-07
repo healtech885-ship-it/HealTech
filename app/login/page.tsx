@@ -68,7 +68,6 @@ export default function LoginPage() {
           <div className="login-panel">
             <Link href="/" className="login-home-link login-home-link-inline" aria-label="Back to home page">
               <ArrowLeft className="h-4 w-4" />
-              Back to home
             </Link>
 
             <div className="login-brand">
