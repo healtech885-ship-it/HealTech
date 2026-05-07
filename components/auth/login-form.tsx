@@ -92,10 +92,10 @@ export function LoginForm() {
   }
 
   return (
-    <div>
+    <div className="login-form-shell">
       <form onSubmit={handleSubmit} className="login-form">
         {error ? (
-          <div className="login-alert flex items-center gap-3 border border-[#efb7aa] bg-[var(--error-container)] text-[var(--danger)]">
+          <div className="login-alert flex items-center gap-3 border border-[var(--danger)] bg-[var(--error-container)] text-[var(--danger)]">
             <AlertCircle className="h-5 w-5 shrink-0" />
             <div>
               <p className="login-alert-title font-semibold">Authentication Failed</p>
@@ -116,7 +116,7 @@ export function LoginForm() {
               value={email}
               onChange={(event) => setEmail(event.target.value)}
               required
-              className={`login-input rounded-lg border bg-[var(--surface-elevated)] pl-14 pr-4 text-[var(--on-surface)] shadow-none placeholder:text-[var(--muted)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] ${error ? "border-[var(--danger)] focus-visible:border-[var(--danger)]" : "border-[var(--border)] focus-visible:border-[var(--primary)]"
+              className={`login-input rounded-xl border bg-[var(--field-background)] pl-14 pr-4 text-[var(--on-surface)] shadow-none placeholder:text-[var(--field-placeholder)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] ${error ? "border-[var(--danger)] focus-visible:border-[var(--danger)]" : "border-[var(--field-border)] focus-visible:border-[var(--primary)]"
                 }`}
               placeholder="admin@healtech.local"
             />
@@ -135,7 +135,7 @@ export function LoginForm() {
               value={password}
               onChange={(event) => setPassword(event.target.value)}
               required
-              className={`login-input login-password-input rounded-lg border bg-[var(--surface-elevated)] pl-14 pr-14 text-[var(--on-surface)] shadow-none placeholder:text-[var(--muted)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] ${error ? "border-[var(--danger)] focus-visible:border-[var(--danger)]" : "border-[var(--border)] focus-visible:border-[var(--primary)]"
+              className={`login-input login-password-input rounded-xl border bg-[var(--field-background)] pl-14 pr-14 text-[var(--on-surface)] shadow-none placeholder:text-[var(--field-placeholder)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] ${error ? "border-[var(--danger)] focus-visible:border-[var(--danger)]" : "border-[var(--field-border)] focus-visible:border-[var(--primary)]"
                 }`}
             />
             <button
@@ -182,7 +182,7 @@ export function LoginForm() {
 
         <Button
           type="submit"
-          className="login-submit w-full rounded-lg bg-[var(--primary)] font-semibold text-white transition hover:bg-[var(--primary-container)]"
+          className="login-submit w-full rounded-xl bg-[var(--primary)] font-semibold text-[var(--primary-foreground)] transition hover:bg-[var(--primary-container)]"
           disabled={loading}
         >
           {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : null}

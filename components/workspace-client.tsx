@@ -16,7 +16,6 @@ import {
   FileText,
   Filter,
   Loader2,
-  MoreVertical,
   RefreshCcw,
   Search,
   Stethoscope,
@@ -361,12 +360,12 @@ export function WorkspaceClient({ config }: { config: WorkspaceConfig }) {
           )}
           description={<>Live rows from `{config.table}` under the current user&apos;s RLS policies.</>}
           action={(
-            <Button type="button" variant="secondary" onClick={loadData} disabled={loading} className="h-11 rounded-xl border-[var(--border)] bg-[var(--surface-elevated)] shadow-sm">
+            <Button type="button" variant="secondary" onClick={loadData} disabled={loading} className="h-11 rounded-xl border-[var(--border)] bg-[var(--surface-elevated)] shadow-sm hover:border-[var(--primary)]">
               <RefreshCcw className="h-4 w-4" />
               Refresh
             </Button>
           )}
-          className="admin-panel min-w-0 overflow-hidden"
+          className="admin-panel admin-records-card min-w-0 overflow-hidden"
           headerClassName="admin-panel-header"
           contentClassName="min-w-0"
         >
@@ -423,7 +422,7 @@ export function WorkspaceClient({ config }: { config: WorkspaceConfig }) {
                     />
                   ) : null}
                   {message ? <Notice tone="success" text={message} /> : null}
-                  <Button type="submit" className="h-12 w-full rounded-xl bg-[var(--primary)] text-[15px] text-[var(--primary-foreground)] shadow-sm hover:bg-[var(--primary-container)]" disabled={saving}>
+                  <Button type="submit" className="h-12 w-full rounded-xl bg-[var(--primary)] text-[15px] text-[var(--primary-foreground)] shadow-md hover:bg-[var(--primary-container)]" disabled={saving}>
                     {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
                     {config.actionLabel}
                   </Button>
@@ -434,7 +433,7 @@ export function WorkspaceClient({ config }: { config: WorkspaceConfig }) {
           <SectionCard
             title="Reference IDs"
             description="Use these visible records for the current role and workflow."
-            className="admin-panel min-w-0 overflow-hidden"
+            className="admin-panel admin-reference-card min-w-0 overflow-hidden"
             headerClassName="admin-panel-header"
             contentClassName="min-w-0"
           >
@@ -1234,63 +1233,100 @@ function AdminDashboardExperience({
   loading: boolean;
 }) {
   const stats = [
-    { label: "TOTAL EMPLOYEES", value: counterValue(counters, ["employees"], "128"), icon: ClipboardPlus, tone: "cyan" },
-    { label: "TOTAL DOCTORS", value: counterValue(counters, ["doctors"], "42"), icon: Stethoscope, tone: "cyan" },
-    { label: "TOTAL PATIENTS", value: counterValue(counters, ["patients"], "1,240"), icon: User, tone: "blue" },
-    { label: "VISITS TODAY", value: counterValue(counters, ["visitsToday"], "46"), icon: Users, tone: "blue", helper: "12%" },
-    { label: "PENDING LEAVES", value: counterValue(counters, ["pendingLeaves"], "7"), icon: Calendar, tone: "amber" },
-    { label: "LOW STOCK MEDS", value: counterValue(counters, ["lowStockMedicines"], "12"), icon: BriefcaseMedical, tone: "amber" },
-    { label: "EXPIRED MEDS", value: counterValue(counters, ["expiredMedicines"], "3"), icon: AlertCircle, tone: "red" },
-    { label: "STORE REQUESTS", value: counterValue(counters, ["storeRequests"], "5"), icon: FileText, tone: "slate" },
+    { label: "TOTAL EMPLOYEES", value: counterValue(counters, ["employees"]), icon: ClipboardPlus, tone: "cyan", helper: "Staff directory" },
+    { label: "TOTAL DOCTORS", value: counterValue(counters, ["doctors"]), icon: Stethoscope, tone: "cyan", helper: "Clinical staff" },
+    { label: "TOTAL PATIENTS", value: counterValue(counters, ["patients"]), icon: User, tone: "blue", helper: "Registered profiles" },
+    { label: "VISITS TODAY", value: counterValue(counters, ["visitsToday"]), icon: Users, tone: "blue", helper: "Current day flow" },
+    { label: "PENDING LEAVES", value: counterValue(counters, ["pendingLeaves"]), icon: Calendar, tone: "amber", helper: "Review queue" },
+    { label: "LOW STOCK MEDS", value: counterValue(counters, ["lowStockMedicines"]), icon: BriefcaseMedical, tone: "amber", helper: "Stock attention" },
+    { label: "EXPIRED MEDS", value: counterValue(counters, ["expiredMedicines"]), icon: AlertCircle, tone: "red", helper: "Safety review" },
+    { label: "STORE REQUESTS", value: counterValue(counters, ["storeRequests"]), icon: FileText, tone: "slate", helper: "Admin approvals" },
   ] as const;
 
   return (
-    <div className="space-y-8">
-      <div className="rounded-3xl border border-[var(--border)] bg-[var(--surface-elevated)] px-6 py-6 shadow-lg md:px-7">
-      <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <p className="text-xs font-bold uppercase tracking-[0.16em] text-[var(--primary)]">Admin overview</p>
-          <h1 className="mt-2 text-[34px] font-bold leading-10 tracking-normal text-[var(--healtech-ink)]">Clinical operations dashboard</h1>
-          <p className="mt-2 max-w-3xl text-[16px] leading-7 text-[var(--on-surface-variant)]">Real-time metrics for staffing, visits, patients, inventory, and operational tasks.</p>
+    <div className="space-y-9">
+      <div className="relative overflow-hidden rounded-[28px] border border-[var(--border)] bg-[var(--healtech-ink)] px-6 py-7 text-[var(--surface-elevated)] shadow-xl md:px-8 md:py-8">
+        <div className="absolute -right-24 -top-28 h-72 w-72 rounded-full border border-white/10 bg-[var(--primary)]/20" />
+        <div className="absolute -bottom-28 left-1/3 h-64 w-64 rounded-full border border-white/10 bg-[var(--accent)]/15" />
+        <div className="relative flex flex-col gap-7 xl:flex-row xl:items-end xl:justify-between">
+          <div className="max-w-4xl">
+            <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1 text-xs font-bold uppercase tracking-[0.12em] text-[var(--surface-container-high)]">
+              <span className="h-2 w-2 rounded-full bg-[var(--accent)]" />
+              Admin command center
+            </div>
+            <h1 className="mt-5 max-w-3xl text-[42px] font-bold leading-[1.02] tracking-normal text-[var(--surface-elevated)] md:text-[58px]">Clinical operations dashboard</h1>
+            <p className="mt-4 max-w-2xl text-[17px] leading-8 text-[var(--surface-container-high)]">Real-time workspace counters for staffing, visits, patients, inventory, and operational tasks.</p>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-3 xl:min-w-[430px]">
+            <Link href="/admin/employees/new" className="rounded-2xl border border-white/15 bg-white/10 p-4 text-sm font-semibold text-[var(--surface-elevated)] transition hover:border-[var(--accent)] hover:bg-white/15">
+              <UserPlus className="mb-3 h-5 w-5 text-[var(--accent)]" />
+              Add employee
+            </Link>
+            <Link href="/admin/visits" className="rounded-2xl border border-white/15 bg-white/10 p-4 text-sm font-semibold text-[var(--surface-elevated)] transition hover:border-[var(--accent)] hover:bg-white/15">
+              <ClipboardPlus className="mb-3 h-5 w-5 text-[var(--accent)]" />
+              Open visits
+            </Link>
+            <div className="rounded-2xl border border-white/15 bg-white/10 p-4 text-sm font-semibold text-[var(--surface-container-high)]">
+              <RefreshCcw className={`mb-3 h-5 w-5 text-[var(--accent)] ${loading ? "animate-spin" : ""}`} />
+              Live counters
+            </div>
+          </div>
         </div>
-        <p className="flex h-10 items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--surface-muted)] px-4 text-[14px] font-semibold text-[var(--healtech-slate)]">
-          <RefreshCcw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
-          Last updated: Just now
-        </p>
-      </div>
       </div>
 
       <section className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
         {stats.map((stat) => (
-          <div key={stat.label} className={`min-h-[176px] rounded-2xl border bg-[var(--surface-elevated)] p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-[var(--border-strong)] hover:shadow-md ${stat.tone === "red" ? "border-[var(--danger)]" : "border-[var(--border)]"}`}>
-            <div className={`flex h-11 w-11 items-center justify-center rounded-2xl ${adminToneClasses(stat.tone)}`}>
-              <stat.icon className="h-5 w-5" />
+          <div key={stat.label} className={`group relative min-h-[190px] overflow-hidden rounded-[22px] border bg-[var(--surface-elevated)] p-5 shadow-sm transition hover:-translate-y-1 hover:border-[var(--border-strong)] hover:shadow-lg ${stat.tone === "red" ? "border-[var(--danger)]" : "border-[var(--border)]"}`}>
+            <div className={`absolute inset-x-0 top-0 h-1 ${adminToneBarClasses(stat.tone)}`} />
+            <div className="flex items-start justify-between gap-4">
+              <div className={`flex h-12 w-12 items-center justify-center rounded-2xl ${adminToneClasses(stat.tone)}`}>
+                <stat.icon className="h-5 w-5" />
+              </div>
+              <span className="rounded-full border border-[var(--border)] bg-[var(--surface-muted)] px-2.5 py-1 text-[11px] font-bold uppercase tracking-[0.08em] text-[var(--muted)]">Live</span>
             </div>
-            <p className="mt-4 text-[13px] font-bold tracking-[0.10em] text-[var(--muted)]">{stat.label}</p>
-            <div className="mt-2 flex items-end gap-3">
-              <p className={`table-numeric text-[40px] font-bold leading-[44px] tracking-normal ${stat.tone === "red" ? "text-[var(--danger)]" : "text-[var(--healtech-ink)]"}`}>{stat.value}</p>
-              {"helper" in stat ? <p className="pb-1 text-[14px] font-semibold text-[var(--primary)]">+{stat.helper}</p> : null}
+            <p className="mt-5 text-[12px] font-bold tracking-[0.12em] text-[var(--muted)]">{stat.label}</p>
+            <div className="mt-2">
+              <p className={`table-numeric text-[46px] font-bold leading-[48px] tracking-normal ${stat.tone === "red" ? "text-[var(--danger)]" : "text-[var(--healtech-ink)]"}`}>{stat.value}</p>
+              <p className="mt-3 text-sm font-medium text-[var(--on-surface-variant)]">{stat.helper}</p>
             </div>
           </div>
         ))}
       </section>
 
-      <section className="grid gap-8 xl:grid-cols-2">
-        <AdminChartCard title="Visits Trend" subtitle="(Last 30 Days)" type="line" />
-        <AdminChartCard title="Visits by Department" type="bars" />
+      <section className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
+        <div className="rounded-[24px] border border-[var(--border)] bg-[var(--surface-elevated)] p-6 shadow-sm">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[0.12em] text-[var(--primary)]">Workspace coverage</p>
+              <h2 className="mt-2 text-2xl font-bold tracking-normal text-[var(--healtech-ink)]">Core admin flows are one click away</h2>
+            </div>
+            <span className="rounded-full bg-[var(--secondary-container)] px-3 py-1 text-xs font-bold text-[var(--primary)]">Role scoped</span>
+          </div>
+          <div className="mt-6 grid gap-3 sm:grid-cols-2">
+            <AdminFocusCard href="/admin/employees" icon={UserPlus} title="Employees" text="Create accounts, review roles, and open staff records." />
+            <AdminFocusCard href="/admin/patients" icon={User} title="Patients" text="Search registered patient profiles and open details." />
+            <AdminFocusCard href="/admin/visits" icon={ClipboardPlus} title="Visits" text="Review queued and completed clinic workflow records." />
+            <AdminFocusCard href="/admin/store/requests" icon={FileText} title="Store requests" text="Open requests waiting for admin review." />
+          </div>
+        </div>
+        <div className="rounded-[24px] border border-[var(--border)] bg-[var(--surface-elevated)] p-6 shadow-sm">
+          <p className="text-xs font-bold uppercase tracking-[0.12em] text-[var(--primary)]">Operational safeguards</p>
+          <h2 className="mt-2 text-2xl font-bold tracking-normal text-[var(--healtech-ink)]">Designed for controlled clinic work</h2>
+          <div className="mt-6 space-y-4">
+            <AdminFocusRow icon={ClipboardPlus} title="Role policies remain active" text="Visible rows continue to depend on the current user and RLS rules." />
+            <AdminFocusRow icon={RefreshCcw} title="Refresh when work changes" text="Use the records refresh control below without leaving the workspace." />
+            <AdminFocusRow icon={AlertCircle} title="Safety queues stay visible" text="Inventory and approval counters stay prominent when they need attention." />
+          </div>
+        </div>
       </section>
 
-      <section className="grid gap-8 xl:grid-cols-[1fr_386px]">
-        <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface-elevated)] p-5 shadow-sm">
-          <div className="flex items-center justify-between border-b border-[var(--border)] pb-4">
-            <h2 className="text-[27px] font-semibold tracking-normal text-[var(--healtech-ink)]">Recent Activity</h2>
-            <Link href="/admin/audit-logs" className="text-[17px] font-medium text-[var(--primary)]">View All</Link>
-          </div>
-          <AdminActivityRow icon={UserPlus} title="New Employee Added" text="Dr. Sarah Jenkins was added to General Medicine." time="10 mins ago" />
-          <AdminActivityRow icon={Calendar} title="Leave Request Submitted" text="Nurse Mark O. requested 3 days of annual leave." time="45 mins ago" amber />
+      <section className="grid gap-6 xl:grid-cols-[1fr_386px]">
+        <div className="rounded-[24px] border border-[var(--border)] bg-[var(--surface-muted)] p-5">
+          <h2 className="text-[22px] font-semibold tracking-normal text-[var(--healtech-ink)]">Operational workspace</h2>
+          <p className="mt-1 text-[15px] text-[var(--on-surface-variant)]">Live records and workflow forms remain connected below.</p>
         </div>
-        <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface-elevated)] p-5 shadow-sm">
-          <h2 className="border-b border-[var(--border)] pb-4 text-[27px] font-semibold tracking-normal text-[var(--healtech-ink)]">Quick Actions</h2>
+        <div className="rounded-[24px] border border-[var(--border)] bg-[var(--surface-elevated)] p-5 shadow-sm">
+          <h2 className="border-b border-[var(--border)] pb-4 text-[22px] font-semibold tracking-normal text-[var(--healtech-ink)]">Quick actions</h2>
           <div className="mt-5 space-y-3">
             <AdminActionButton href="/admin/employees/new" icon={UserPlus} label="Add Employee" primary />
             <AdminActionButton href="/admin/departments" icon={Building2} label="Create Department" />
@@ -1298,79 +1334,32 @@ function AdminDashboardExperience({
           </div>
         </div>
       </section>
-
-      <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface-muted)] px-5 py-4">
-        <h2 className="text-[22px] font-semibold tracking-normal text-[var(--healtech-ink)]">Operational Workspace</h2>
-        <p className="mt-1 text-[15px] text-[var(--on-surface-variant)]">Live records and workflow forms remain connected below.</p>
-      </div>
     </div>
   );
 }
 
-function AdminChartCard({ title, subtitle, type }: { title: string; subtitle?: string; type: "line" | "bars" }) {
+function AdminFocusCard({ href, icon: Icon, title, text }: { href: string; icon: typeof UserPlus; title: string; text: string }) {
   return (
-    <div className="h-[384px] rounded-2xl border border-[var(--border)] bg-[var(--surface-elevated)] p-5 shadow-sm">
-      <div className="flex justify-between">
-        <h2 className="text-[27px] font-semibold tracking-normal text-[var(--healtech-ink)]">
-          {title} {subtitle ? <span className="text-[15px] font-normal text-[var(--on-surface-variant)]">{subtitle}</span> : null}
-        </h2>
-        <MoreVertical className="h-6 w-6 text-[var(--healtech-slate)]" />
-      </div>
-      {type === "line" ? (
-        <div className="mt-7 grid h-[270px] grid-cols-[34px_1fr] text-[14px] text-[var(--on-surface-variant)]">
-          <div className="flex flex-col justify-between pb-7 pt-0">
-            <span>150</span>
-            <span>100</span>
-            <span>50</span>
-            <span>0</span>
-          </div>
-          <div className="relative border-l border-[var(--border)] bg-[linear-gradient(to_bottom,transparent_0,transparent_11%,var(--surface-muted)_11%,transparent_12%,transparent_40%,var(--surface-muted)_40%,transparent_41%,transparent_69%,var(--surface-muted)_69%,transparent_70%)]">
-            <svg viewBox="0 0 520 236" className="h-[236px] w-full">
-              <path d="M6 214 C58 186 118 226 160 144 S244 158 286 94 S363 126 413 88 S486 58 516 116" fill="none" stroke="var(--primary)" strokeWidth="3" />
-              <path d="M6 214 C58 186 118 226 160 144 S244 158 286 94 S363 126 413 88 S486 58 516 116 L516 236 L6 236 Z" fill="var(--primary)" opacity=".14" />
-            </svg>
-            <div className="absolute bottom-0 left-0 right-0 flex justify-between px-1 text-[14px]">
-              <span>1st</span>
-              <span>10th</span>
-              <span>20th</span>
-              <span>30th</span>
-            </div>
-          </div>
-        </div>
-      ) : (
-        <div className="mt-16 flex h-[205px] items-end justify-center gap-5">
-          {[
-            ["Gen", 200, 0.78, "var(--primary)"],
-            ["Den", 200, 0.60, "var(--healtech-sage)"],
-            ["Derma", 200, 0.40, "var(--primary)"],
-            ["Peds", 200, 0.70, "var(--healtech-sage)"],
-            ["Int", 200, 0.64, "var(--primary)"],
-          ].map(([label, total, ratio, color]) => (
-            <div key={String(label)} className="flex w-[88px] flex-col items-center gap-2">
-              <div className="relative h-[200px] w-full overflow-hidden rounded-t-sm bg-[var(--surface-muted)]">
-                <div className="absolute inset-x-0 top-0 h-[40px] bg-[var(--secondary-container)]" />
-                <div className="absolute inset-x-0 bottom-0" style={{ height: Number(total) * Number(ratio), backgroundColor: String(color) }} />
-              </div>
-              <span className="text-[14px] text-[var(--healtech-slate)]">{label}</span>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
-function AdminActivityRow({ icon: Icon, title, text, time, amber }: { icon: typeof UserPlus; title: string; text: string; time: string; amber?: boolean }) {
-  return (
-    <div className="flex gap-5 py-5">
-      <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${amber ? "bg-[var(--warning-container)] text-[var(--warning)]" : "bg-[var(--surface-muted)] text-[var(--muted)]"}`}>
+    <Link href={href} className="group rounded-2xl border border-[var(--border)] bg-[var(--surface-muted)] p-4 transition hover:border-[var(--primary)] hover:bg-[var(--surface-elevated)]">
+      <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--secondary-container)] text-[var(--primary)]">
         <Icon className="h-5 w-5" />
       </span>
-      <div>
-        <p className="text-[18px] font-semibold text-[var(--healtech-ink)]">{title}</p>
-        <p className="text-[16px] text-[var(--on-surface-variant)]">{text}</p>
-        <p className="mt-1 text-[14px] text-[var(--healtech-slate)]">{time}</p>
-      </div>
+      <p className="mt-4 text-base font-bold text-[var(--healtech-ink)]">{title}</p>
+      <p className="mt-1 text-sm leading-6 text-[var(--on-surface-variant)]">{text}</p>
+    </Link>
+  );
+}
+
+function AdminFocusRow({ icon: Icon, title, text }: { icon: typeof RefreshCcw; title: string; text: string }) {
+  return (
+    <div className="flex gap-4 rounded-2xl border border-[var(--border)] bg-[var(--surface-muted)] p-4">
+      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--surface-elevated)] text-[var(--primary)]">
+        <Icon className="h-5 w-5" />
+      </span>
+      <span>
+        <span className="block text-sm font-bold text-[var(--healtech-ink)]">{title}</span>
+        <span className="mt-1 block text-sm leading-6 text-[var(--on-surface-variant)]">{text}</span>
+      </span>
     </div>
   );
 }
@@ -1384,7 +1373,7 @@ function AdminActionButton({ href, icon: Icon, label, primary, amber }: { href: 
   );
 }
 
-function counterValue(counters: Record<string, unknown> | null, keys: string[], fallback: string) {
+function counterValue(counters: Record<string, unknown> | null, keys: string[], fallback = "-") {
   for (const key of keys) {
     const value = counters?.[key];
     if (value !== undefined && value !== null) return Number(value).toLocaleString();
@@ -1398,6 +1387,14 @@ function adminToneClasses(tone: "cyan" | "blue" | "amber" | "red" | "slate") {
   if (tone === "blue") return "bg-[var(--info-container)] text-[var(--info)]";
   if (tone === "slate") return "bg-[var(--surface-muted)] text-[var(--muted)]";
   return "bg-[var(--secondary-container)] text-[var(--primary)]";
+}
+
+function adminToneBarClasses(tone: "cyan" | "blue" | "amber" | "red" | "slate") {
+  if (tone === "amber") return "bg-[var(--warning)]";
+  if (tone === "red") return "bg-[var(--danger)]";
+  if (tone === "blue") return "bg-[var(--info)]";
+  if (tone === "slate") return "bg-[var(--border-strong)]";
+  return "bg-[var(--primary)]";
 }
 
 function DashboardIntelligence({ config, counters }: { config: WorkspaceConfig; counters: Record<string, unknown> }) {

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowLeft, ShieldCheck } from "lucide-react";
+import { Activity, ArrowLeft, CalendarDays, ClipboardCheck, ShieldCheck, UsersRound } from "lucide-react";
 import { LoginForm } from "@/components/auth/login-form";
 import { roleHome, roleLabels } from "@/lib/constants/navigation";
 import { hasSupabaseEnv } from "@/lib/supabase/env";
@@ -11,8 +11,59 @@ export default function LoginPage() {
   const demoMode = !hasSupabaseEnv();
 
   return (
-    <main className="login-main bg-[var(--surface-elevated)] font-[Manrope,Inter,sans-serif] text-[var(--healtech-ink)]">
+    <main className="login-main bg-[var(--background)] font-[Manrope,Inter,sans-serif] text-[var(--healtech-ink)]">
       <div className="login-grid">
+        <section className="login-visual bg-[var(--healtech-ink)]">
+          <div className="login-visual-orbit login-visual-orbit-one" />
+          <div className="login-visual-orbit login-visual-orbit-two" />
+          <div className="login-visual-mesh" />
+          <div className="login-visual-inner">
+            <div className="login-visual-brand">
+              <div className="login-visual-mark">
+                <ShieldCheck className="h-7 w-7 stroke-[2.4]" />
+              </div>
+              <div>
+                <p className="text-xl font-bold leading-none text-[var(--surface-elevated)]">HealTech</p>
+                <p className="mt-1 text-sm font-medium text-[var(--surface-container-high)]">Clinic command workspace</p>
+              </div>
+            </div>
+
+            <div className="login-visual-copy">
+              <p className="login-kicker">Role-aware clinic operations</p>
+              <h1>Run front desk, clinical, lab, pharmacy, and patient workflows from one calm workspace.</h1>
+              <p>
+                HealTech keeps daily clinic work organized with clear role workspaces, operational queues, and focused admin controls.
+              </p>
+            </div>
+
+            <div className="login-signal-card">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <p className="text-sm font-semibold text-[var(--surface-container-high)]">Today&apos;s workspace shape</p>
+                  <p className="mt-2 text-2xl font-bold text-[var(--surface-elevated)]">Fast access, fewer distractions</p>
+                </div>
+                <span className="rounded-full border border-white/15 bg-white/10 px-3 py-1 text-xs font-semibold text-[var(--surface-elevated)]">Admin ready</span>
+              </div>
+              <div className="login-workflow-grid">
+                {[
+                  { icon: UsersRound, label: "Patients", text: "Search and registration" },
+                  { icon: CalendarDays, label: "Visits", text: "Queue and routing" },
+                  { icon: ClipboardCheck, label: "Records", text: "Role-filtered access" },
+                  { icon: Activity, label: "Tasks", text: "Operational follow-up" },
+                ].map((item) => (
+                  <div key={item.label} className="login-workflow-tile">
+                    <item.icon className="h-5 w-5 text-[var(--accent)]" />
+                    <span>
+                      <span className="block text-sm font-bold text-[var(--surface-elevated)]">{item.label}</span>
+                      <span className="mt-1 block text-xs leading-5 text-[var(--surface-container-high)]">{item.text}</span>
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
+
         <section className="login-left">
           <Link href="/" className="login-home-link" aria-label="Back to home page">
             <ArrowLeft className="h-4 w-4" />
@@ -21,15 +72,19 @@ export default function LoginPage() {
 
           <div className="login-panel">
             <div className="login-brand">
-              <div className="login-brand-icon text-[var(--primary)]">
+              <div className="login-brand-icon bg-[var(--primary)] text-[var(--primary-foreground)]">
                 <ShieldCheck className="h-7 w-7 stroke-[2.4]" />
               </div>
-              <p className="login-brand-text text-[var(--healtech-ink)]">HealTech</p>
+              <div>
+                <p className="login-brand-text text-[var(--healtech-ink)]">HealTech</p>
+                <p className="mt-1 text-sm font-semibold text-[var(--muted)]">Clinical management system</p>
+              </div>
             </div>
 
             <div className="login-heading-block">
-              <h1 className="login-heading text-[var(--healtech-ink)]">Sign In</h1>
-              <p className="login-subheading text-[var(--healtech-slate)]">Manage your clinic operations</p>
+              <p className="login-kicker text-[var(--primary)]">Secure workspace access</p>
+              <h1 className="login-heading text-[var(--healtech-ink)]">Welcome back</h1>
+              <p className="login-subheading text-[var(--healtech-slate)]">Sign in to continue managing clinic operations with the right role workspace.</p>
             </div>
 
             {demoMode ? (
@@ -48,37 +103,6 @@ export default function LoginPage() {
             ) : (
               <LoginForm />
             )}
-          </div>
-        </section>
-
-        <section className="login-visual bg-[var(--surface-muted)]">
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_28%,rgba(255,255,255,0.94),rgba(238,246,244,0.66)_34%,rgba(217,240,236,0.86)_82%)]" />
-          <div className="absolute left-[9%] top-[12%] h-16 w-32 rotate-[-7deg] rounded-2xl bg-white/45 blur-[2px]" />
-          <div className="absolute right-[9%] top-[14%] h-16 w-24 rotate-[18deg] rounded-2xl bg-white/55 blur-[2px]" />
-          <div className="absolute inset-x-0 top-[28%] h-[330px] bg-[linear-gradient(90deg,rgba(255,255,255,0)_0%,rgba(255,255,255,0.42)_24%,rgba(255,255,255,0.36)_78%,rgba(255,255,255,0)_100%)] blur-xl" />
-
-          <div className="login-visual-inner">
-            <div className="login-info-card border border-white/75 bg-white/88 backdrop-blur">
-              <div className="login-info-icon bg-[var(--primary)] text-white">
-                <ShieldCheck className="h-6 w-6 stroke-[2.4]" />
-              </div>
-              <h2 className="login-info-heading text-[var(--healtech-ink)]">Secure Patient Records</h2>
-              <p className="login-info-copy text-[var(--on-surface-variant)]">
-                Role-based access control for maximum compliance. HealTech ensures all operational data remains encrypted and isolated per practitioner.
-              </p>
-              <div className="login-bars">
-                <div className="login-bar bg-[var(--surface-variant)]">
-                  <div className="login-bar-fill login-bar-fill-primary bg-[var(--primary)]" />
-                </div>
-                <div className="login-bar bg-[var(--surface-variant)]">
-                  <div className="login-bar-fill login-bar-fill-secondary bg-[var(--accent)]" />
-                </div>
-              </div>
-              <div className="login-integrity">
-                <span className="text-[var(--muted)]">System Integrity</span>
-                <span className="font-semibold tracking-[0.04em] text-[var(--primary)]">100% Encrypted</span>
-              </div>
-            </div>
           </div>
         </section>
       </div>
