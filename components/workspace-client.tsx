@@ -515,7 +515,7 @@ function CreateVisitView({
         >
             <ReadOnlyLine label="Visit status" value="queued" />
             <ReadOnlyLine label="Required fields" value="Patient and doctor" />
-            <Link href="/reception/visits" className="inline-flex h-10 items-center justify-center rounded-lg border border-border bg-white px-4 text-sm font-semibold text-primary hover:bg-muted">
+            <Link href="/reception/visits" className="inline-flex h-10 items-center justify-center rounded-lg border border-[var(--border)] bg-[var(--surface-elevated)] px-4 text-sm font-semibold text-[var(--primary)] transition hover:bg-[var(--surface-muted)]">
               View queued visits
             </Link>
         </SectionCard>
@@ -1167,7 +1167,7 @@ function EmployeeEditView({
 
 function ReadOnlyLine({ label, value }: { label: string; value: unknown }) {
   return (
-    <div className="rounded-lg border border-border bg-muted p-3">
+    <div className="rounded-lg border border-[var(--border)] bg-[var(--surface-muted)] p-3">
       <p className="text-xs font-semibold uppercase tracking-[0.02em] text-[var(--on-surface-variant)]">{label}</p>
       <p className="mt-1 break-words font-semibold text-[var(--on-surface)]">{formatDetailValue(value)}</p>
     </div>
@@ -1190,7 +1190,7 @@ function CreateEmployeeSuccessPanel({
           <p className="text-base font-bold text-[var(--success)]">Employee account created</p>
           <p className="mt-1 text-[var(--on-surface-variant)]">Save these sign-in details before leaving this page.</p>
         </div>
-        <Link href={`/admin/employees/${result.employeeId}`} className="inline-flex h-9 shrink-0 items-center justify-center rounded-lg border border-border bg-white px-3 text-xs font-semibold text-primary hover:bg-muted">
+        <Link href={`/admin/employees/${result.employeeId}`} className="inline-flex h-9 shrink-0 items-center justify-center rounded-lg border border-[var(--border)] bg-[var(--surface-elevated)] px-3 text-xs font-semibold text-[var(--primary)] transition hover:bg-[var(--surface-muted)]">
           Open employee details
         </Link>
       </div>
@@ -1246,7 +1246,7 @@ function AdminDashboardExperience({
 
   return (
     <div className="space-y-8">
-      <div className="rounded-3xl border border-[var(--border)] bg-[var(--surface-elevated)] px-6 py-6 shadow-[0_18px_48px_rgba(11,19,32,0.08)] md:px-7">
+      <div className="rounded-3xl border border-[var(--border)] bg-[var(--surface-elevated)] px-6 py-6 shadow-lg md:px-7">
       <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <p className="text-xs font-bold uppercase tracking-[0.16em] text-[var(--primary)]">Admin overview</p>
@@ -1262,7 +1262,7 @@ function AdminDashboardExperience({
 
       <section className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
         {stats.map((stat) => (
-          <div key={stat.label} className={`min-h-[176px] rounded-2xl border bg-[var(--surface-elevated)] p-5 shadow-[0_12px_32px_rgba(11,19,32,0.06)] transition hover:-translate-y-0.5 hover:shadow-[0_18px_38px_rgba(11,19,32,0.10)] ${stat.tone === "red" ? "border-[#efb7aa]" : "border-[var(--border)]"}`}>
+          <div key={stat.label} className={`min-h-[176px] rounded-2xl border bg-[var(--surface-elevated)] p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-[var(--border-strong)] hover:shadow-md ${stat.tone === "red" ? "border-[var(--danger)]" : "border-[var(--border)]"}`}>
             <div className={`flex h-11 w-11 items-center justify-center rounded-2xl ${adminToneClasses(stat.tone)}`}>
               <stat.icon className="h-5 w-5" />
             </div>
@@ -1281,7 +1281,7 @@ function AdminDashboardExperience({
       </section>
 
       <section className="grid gap-8 xl:grid-cols-[1fr_386px]">
-        <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface-elevated)] p-5 shadow-[0_12px_32px_rgba(11,19,32,0.06)]">
+        <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface-elevated)] p-5 shadow-sm">
           <div className="flex items-center justify-between border-b border-[var(--border)] pb-4">
             <h2 className="text-[27px] font-semibold tracking-normal text-[var(--healtech-ink)]">Recent Activity</h2>
             <Link href="/admin/audit-logs" className="text-[17px] font-medium text-[var(--primary)]">View All</Link>
@@ -1289,7 +1289,7 @@ function AdminDashboardExperience({
           <AdminActivityRow icon={UserPlus} title="New Employee Added" text="Dr. Sarah Jenkins was added to General Medicine." time="10 mins ago" />
           <AdminActivityRow icon={Calendar} title="Leave Request Submitted" text="Nurse Mark O. requested 3 days of annual leave." time="45 mins ago" amber />
         </div>
-        <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface-elevated)] p-5 shadow-[0_12px_32px_rgba(11,19,32,0.06)]">
+        <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface-elevated)] p-5 shadow-sm">
           <h2 className="border-b border-[var(--border)] pb-4 text-[27px] font-semibold tracking-normal text-[var(--healtech-ink)]">Quick Actions</h2>
           <div className="mt-5 space-y-3">
             <AdminActionButton href="/admin/employees/new" icon={UserPlus} label="Add Employee" primary />
@@ -1309,7 +1309,7 @@ function AdminDashboardExperience({
 
 function AdminChartCard({ title, subtitle, type }: { title: string; subtitle?: string; type: "line" | "bars" }) {
   return (
-    <div className="h-[384px] rounded-2xl border border-[var(--border)] bg-[var(--surface-elevated)] p-5 shadow-[0_12px_32px_rgba(11,19,32,0.06)]">
+    <div className="h-[384px] rounded-2xl border border-[var(--border)] bg-[var(--surface-elevated)] p-5 shadow-sm">
       <div className="flex justify-between">
         <h2 className="text-[27px] font-semibold tracking-normal text-[var(--healtech-ink)]">
           {title} {subtitle ? <span className="text-[15px] font-normal text-[var(--on-surface-variant)]">{subtitle}</span> : null}
@@ -1377,7 +1377,7 @@ function AdminActivityRow({ icon: Icon, title, text, time, amber }: { icon: type
 
 function AdminActionButton({ href, icon: Icon, label, primary, amber }: { href: string; icon: typeof UserPlus; label: string; primary?: boolean; amber?: boolean }) {
   return (
-    <Link href={href} className={`flex h-[52px] items-center gap-4 rounded-lg border px-6 text-[19px] font-semibold ${primary ? "border-[var(--primary)] bg-[var(--primary)] text-white" : "border-[var(--border)] bg-[var(--surface-muted)] text-[var(--healtech-ink)]"}`}>
+    <Link href={href} className={`flex h-[52px] items-center gap-4 rounded-lg border px-6 text-[19px] font-semibold transition ${primary ? "border-[var(--primary)] bg-[var(--primary)] text-[var(--primary-foreground)] hover:bg-[var(--primary-container)]" : "border-[var(--border)] bg-[var(--surface-muted)] text-[var(--healtech-ink)] hover:border-[var(--border-strong)] hover:bg-[var(--surface-elevated)]"}`}>
       <Icon className={`h-6 w-6 ${amber ? "text-[var(--warning)]" : ""}`} />
       {label}
     </Link>
@@ -1395,7 +1395,7 @@ function counterValue(counters: Record<string, unknown> | null, keys: string[], 
 function adminToneClasses(tone: "cyan" | "blue" | "amber" | "red" | "slate") {
   if (tone === "amber") return "bg-[var(--warning-container)] text-[var(--warning)]";
   if (tone === "red") return "bg-[var(--error-container)] text-[var(--danger)]";
-  if (tone === "blue") return "bg-[var(--tertiary-container)] text-[#5b5797]";
+  if (tone === "blue") return "bg-[var(--info-container)] text-[var(--info)]";
   if (tone === "slate") return "bg-[var(--surface-muted)] text-[var(--muted)]";
   return "bg-[var(--secondary-container)] text-[var(--primary)]";
 }
@@ -1408,10 +1408,10 @@ function DashboardIntelligence({ config, counters }: { config: WorkspaceConfig; 
         title="Operational Trend"
         description="Simple, low-noise visual summary for today's clinical workload."
       >
-          <div className="flex h-44 items-end gap-2 rounded-xl border border-border bg-[var(--surface)] p-4">
+          <div className="flex h-44 items-end gap-2 rounded-xl border border-[var(--border)] bg-[var(--surface)] p-4">
             {[38, 54, 46, 72, 63, 86, 78, 94, 68, 82, 91, 76].map((height, index) => (
               <div key={index} className="flex flex-1 flex-col items-center gap-2">
-                <span className="w-full rounded-t-md bg-primary/80" style={{ height }} />
+                <span className="w-full rounded-t-md bg-[var(--primary)] opacity-80" style={{ height }} />
                 <span className="text-[10px] text-[var(--on-surface-variant)]">{index + 8}:00</span>
               </div>
             ))}
@@ -1427,8 +1427,8 @@ function DashboardIntelligence({ config, counters }: { config: WorkspaceConfig; 
             `Visible rows are restricted by role policies`,
             values.some((value) => value === 0) ? "Some queues are clear" : "Queues need review",
           ].map((item, index) => (
-            <div key={item} className="flex gap-3 rounded-lg border border-border bg-white p-3">
-              <span className="mt-1 h-2 w-2 rounded-full bg-primary" />
+            <div key={item} className="flex gap-3 rounded-lg border border-[var(--border)] bg-[var(--surface-elevated)] p-3">
+              <span className="mt-1 h-2 w-2 rounded-full bg-[var(--primary)]" />
               <div>
                 <p className="text-sm font-semibold text-[var(--on-surface)]">{item}</p>
                 <p className="mt-1 text-xs text-[var(--on-surface-variant)]">{index === 0 ? "Now" : `${index + 2} min ago`}</p>
@@ -1455,7 +1455,7 @@ function DataToolbar({
 }) {
   return (
     <PageToolbar
-      className="mb-5 bg-[var(--surface-muted)]"
+      className="mb-5 border-[var(--border)] bg-[var(--surface-muted)]"
       search={(
         <div className="relative w-full lg:max-w-sm">
           <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--muted)]" />
@@ -1503,7 +1503,7 @@ function FieldControl({
   const referenceOptions = field.reference ? references[field.reference] ?? [] : [];
   const registration = register(field.name);
   return (
-    <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface-muted)] p-4">
+    <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface-muted)] p-4 transition-colors focus-within:border-[var(--border-strong)] focus-within:bg-[var(--surface-elevated)]">
       <Label htmlFor={field.name} className="text-[13px] font-bold uppercase tracking-[0.08em] text-[var(--muted)]">{field.label}{field.required ? " *" : ""}</Label>
       <div className="mt-2">
       {field.reference ? (
@@ -1527,7 +1527,7 @@ function FieldControl({
           onChange={(nextValue) => setValue(field.name, nextValue, { shouldDirty: true, shouldValidate: true })}
         />
       ) : inputType === "checkbox" ? (
-        <input id={field.name} type="checkbox" className="h-4 w-4 rounded border-border text-primary" {...registration} />
+        <input id={field.name} type="checkbox" className="h-4 w-4 rounded border-[var(--field-border)] text-[var(--primary)] focus:ring-[var(--focus-ring)]" {...registration} />
       ) : (
         <Input id={field.name} type={inputType} step={field.step} placeholder={field.placeholder ?? field.label} {...registration} />
       )}

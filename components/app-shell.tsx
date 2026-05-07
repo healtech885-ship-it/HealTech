@@ -144,7 +144,7 @@ function AdminShell({
       {mobileOpen ? <button aria-label="Close navigation overlay" className="fixed inset-0 z-20 bg-[rgba(11,19,32,0.35)] lg:hidden" onClick={() => setMobileOpen(false)} /> : null}
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-30 flex w-[300px] -translate-x-full flex-col border-r border-white/10 bg-[var(--healtech-ink)] px-5 py-6 text-white shadow-[18px_0_44px_rgba(11,19,32,0.22)] transition-[transform,width,padding] duration-300 ease-out lg:sticky lg:top-0 lg:h-screen lg:translate-x-0 lg:shadow-none",
+          "fixed inset-y-0 left-0 z-30 flex w-[300px] -translate-x-full flex-col border-r border-white/10 bg-[var(--healtech-ink)] px-5 py-6 text-[var(--surface-elevated)] shadow-lg transition-[transform,width,padding] duration-300 ease-out lg:sticky lg:top-0 lg:h-screen lg:translate-x-0 lg:shadow-none",
           mobileOpen && "translate-x-0",
           collapsed ? "lg:w-[96px] lg:px-5" : "lg:w-[320px]",
         )}
@@ -156,12 +156,12 @@ function AdminShell({
             title={collapsed ? "City General" : undefined}
             className={cn("flex min-w-0 items-center gap-4", collapsed && "lg:justify-center")}
           >
-            <span className="flex h-[54px] w-[54px] shrink-0 items-center justify-center rounded-xl bg-[var(--accent)] text-[var(--accent-foreground)] shadow-[0_14px_30px_rgba(235,203,139,0.24)]">
+            <span className="flex h-[54px] w-[54px] shrink-0 items-center justify-center rounded-xl bg-[var(--accent)] text-[var(--accent-foreground)] shadow-md">
               <BriefcaseMedical className="h-7 w-7" />
             </span>
             <span className={cn("min-w-0 overflow-hidden transition-[opacity,width] duration-200", collapsed && "lg:w-0 lg:opacity-0")}>
-              <span className="block text-[23px] font-bold leading-7 tracking-normal text-white">City General</span>
-              <span className="block text-[14px] leading-5 text-[#c9d8d4]">Admin Wing</span>
+              <span className="block text-[23px] font-bold leading-7 tracking-normal text-[var(--surface-elevated)]">City General</span>
+              <span className="block text-[14px] leading-5 text-[var(--surface-muted)]">Admin Wing</span>
             </span>
           </Link>
           <button
@@ -169,7 +169,7 @@ function AdminShell({
             aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
             onClick={() => setCollapsed((value) => !value)}
             className={cn(
-              "hidden h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-white/10 bg-white/8 text-[#dbe7e3] shadow-[0_8px_18px_rgba(11,19,32,0.20)] transition hover:border-[var(--accent)] hover:text-white lg:flex",
+              "hidden h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-white/10 bg-white/8 text-[var(--surface-container-high)] shadow-sm transition hover:border-[var(--accent)] hover:text-[var(--surface-elevated)] lg:flex",
               collapsed && "lg:absolute lg:-right-[38px] lg:top-5 lg:z-40",
             )}
           >
@@ -179,7 +179,7 @@ function AdminShell({
             type="button"
             aria-label="Close navigation"
             onClick={() => setMobileOpen(false)}
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-white/10 bg-white/8 text-[#dbe7e3] lg:hidden"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-white/10 bg-white/8 text-[var(--surface-container-high)] lg:hidden"
           >
             <X className="h-5 w-5" />
           </button>
@@ -189,7 +189,7 @@ function AdminShell({
           href="/admin/visits"
           onClick={() => setMobileOpen(false)}
           className={cn(
-            "mt-6 flex h-[48px] items-center justify-center gap-3 overflow-hidden rounded-xl bg-[var(--primary)] text-[16px] font-semibold text-white shadow-[0_14px_28px_rgba(14,124,123,0.24)] transition-all duration-300 hover:bg-[var(--primary-container)]",
+            "mt-6 flex h-[48px] items-center justify-center gap-3 overflow-hidden rounded-xl bg-[var(--primary)] text-[16px] font-semibold text-[var(--primary-foreground)] shadow-md transition-all duration-300 hover:bg-[var(--primary-container)]",
             collapsed && "lg:mx-auto lg:h-[54px] lg:w-[54px] lg:rounded-xl lg:px-0",
           )}
           title={collapsed ? "New Consultation" : undefined}
@@ -212,10 +212,10 @@ function AdminShell({
                   collapsed && "lg:h-[54px] lg:w-[54px] lg:justify-center lg:gap-0 lg:rounded-xl lg:px-0",
                   selected
                     ? "border border-[var(--accent)] bg-[var(--healtech-champagne)] text-[var(--healtech-ink)] shadow-[0_8px_22px_rgba(235,203,139,0.16)] before:absolute before:left-0 before:top-3 before:h-6 before:w-1 before:rounded-r-full before:bg-[var(--primary)]"
-                    : "text-[#c9d8d4] hover:bg-white/8 hover:text-white",
+                    : "text-[var(--surface-muted)] hover:bg-white/8 hover:text-[var(--surface-elevated)]",
                 )}
               >
-                <item.icon className={cn("h-5 w-5 shrink-0", selected ? "text-[var(--primary)]" : "text-[#9fb5af]")} />
+                <item.icon className={cn("h-5 w-5 shrink-0", selected ? "text-[var(--primary)]" : "text-[var(--border-strong)]")} />
                 <span className={cn("whitespace-nowrap transition-opacity duration-200", collapsed && "lg:hidden")}>{item.label}</span>
               </Link>
             );
@@ -231,7 +231,7 @@ function AdminShell({
               className={cn(
                 "flex h-[50px] items-center gap-4 overflow-hidden rounded-xl px-4 text-[15px] font-semibold transition-all duration-300",
                 collapsed && "lg:h-[54px] lg:w-[54px] lg:justify-center lg:gap-0 lg:rounded-xl lg:px-0",
-                settingsItem.href === activeHref ? "border border-[var(--accent)] bg-[var(--healtech-champagne)] text-[var(--healtech-ink)] shadow-sm" : "text-[#c9d8d4] hover:bg-white/8 hover:text-white",
+                settingsItem.href === activeHref ? "border border-[var(--accent)] bg-[var(--healtech-champagne)] text-[var(--healtech-ink)] shadow-sm" : "text-[var(--surface-muted)] hover:bg-white/8 hover:text-[var(--surface-elevated)]",
               )}
             >
               <settingsItem.icon className="h-[22px] w-[22px] shrink-0" />
@@ -240,7 +240,7 @@ function AdminShell({
           ) : null}
           <SignOutButton
             className={cn(
-              "mt-2 !h-[50px] w-full justify-start gap-4 overflow-hidden border-0 bg-transparent px-4 text-[15px] font-semibold text-[#c9d8d4] transition-all duration-300 hover:bg-white/8 hover:text-white",
+              "mt-2 !h-[50px] w-full justify-start gap-4 overflow-hidden border-0 bg-transparent px-4 text-[15px] font-semibold text-[var(--surface-muted)] transition-all duration-300 hover:bg-white/8 hover:text-[var(--surface-elevated)]",
               collapsed && "lg:!h-[54px] lg:w-[54px] lg:justify-center lg:gap-0 lg:rounded-xl lg:px-0",
             )}
             iconClassName="h-[22px] w-[22px]"
@@ -251,7 +251,7 @@ function AdminShell({
       </aside>
 
       <main className="min-w-0">
-        <header className="sticky top-0 z-10 border-b border-[var(--border)] bg-[var(--surface-elevated)]/95 shadow-[0_8px_28px_rgba(11,19,32,0.06)] backdrop-blur">
+        <header className="sticky top-0 z-10 border-b border-[var(--border)] bg-[var(--surface-elevated)]/95 shadow-sm backdrop-blur">
           <div className="flex min-h-20 items-center gap-6 px-5 lg:px-8">
             <button
               type="button"
@@ -291,7 +291,7 @@ function AdminShell({
                 type="button"
                 aria-label="Open emergency workflow"
                 onClick={() => setEmergencyOpen(true)}
-                className="flex h-10 items-center gap-2 rounded-full border border-[#efb7aa] bg-[var(--error-container)] px-3 text-sm font-semibold text-[var(--danger)] shadow-[0_8px_18px_rgba(184,74,53,0.08)] transition hover:bg-[#f7d5cb] focus:outline-none focus:ring-2 focus:ring-[rgba(224,122,95,0.24)] md:px-5 md:text-[15px]"
+                className="flex h-10 items-center gap-2 rounded-full border border-[var(--danger)] bg-[var(--error-container)] px-3 text-sm font-semibold text-[var(--danger)] shadow-sm transition hover:border-[var(--border-strong)] hover:bg-[var(--danger-container)] focus:outline-none focus:ring-2 focus:ring-[var(--focus-ring)] md:px-5 md:text-[15px]"
               >
                 <span className="text-[26px] leading-none">*</span>
                 <span className="hidden sm:inline">Emergency</span>
@@ -564,9 +564,9 @@ function EmergencyWorkflowDialog({ open, onClose }: { open: boolean; onClose: ()
         aria-modal="true"
         aria-labelledby="emergency-workflow-title"
         tabIndex={-1}
-        className="w-full max-w-xl rounded-xl bg-[var(--surface-elevated)] shadow-[0_24px_60px_rgba(11,19,32,0.24)] outline-none"
+        className="w-full max-w-xl rounded-xl bg-[var(--surface-elevated)] shadow-xl outline-none"
       >
-        <div className="flex items-start justify-between gap-4 border-b border-[#efb7aa] px-5 py-4">
+        <div className="flex items-start justify-between gap-4 border-b border-[var(--danger)] px-5 py-4">
           <div className="flex items-start gap-3">
             <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[var(--error-container)] text-[var(--danger)]">
               <AlertTriangle className="h-6 w-6" />
@@ -581,14 +581,14 @@ function EmergencyWorkflowDialog({ open, onClose }: { open: boolean; onClose: ()
           </button>
         </div>
         <div className="space-y-3 px-5 py-5">
-          <p className="rounded-lg border border-[#efb7aa] bg-[var(--error-container)] px-4 py-3 text-sm leading-6 text-[#8c1d18]">
+          <p className="rounded-lg border border-[var(--danger)] bg-[var(--error-container)] px-4 py-3 text-sm leading-6 text-[var(--danger)]">
             Use these shortcuts to find or create the appropriate clinic record for an urgent visit. No database record is created until you use the normal visit or patient workflow.
           </p>
-          <Link href="/admin/visits" onClick={onClose} className="flex items-center gap-3 rounded-lg border border-[var(--border)] px-4 py-3 text-sm font-semibold text-[var(--healtech-slate)] transition hover:border-[#efb7aa] hover:bg-[var(--error-container)]">
+          <Link href="/admin/visits" onClick={onClose} className="flex items-center gap-3 rounded-lg border border-[var(--border)] px-4 py-3 text-sm font-semibold text-[var(--healtech-slate)] transition hover:border-[var(--danger)] hover:bg-[var(--error-container)]">
             <ClipboardList className="h-5 w-5 text-[var(--danger)]" />
             Go to Visits page
           </Link>
-          <Link href="/admin/patients" onClick={onClose} className="flex items-center gap-3 rounded-lg border border-[var(--border)] px-4 py-3 text-sm font-semibold text-[var(--healtech-slate)] transition hover:border-[#efb7aa] hover:bg-[var(--error-container)]">
+          <Link href="/admin/patients" onClick={onClose} className="flex items-center gap-3 rounded-lg border border-[var(--border)] px-4 py-3 text-sm font-semibold text-[var(--healtech-slate)] transition hover:border-[var(--danger)] hover:bg-[var(--error-container)]">
             <UserRound className="h-5 w-5 text-[var(--danger)]" />
             Go to Patients page
           </Link>
