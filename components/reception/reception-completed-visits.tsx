@@ -2,6 +2,7 @@ import {
   Calendar, CheckCircle2, ChevronLeft, ChevronRight, Clock3, Download,
   Eye, Filter, MoreVertical, Search, TrendingUp, Users,
 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { Select } from "@/components/ui/select";
 import { AvatarCircle } from "./reception-shell";
 
@@ -102,7 +103,7 @@ export function ReceptionCompletedVisitsView() {
                 <td className="px-5 py-4 font-medium">{v.duration}</td>
                 <td className="px-5 py-4 text-[#64717a]">{v.completedAt}</td>
                 <td className="px-5 py-4">
-                  <span className="rounded-full bg-[#d8f3df] px-3 py-1 text-xs font-semibold text-[#146c43]">Completed</span>
+                  <Badge tone="success">Completed</Badge>
                 </td>
                 <td className="px-5 py-4">
                   <div className="flex gap-2 text-[#64717a]">

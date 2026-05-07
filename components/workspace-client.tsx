@@ -5,7 +5,6 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   AlertCircle,
-  AlertTriangle,
   ArrowLeft,
   BriefcaseMedical,
   Building2,
@@ -34,6 +33,7 @@ import { StatCard } from "@/components/dashboard/stat-card";
 import { StatusBadge } from "@/components/status-badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { FeedbackAlert, LoadingState as SharedLoadingState } from "@/components/ui/data-state";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
@@ -2240,7 +2240,7 @@ function labelize(value: string) {
 }
 
 function LoadingState() {
-  return <div className="flex h-40 items-center justify-center text-sm text-[var(--on-surface-variant)]"><Loader2 className="mr-2 h-4 w-4 animate-spin" />Loading records</div>;
+  return <SharedLoadingState label="Loading records" className="h-40" />;
 }
 
 function ReadOnlyNotice() {
@@ -2248,16 +2248,5 @@ function ReadOnlyNotice() {
 }
 
 function Notice({ tone, text }: { tone: "success" | "warning" | "danger"; text: string }) {
-  const classes = tone === "success"
-    ? "border-[var(--success-container)] bg-[var(--success-container)] text-[var(--success)]"
-    : tone === "warning"
-      ? "border-[var(--warning-container)] bg-[var(--warning-container)] text-[var(--warning)]"
-      : "border-[var(--error-container)] bg-[var(--error-container)] text-[var(--error)]";
-
-  return (
-    <p className={`flex items-start gap-2 rounded-lg border px-3 py-2 text-sm ${classes}`}>
-      <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
-      {text}
-    </p>
-  );
+  return <FeedbackAlert tone={tone} message={text} />;
 }

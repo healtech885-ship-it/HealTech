@@ -8,6 +8,7 @@ import {
 } from "@tanstack/react-table";
 import Link from "next/link";
 import { StatusBadge } from "@/components/status-badge";
+import { Table, TableBody, TableCell, TableFrame, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import type { ModuleRecord } from "@/types/app.types";
 
 type RowLink = {
@@ -61,32 +62,40 @@ export function DataTable({
   const table = useReactTable({ data: rows, columns, getCoreRowModel: getCoreRowModel() });
 
   return (
-    <div className="max-h-[560px] max-w-full overflow-auto rounded-lg border border-border overscroll-contain">
-      <table className="min-w-full border-collapse text-left text-sm">
-        <thead className="sticky top-0 z-[1] bg-[#f1f5f9] text-xs font-semibold uppercase tracking-[0.02em] text-[var(--on-surface-variant)]">
+    <TableFrame scrollClassName="max-h-[560px]">
+      <Table>
+        <TableHeader className="sticky top-0 z-[1]">
           {table.getHeaderGroups().map((headerGroup) => (
-            <tr key={headerGroup.id}>
+            <TableRow key={headerGroup.id} className="hover:bg-transparent">
               {headerGroup.headers.map((header) => (
-                <th key={header.id} className="whitespace-nowrap px-4 py-3">
+                <TableHead key={header.id}>
                   {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
-                </th>
+                </TableHead>
               ))}
-            </tr>
+            </TableRow>
           ))}
-        </thead>
-        <tbody className="divide-y divide-border bg-white">
-          {table.getRowModel().rows.map((row) => (
-            <tr key={row.id} className="transition hover:bg-[#f8fafc]">
-              {row.getVisibleCells().map((cell) => (
-                <td key={cell.id} className="max-w-[220px] break-words px-4 py-3 text-[var(--on-surface)]">
-                  {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                </td>
-              ))}
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+        </TableHeader>
+        <TableBody>
+          {table.getRowModel().rows.length === 0 ? (
+            <TableRow>
+              <TableCell colSpan={Math.max(columns.length, 1)} className="py-10 text-center text-[#607084]">
+                No records visible for this role
+              </TableCell>
+            </TableRow>
+          ) : (
+            table.getRowModel().rows.map((row) => (
+              <TableRow key={row.id}>
+                {row.getVisibleCells().map((cell) => (
+                  <TableCell key={cell.id} className="max-w-[220px] break-words">
+                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                  </TableCell>
+                ))}
+              </TableRow>
+            ))
+          )}
+        </TableBody>
+      </Table>
+    </TableFrame>
   );
 }
 

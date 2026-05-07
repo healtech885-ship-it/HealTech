@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ChevronLeft, ChevronRight, Eye, Calendar, Search, UserPlus, SlidersHorizontal } from "lucide-react";
+import { Badge, badgeTone } from "@/components/ui/badge";
 import { Select } from "@/components/ui/select";
 import { AvatarCircle } from "./reception-shell";
 
@@ -96,7 +97,7 @@ export function ReceptionPatientsView() {
                 <td className="px-6 py-4">{p.dept}</td>
                 <td className="px-6 py-4">{p.lastVisit}</td>
                 <td className="px-6 py-4">
-                  <span className="rounded-full px-3 py-1 text-xs font-semibold" style={{ backgroundColor: p.statusBg, color: p.statusColor }}>{p.status}</span>
+                  <Badge tone={badgeTone(p.status)}>{p.status}</Badge>
                 </td>
                 <td className="px-6 py-4">
                   <div className="flex gap-2 text-[#64717a]">

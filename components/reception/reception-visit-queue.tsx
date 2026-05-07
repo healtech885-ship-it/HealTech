@@ -3,6 +3,7 @@ import {
   AlertTriangle, CheckCircle2, ChevronLeft, ChevronRight, Clock3,
   Filter, MoreVertical, Plus, RefreshCw, Search, Users,
 } from "lucide-react";
+import { Badge, badgeTone } from "@/components/ui/badge";
 import { AvatarCircle } from "./reception-shell";
 
 const queueStats = [
@@ -20,18 +21,6 @@ const visits = [
   { code: "VN-8496", patient: "Aisha Karim", initials: "AK", dob: "03/14/90", doctor: "Dr. Patel", dept: "Pediatrics", priority: "Urgent", waitTime: "2m", status: "Checked In", color: "#c59434" },
   { code: "VN-8497", patient: "Robert Johansson", initials: "RJ", dob: "01/22/60", doctor: "Dr. Lee", dept: "Orthopedics", priority: "Normal", waitTime: "22m", status: "Waiting", color: "#64717a" },
 ];
-
-function statusStyle(status: string) {
-  if (status === "Checked In") return { bg: "#e0f7fa", color: "#0b9ab5" };
-  if (status === "Delayed") return { bg: "#fde8e8", color: "#d32f2f" };
-  return { bg: "#e8ecf1", color: "#475569" };
-}
-
-function priorityStyle(priority: string) {
-  if (priority === "Urgent") return { bg: "#fde8e8", color: "#d32f2f" };
-  if (priority === "High") return { bg: "#fff3d6", color: "#b46a09" };
-  return { bg: "#e8ecf1", color: "#475569" };
-}
 
 export function ReceptionVisitQueueView() {
   return (
@@ -106,10 +95,7 @@ export function ReceptionVisitQueueView() {
             </tr>
           </thead>
           <tbody>
-            {visits.map((v) => {
-              const ss = statusStyle(v.status);
-              const ps = priorityStyle(v.priority);
-              return (
+            {visits.map((v) => (
                 <tr key={v.code} className="border-t border-[#e8ecf1] hover:bg-[#f9fbfd]">
                   <td className="px-5 py-4 font-medium text-[#0b9ab5]">{v.code}</td>
                   <td className="px-5 py-4">
@@ -124,16 +110,15 @@ export function ReceptionVisitQueueView() {
                   <td className="px-5 py-4">{v.doctor}</td>
                   <td className="px-5 py-4 text-[#64717a]">{v.dept}</td>
                   <td className="px-5 py-4">
-                    <span className="rounded-full px-3 py-1 text-xs font-semibold" style={{ backgroundColor: ps.bg, color: ps.color }}>{v.priority}</span>
+                    <Badge tone={badgeTone(v.priority)}>{v.priority}</Badge>
                   </td>
                   <td className={`px-5 py-4 font-medium ${v.status === "Delayed" ? "text-[#d32f2f]" : ""}`}>{v.waitTime}</td>
                   <td className="px-5 py-4">
-                    <span className="rounded-full px-3 py-1 text-xs font-semibold" style={{ backgroundColor: ss.bg, color: ss.color }}>{v.status}</span>
+                    <Badge tone={badgeTone(v.status)}>{v.status}</Badge>
                   </td>
                   <td className="px-5 py-4"><MoreVertical className="h-4 w-4 text-[#8293a8]" /></td>
                 </tr>
-              );
-            })}
+            ))}
           </tbody>
         </table>
         <div className="flex items-center justify-between border-t border-[#e8ecf1] px-5 py-3 text-sm text-[#64717a]">

@@ -16,6 +16,7 @@ import {
   Settings,
 } from "lucide-react";
 import { Badge, badgeTone } from "@/components/ui/badge";
+import { EmptyState as SharedEmptyState, FeedbackAlert, LoadingState as SharedLoadingState } from "@/components/ui/data-state";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
@@ -1432,29 +1433,15 @@ function InfoBlock({ label, value, helper }: { label: string; value: string; hel
 }
 
 function LoadingState({ label }: { label: string }) {
-  return (
-    <div className="flex min-h-32 items-center justify-center gap-2 text-sm text-[#607084]">
-      <Loader2 className="h-4 w-4 animate-spin" />
-      {label}
-    </div>
-  );
+  return <SharedLoadingState label={label} />;
 }
 
 function EmptyState({ title, description }: { title: string; description: string }) {
-  return (
-    <div className="rounded-lg border border-dashed border-[#cbd8e2] bg-white p-8 text-center">
-      <p className="font-semibold">{title}</p>
-      <p className="mt-1 text-sm text-[#607084]">{description}</p>
-    </div>
-  );
+  return <SharedEmptyState title={title} description={description} />;
 }
 
 function ErrorState({ message }: { message: string }) {
-  return (
-    <div className="rounded-lg border border-[#f2aaa4] bg-[#fff1f0] p-4 text-sm text-[#b42318]">
-      {message}
-    </div>
-  );
+  return <FeedbackAlert tone="danger" message={message} />;
 }
 
 function Avatar({ name, small }: { name: string; small?: boolean }) {

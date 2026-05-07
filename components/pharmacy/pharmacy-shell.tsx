@@ -19,6 +19,7 @@ import {
   Settings,
 } from "lucide-react";
 import { Badge, badgeTone } from "@/components/ui/badge";
+import { EmptyState as SharedEmptyState, FeedbackAlert, LoadingState as SharedLoadingState } from "@/components/ui/data-state";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
@@ -1279,39 +1280,19 @@ function StatCard({ title, value, icon: Icon, tone = "info" }: { title: string; 
 }
 
 function LoadingState({ label }: { label: string }) {
-  return (
-    <div className="flex min-h-32 items-center justify-center gap-2 text-sm text-[#607084]">
-      <Loader2 className="h-4 w-4 animate-spin" />
-      {label}
-    </div>
-  );
+  return <SharedLoadingState label={label} />;
 }
 
 function EmptyState({ title, description }: { title: string; description: string }) {
-  return (
-    <div className="rounded-lg border border-dashed border-[#cbd8e2] bg-[#f8fbfd] p-8 text-center">
-      <p className="font-semibold">{title}</p>
-      <p className="mt-1 text-sm text-[#607084]">{description}</p>
-    </div>
-  );
+  return <SharedEmptyState title={title} description={description} />;
 }
 
 function ErrorState({ message }: { message: string }) {
-  return (
-    <div className="rounded-lg border border-[#f2aaa4] bg-[#fff1f0] p-4 text-sm text-[#b42318]">
-      <AlertTriangle className="mr-2 inline h-4 w-4" />
-      {message}
-    </div>
-  );
+  return <FeedbackAlert tone="danger" message={message} />;
 }
 
 function SuccessState({ message }: { message: string }) {
-  return (
-    <div className="rounded-lg border border-[#a7dfb7] bg-[#edf8ef] p-4 text-sm text-[#087a35]">
-      <CheckCircle2 className="mr-2 inline h-4 w-4" />
-      {message}
-    </div>
-  );
+  return <FeedbackAlert tone="success" message={message} />;
 }
 
 function SearchInput({ value, onChange, placeholder }: { value: string; onChange: (value: string) => void; placeholder: string }) {

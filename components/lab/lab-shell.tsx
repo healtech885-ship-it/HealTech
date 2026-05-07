@@ -17,8 +17,10 @@ import {
   X,
 } from "lucide-react";
 import { Badge, badgeTone } from "@/components/ui/badge";
+import { EmptyState as SharedEmptyState, FeedbackAlert, LoadingState as SharedLoadingState } from "@/components/ui/data-state";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Table, TableBody, TableCell, TableFrame, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
 import { navigationByRole } from "@/lib/constants/navigation";
 import { createClient } from "@/lib/supabase/client";
@@ -450,62 +452,62 @@ function LabResultsList({
 
 function LabResultsTable({ results, compact = false, onEditResult }: { results: LabResultRecord[]; compact?: boolean; onEditResult?: (result: LabResultRecord) => void }) {
   return (
-    <div className="overflow-x-auto">
-      <table className="min-w-full divide-y divide-[#d4e0e8] text-sm">
-        <thead className="bg-[#edf4f7] text-left text-xs uppercase tracking-wide text-[#607084]">
-          <tr>
-            <th className="px-4 py-3">Patient</th>
-            <th className="px-4 py-3">Visit</th>
-            <th className="px-4 py-3">Test</th>
-            {!compact ? <th className="px-4 py-3">Doctor</th> : null}
-            <th className="px-4 py-3">Status</th>
-            <th className="px-4 py-3">Result Value</th>
-            <th className="px-4 py-3">Created</th>
-            <th className="px-4 py-3 text-right">Action</th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-[#e4edf2]">
+    <TableFrame>
+      <Table>
+        <TableHeader>
+          <TableRow className="hover:bg-transparent">
+            <TableHead>Patient</TableHead>
+            <TableHead>Visit</TableHead>
+            <TableHead>Test</TableHead>
+            {!compact ? <TableHead>Doctor</TableHead> : null}
+            <TableHead>Status</TableHead>
+            <TableHead>Result Value</TableHead>
+            <TableHead>Created</TableHead>
+            <TableHead className="text-right">Action</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
           {results.map((result) => (
-            <tr key={result.id} className="align-top">
-              <td className="px-4 py-4">
+            <TableRow key={result.id}>
+              <TableCell>
                 <p className="font-semibold">{result.patients?.full_name ?? "Unknown patient"}</p>
                 <p className="text-xs text-[#607084]">{patientIdentifier(result.patients)}</p>
-              </td>
-              <td className="px-4 py-4">
+              </TableCell>
+              <TableCell>
                 <p className="font-semibold">{result.visits?.visit_code ?? "No visit code"}</p>
                 <p className="max-w-xs text-xs text-[#607084]">{result.visits?.chief_complaint ?? "No chief complaint"}</p>
                 {result.visits ? <Badge tone={badgeTone(result.visits.priority)} className="mt-2">{formatLabel(result.visits.priority)}</Badge> : null}
-              </td>
-              <td className="px-4 py-4">
+              </TableCell>
+              <TableCell>
                 <p className="font-semibold">{result.lab_tests?.name ?? "Lab test"}</p>
                 <p className="text-xs text-[#607084]">
                   {result.lab_tests?.code ?? "No code"}
                   {result.lab_tests?.normal_range ? ` / Range: ${result.lab_tests.normal_range}` : ""}
                 </p>
-              </td>
+              </TableCell>
               {!compact ? (
-                <td className="px-4 py-4">
+                <TableCell>
                   <p className="font-medium">{result.doctor?.full_name ?? "Assigned doctor"}</p>
                   <p className="text-xs text-[#607084]">{result.doctor?.email ?? result.doctor_id}</p>
-                </td>
+                </TableCell>
               ) : null}
-              <td className="px-4 py-4">
+              <TableCell>
                 <Badge tone={badgeTone(result.status)}>{formatLabel(result.status)}</Badge>
                 <p className="mt-2 text-xs text-[#607084]">{result.visible_to_patient ? "Visible to patient" : "Not visible to patient"}</p>
-              </td>
-              <td className="px-4 py-4">
+              </TableCell>
+              <TableCell>
                 <p className="font-medium">{formatResultValue(result)}</p>
                 <p className="mt-1 max-w-xs text-xs text-[#607084]">{result.result_notes ?? "No result notes"}</p>
-              </td>
-              <td className="px-4 py-4 text-[#41546b]">{formatDate(result.created_at)}</td>
-              <td className="px-4 py-4 text-right">
+              </TableCell>
+              <TableCell className="text-[#41546b]">{formatDate(result.created_at)}</TableCell>
+              <TableCell className="text-right">
                 <LabResultAction result={result} onEditResult={onEditResult} />
-              </td>
-            </tr>
+              </TableCell>
+            </TableRow>
           ))}
-        </tbody>
-      </table>
-    </div>
+        </TableBody>
+      </Table>
+    </TableFrame>
   );
 }
 
@@ -729,36 +731,36 @@ function LabTestsPage() {
 
 function LabTestsTable({ tests }: { tests: LabTestRow[] }) {
   return (
-    <div className="overflow-x-auto">
-      <table className="min-w-full divide-y divide-[#d4e0e8] text-sm">
-        <thead className="bg-[#edf4f7] text-left text-xs uppercase tracking-wide text-[#607084]">
-          <tr>
-            <th className="px-4 py-3">Name</th>
-            <th className="px-4 py-3">Code</th>
-            <th className="px-4 py-3">Description</th>
-            <th className="px-4 py-3">Unit</th>
-            <th className="px-4 py-3">Normal Range</th>
-            <th className="px-4 py-3">Status</th>
-            <th className="px-4 py-3">Created</th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-[#e4edf2]">
+    <TableFrame>
+      <Table>
+        <TableHeader>
+          <TableRow className="hover:bg-transparent">
+            <TableHead>Name</TableHead>
+            <TableHead>Code</TableHead>
+            <TableHead>Description</TableHead>
+            <TableHead>Unit</TableHead>
+            <TableHead>Normal Range</TableHead>
+            <TableHead>Status</TableHead>
+            <TableHead>Created</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
           {tests.map((test) => (
-            <tr key={test.id}>
-              <td className="px-4 py-4 font-semibold">{test.name}</td>
-              <td className="px-4 py-4">{test.code ?? "No code"}</td>
-              <td className="max-w-md px-4 py-4 text-[#41546b]">{test.description ?? "No description"}</td>
-              <td className="px-4 py-4">{test.unit ?? "Not set"}</td>
-              <td className="px-4 py-4">{test.normal_range ?? "Not set"}</td>
-              <td className="px-4 py-4">
+            <TableRow key={test.id}>
+              <TableCell className="font-semibold">{test.name}</TableCell>
+              <TableCell>{test.code ?? "No code"}</TableCell>
+              <TableCell className="max-w-md text-[#41546b]">{test.description ?? "No description"}</TableCell>
+              <TableCell>{test.unit ?? "Not set"}</TableCell>
+              <TableCell>{test.normal_range ?? "Not set"}</TableCell>
+              <TableCell>
                 <Badge tone={badgeTone(test.status)}>{formatLabel(test.status)}</Badge>
-              </td>
-              <td className="px-4 py-4 text-[#41546b]">{formatDate(test.created_at)}</td>
-            </tr>
+              </TableCell>
+              <TableCell className="text-[#41546b]">{formatDate(test.created_at)}</TableCell>
+            </TableRow>
           ))}
-        </tbody>
-      </table>
-    </div>
+        </TableBody>
+      </Table>
+    </TableFrame>
   );
 }
 
@@ -802,29 +804,19 @@ function SearchBox({ value, onChange, placeholder }: { value: string; onChange: 
 }
 
 function LoadingState({ label }: { label: string }) {
-  return (
-    <div className="flex items-center justify-center gap-2 p-8 text-sm text-[#607084]">
-      <Loader2 className="h-4 w-4 animate-spin" />
-      {label}
-    </div>
-  );
+  return <SharedLoadingState label={label} className="p-8" />;
 }
 
 function ErrorState({ message }: { message: string }) {
-  return <div className="m-4 rounded-lg border border-[#f2aaa4] bg-[var(--error-container)] p-4 text-sm text-[var(--error)]">Supabase error: {message}</div>;
+  return <FeedbackAlert tone="danger" message={`Supabase error: ${message}`} className="m-4" />;
 }
 
 function EmptyState({ title, description }: { title: string; description: string }) {
-  return (
-    <div className="p-8 text-center">
-      <p className="font-semibold">{title}</p>
-      <p className="mt-2 text-sm text-[#607084]">{description}</p>
-    </div>
-  );
+  return <SharedEmptyState title={title} description={description} className="m-4" />;
 }
 
 function Notice({ message }: { message: string }) {
-  return <div className="m-4 rounded-lg border border-[#e6ca83] bg-[var(--warning-container)] p-4 text-sm text-[var(--warning)]">{message}</div>;
+  return <FeedbackAlert tone="warning" message={message} className="m-4" />;
 }
 
 function InfoBlock({ label, value, helper }: { label: string; value: string; helper?: string }) {

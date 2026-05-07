@@ -23,6 +23,7 @@ import {
 import { Badge, badgeTone } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select } from "@/components/ui/select";
+import { Table, TableBody, TableCell, TableFrame, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { navigationByRole } from "@/lib/constants/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
@@ -1755,45 +1756,45 @@ function OrderPage({
 
 function VisitTable({ visits, compact = false }: { visits: DoctorVisit[]; compact?: boolean }) {
   return (
-    <div className="overflow-x-auto">
-      <table className="min-w-full divide-y divide-[#e1e9ef] text-left">
-        <thead className="bg-[#f4f8fb] text-xs uppercase tracking-wide text-[#607084]">
-          <tr>
-            <th className="px-4 py-3 font-semibold">Visit Code</th>
-            <th className="px-4 py-3 font-semibold">Patient</th>
-            {!compact ? <th className="px-4 py-3 font-semibold">MRN / Student ID</th> : null}
-            <th className="px-4 py-3 font-semibold">Chief Complaint</th>
-            <th className="px-4 py-3 font-semibold">Priority</th>
-            <th className="px-4 py-3 font-semibold">Status</th>
-            <th className="px-4 py-3 font-semibold">Created</th>
-            <th className="px-4 py-3 font-semibold">Action</th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-[#e1e9ef] bg-white">
+    <TableFrame>
+      <Table>
+        <TableHeader>
+          <TableRow className="hover:bg-transparent">
+            <TableHead>Visit Code</TableHead>
+            <TableHead>Patient</TableHead>
+            {!compact ? <TableHead>MRN / Student ID</TableHead> : null}
+            <TableHead>Chief Complaint</TableHead>
+            <TableHead>Priority</TableHead>
+            <TableHead>Status</TableHead>
+            <TableHead>Created</TableHead>
+            <TableHead>Action</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
           {visits.map((visit) => (
-            <tr key={visit.id}>
-              <td className="whitespace-nowrap px-4 py-4 text-sm font-semibold text-[#24364b]">{visit.visit_code}</td>
-              <td className="px-4 py-4">
+            <TableRow key={visit.id}>
+              <TableCell className="whitespace-nowrap font-semibold">{visit.visit_code}</TableCell>
+              <TableCell>
                 <div className="flex items-center gap-3">
                   <Avatar name={visit.patients?.full_name ?? "Patient"} small />
                   <span className="text-sm font-medium">{visit.patients?.full_name ?? "Patient unavailable"}</span>
                 </div>
-              </td>
-              {!compact ? <td className="whitespace-nowrap px-4 py-4 text-sm text-[#607084]">{patientIdentifier(visit.patients)}</td> : null}
-              <td className="min-w-[220px] px-4 py-4 text-sm text-[#41546b]">{visit.chief_complaint ?? "Not recorded"}</td>
-              <td className="px-4 py-4"><PriorityBadge value={visit.priority} /></td>
-              <td className="px-4 py-4"><StatusBadge value={visit.status} /></td>
-              <td className="whitespace-nowrap px-4 py-4 text-sm text-[#607084]">{formatDateTime(visit.created_at)}</td>
-              <td className="px-4 py-4">
+              </TableCell>
+              {!compact ? <TableCell className="whitespace-nowrap text-[#607084]">{patientIdentifier(visit.patients)}</TableCell> : null}
+              <TableCell className="min-w-[220px] text-[#41546b]">{visit.chief_complaint ?? "Not recorded"}</TableCell>
+              <TableCell><PriorityBadge value={visit.priority} /></TableCell>
+              <TableCell><StatusBadge value={visit.status} /></TableCell>
+              <TableCell className="whitespace-nowrap text-[#607084]">{formatDateTime(visit.created_at)}</TableCell>
+              <TableCell>
                 <Link href={`/doctor/visits/${visit.id}`} className="inline-flex h-9 items-center justify-center rounded-lg bg-[#006d86] px-3 text-sm font-semibold text-white">
                   Open
                 </Link>
-              </td>
-            </tr>
+              </TableCell>
+            </TableRow>
           ))}
-        </tbody>
-      </table>
-    </div>
+        </TableBody>
+      </Table>
+    </TableFrame>
   );
 }
 
