@@ -2,53 +2,98 @@
 @import "@heroui/styles";
 
 :root {
+  /* Brand tokens */
   --healtech-ink: #0b1320;
   --healtech-slate: #162231;
   --healtech-pearl: #f7faf8;
   --healtech-mist: #eef6f4;
   --healtech-teal: #0e7c7b;
-  --healtech-aqua: #d9f0ec;
   --healtech-sage: #7bae9f;
   --healtech-sand: #ebcb8b;
   --healtech-champagne: #f6e7bd;
   --healtech-coral: #e07a5f;
   --healtech-violet: #8e8abf;
+
+  /* Surface tokens */
   --background: var(--healtech-pearl);
   --foreground: var(--healtech-ink);
   --surface: var(--healtech-pearl);
   --surface-muted: var(--healtech-mist);
   --surface-elevated: #ffffff;
-  --surface-container-lowest: #ffffff;
-  --surface-container-low: var(--healtech-mist);
   --surface-container: #e5f0ed;
   --surface-container-high: #dae8e4;
-  --surface-variant: #dbe7e3;
+
+  /* Text tokens */
   --on-surface: var(--healtech-ink);
   --on-surface-variant: #4b5b68;
   --muted: #5a6a76;
+
+  /* Border and focus tokens */
   --border: #ccdcd7;
   --border-strong: #7f968e;
-  --outline: #6b7c87;
-  --outline-variant: var(--border);
+  --focus: var(--healtech-teal);
+  --focus-ring: rgba(14, 124, 123, 0.24);
+
+  /* Semantic tokens */
   --primary: var(--healtech-teal);
-  --primary-container: #0a6b6a;
-  --on-primary: #ffffff;
+  --primary-foreground: #ffffff;
+  --secondary: #536575;
+  --secondary-foreground: #ffffff;
   --accent: var(--healtech-sand);
   --accent-foreground: #533b10;
-  --secondary: #536575;
-  --secondary-container: var(--healtech-aqua);
-  --tertiary: var(--healtech-violet);
-  --tertiary-container: #eceafd;
-  --error: #a24130;
-  --error-container: #f9ded7;
-  --danger: var(--error);
   --success: #286b55;
+  --success-foreground: #ffffff;
   --success-container: #ddf1e9;
   --warning: #7d5a16;
+  --warning-foreground: #ffffff;
   --warning-container: var(--healtech-champagne);
+  --danger: #a24130;
+  --danger-foreground: #ffffff;
+  --danger-container: #f9ded7;
   --info: #5363a3;
+  --info-foreground: #ffffff;
   --info-container: #e8e7f7;
-  --focus-ring: rgba(14, 124, 123, 0.24);
+
+  /* Form field tokens */
+  --field-background: var(--surface-elevated);
+  --field-foreground: var(--on-surface);
+  --field-placeholder: var(--muted);
+  --field-border: var(--border);
+
+  /* Role accent tokens */
+  --role-accent: var(--primary);
+  --role-accent-container: #d9f0ec;
+  --role-accent-foreground: var(--primary);
+
+  /* HeroUI neutral/default mapping */
+  --default: var(--surface-container);
+  --default-foreground: var(--on-surface);
+  --surface-foreground: var(--on-surface);
+  --surface-secondary: var(--surface-muted);
+  --surface-secondary-foreground: var(--on-surface);
+  --surface-tertiary: var(--surface-container);
+  --surface-tertiary-foreground: var(--on-surface);
+  --overlay: var(--surface-elevated);
+  --overlay-foreground: var(--on-surface);
+  --separator: var(--border);
+  --link: var(--primary);
+
+  /* Backward-compatible aliases currently used across the app */
+  --healtech-aqua: var(--role-accent-container);
+  --surface-container-lowest: var(--surface-elevated);
+  --surface-container-low: var(--surface-muted);
+  --surface-variant: #dbe7e3;
+  --outline: #6b7c87;
+  --outline-variant: var(--border);
+  --primary-container: #0a6b6a;
+  --on-primary: var(--primary-foreground);
+  --secondary-container: var(--role-accent-container);
+  --tertiary: var(--healtech-violet);
+  --tertiary-container: var(--info-container);
+  --error: var(--danger);
+  --error-container: var(--danger-container);
+  --destructive: var(--danger);
+  --destructive-foreground: var(--danger-foreground);
   --ring: var(--focus-ring);
   --chart-1: var(--healtech-teal);
   --chart-2: var(--healtech-sage);
@@ -62,14 +107,38 @@
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-surface: var(--surface);
+  --color-surface-muted: var(--surface-muted);
+  --color-surface-elevated: var(--surface-elevated);
+  --color-surface-container: var(--surface-container);
+  --color-surface-container-high: var(--surface-container-high);
   --color-card: var(--surface-container-lowest);
   --color-muted: var(--surface-container-low);
+  --color-muted-foreground: var(--muted);
   --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-focus: var(--focus);
+  --color-default: var(--default);
+  --color-default-foreground: var(--default-foreground);
   --color-primary: var(--primary);
-  --color-primary-foreground: var(--on-primary);
+  --color-primary-foreground: var(--primary-foreground);
   --color-secondary: var(--secondary);
-  --color-destructive: var(--error);
+  --color-secondary-foreground: var(--secondary-foreground);
   --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-danger: var(--danger);
+  --color-danger-foreground: var(--danger-foreground);
+  --color-info: var(--info);
+  --color-info-foreground: var(--info-foreground);
+  --color-destructive: var(--danger);
+  --color-destructive-foreground: var(--danger-foreground);
+  --color-field-background: var(--field-background);
+  --color-field-foreground: var(--field-foreground);
+  --color-field-placeholder: var(--field-placeholder);
+  --color-field-border: var(--field-border);
   --font-sans: var(--font-inter), "Segoe UI", Arial, sans-serif;
 }
 
