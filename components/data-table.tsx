@@ -84,7 +84,7 @@ export function DataTable({
         <TableBody>
           {table.getRowModel().rows.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={Math.max(columns.length, 1)} className="py-10 text-center text-[#607084]">
+              <TableCell colSpan={Math.max(columns.length, 1)} className="py-10 text-center text-[var(--muted)]">
                 No records visible for this role
               </TableCell>
             </TableRow>

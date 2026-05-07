@@ -16,7 +16,7 @@ export function TableFrame({
   return (
     <HeroUITable.Root
       variant="primary"
-      className={cn("overflow-hidden rounded-xl border border-[#d4e0e8] bg-white shadow-sm", className)}
+      className={cn("overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--surface-elevated)] shadow-sm", className)}
     >
       <HeroUITable.ScrollContainer className={cn("max-w-full overflow-auto overscroll-contain", scrollClassName)}>
         {children}
@@ -33,7 +33,7 @@ export function TableHeader({ className, ...props }: React.HTMLAttributes<HTMLTa
   return (
     <thead
       className={cn(
-        "bg-[#edf4f7] text-left text-xs font-semibold uppercase tracking-[0.04em] text-[#52677a]",
+        "bg-[var(--surface-muted)] text-left text-xs font-semibold uppercase tracking-[0.04em] text-[var(--on-surface-variant)]",
         className,
       )}
       {...props}
@@ -42,11 +42,11 @@ export function TableHeader({ className, ...props }: React.HTMLAttributes<HTMLTa
 }
 
 export function TableBody({ className, ...props }: React.HTMLAttributes<HTMLTableSectionElement>) {
-  return <tbody className={cn("divide-y divide-[#e4edf2] bg-white", className)} {...props} />;
+  return <tbody className={cn("divide-y divide-[var(--border)] bg-[var(--surface-elevated)]", className)} {...props} />;
 }
 
 export function TableRow({ className, ...props }: React.HTMLAttributes<HTMLTableRowElement>) {
-  return <tr className={cn("align-top transition-colors hover:bg-[#f7fbfd]", className)} {...props} />;
+  return <tr className={cn("align-top transition-colors hover:bg-[var(--surface-muted)]", className)} {...props} />;
 }
 
 export function TableHead({ className, ...props }: React.ThHTMLAttributes<HTMLTableCellElement>) {
@@ -54,5 +54,5 @@ export function TableHead({ className, ...props }: React.ThHTMLAttributes<HTMLTa
 }
 
 export function TableCell({ className, ...props }: React.TdHTMLAttributes<HTMLTableCellElement>) {
-  return <td className={cn("px-4 py-4 text-[#24364b]", className)} {...props} />;
+  return <td className={cn("px-4 py-4 text-[var(--on-surface)]", className)} {...props} />;
 }

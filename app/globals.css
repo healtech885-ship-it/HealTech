@@ -2,39 +2,59 @@
 @import "@heroui/styles";
 
 :root {
-  --background: #f9f9ff;
-  --foreground: #191c22;
-  --surface: #f9f9ff;
+  --healtech-ink: #0b1320;
+  --healtech-slate: #162231;
+  --healtech-pearl: #f7faf8;
+  --healtech-mist: #eef6f4;
+  --healtech-teal: #0e7c7b;
+  --healtech-aqua: #d9f0ec;
+  --healtech-sage: #7bae9f;
+  --healtech-sand: #ebcb8b;
+  --healtech-champagne: #f6e7bd;
+  --healtech-coral: #e07a5f;
+  --healtech-violet: #8e8abf;
+  --background: var(--healtech-pearl);
+  --foreground: var(--healtech-ink);
+  --surface: var(--healtech-pearl);
+  --surface-muted: var(--healtech-mist);
+  --surface-elevated: #ffffff;
   --surface-container-lowest: #ffffff;
-  --surface-container-low: #f2f3fc;
-  --surface-container: #ecedf6;
-  --surface-container-high: #e6e8f1;
-  --surface-variant: #e1e2eb;
-  --on-surface: #191c22;
-  --on-surface-variant: #414753;
-  --outline: #727784;
-  --outline-variant: #c1c6d5;
-  --primary: #004e9f;
-  --primary-container: #0066cc;
+  --surface-container-low: var(--healtech-mist);
+  --surface-container: #e5f0ed;
+  --surface-container-high: #dae8e4;
+  --surface-variant: #dbe7e3;
+  --on-surface: var(--healtech-ink);
+  --on-surface-variant: #4b5b68;
+  --muted: #5a6a76;
+  --border: #ccdcd7;
+  --border-strong: #7f968e;
+  --outline: #6b7c87;
+  --outline-variant: var(--border);
+  --primary: var(--healtech-teal);
+  --primary-container: #0a6b6a;
   --on-primary: #ffffff;
-  --secondary: #505f76;
-  --secondary-container: #d0e1fb;
-  --tertiary: #883700;
-  --tertiary-container: #ffdbcb;
-  --error: #ba1a1a;
-  --error-container: #ffdad6;
-  --success: #146c43;
-  --success-container: #d8f3df;
-  --warning: #8a5a00;
-  --warning-container: #ffefc2;
-  --info: #005cba;
-  --info-container: #dfe8ff;
-  --ring: rgba(0, 92, 186, 0.22);
-  --chart-1: #004e9f;
-  --chart-2: #008a9b;
-  --chart-3: #146c43;
-  --chart-4: #8a5a00;
-  --chart-5: #883700;
+  --accent: var(--healtech-sand);
+  --accent-foreground: #533b10;
+  --secondary: #536575;
+  --secondary-container: var(--healtech-aqua);
+  --tertiary: var(--healtech-violet);
+  --tertiary-container: #eceafd;
+  --error: #a24130;
+  --error-container: #f9ded7;
+  --danger: var(--error);
+  --success: #286b55;
+  --success-container: #ddf1e9;
+  --warning: #7d5a16;
+  --warning-container: var(--healtech-champagne);
+  --info: #5363a3;
+  --info-container: #e8e7f7;
+  --focus-ring: rgba(14, 124, 123, 0.24);
+  --ring: var(--focus-ring);
+  --chart-1: var(--healtech-teal);
+  --chart-2: var(--healtech-sage);
+  --chart-3: var(--healtech-sand);
+  --chart-4: var(--healtech-violet);
+  --chart-5: var(--healtech-coral);
   --sidebar-width: 260px;
 }
 
@@ -44,11 +64,12 @@
   --color-surface: var(--surface);
   --color-card: var(--surface-container-lowest);
   --color-muted: var(--surface-container-low);
-  --color-border: var(--outline-variant);
+  --color-border: var(--border);
   --color-primary: var(--primary);
   --color-primary-foreground: var(--on-primary);
   --color-secondary: var(--secondary);
   --color-destructive: var(--error);
+  --color-accent: var(--accent);
   --font-sans: var(--font-inter), "Segoe UI", Arial, sans-serif;
 }
 
@@ -85,9 +106,9 @@ textarea {
 }
 
 .clinical-card {
-  border: 1px solid var(--outline-variant);
-  background: var(--surface-container-lowest);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05), 0 4px 6px rgba(0, 0, 0, 0.02);
+  border: 1px solid var(--border);
+  background: var(--surface-elevated);
+  box-shadow: 0 12px 30px rgba(11, 19, 32, 0.06);
 }
 
 .table-numeric {
@@ -96,15 +117,15 @@ textarea {
 
 .admin-workspace .clinical-card,
 .admin-panel {
-  border-color: #cfe0e8;
+  border-color: var(--border);
   border-radius: 18px;
-  background: #ffffff;
-  box-shadow: 0 14px 38px rgba(15, 23, 42, 0.07);
+  background: var(--surface-elevated);
+  box-shadow: 0 14px 38px rgba(11, 19, 32, 0.08);
 }
 
 .admin-panel-header {
-  border-color: #d9e6eb;
-  background: #fbfdfe;
+  border-color: var(--border);
+  background: var(--surface);
 }
 
 .admin-form-card {
@@ -116,21 +137,21 @@ textarea {
   position: absolute;
   inset: 0 auto 0 0;
   width: 4px;
-  background: #00758d;
+  background: var(--primary);
 }
 
 .admin-data-table {
-  border-color: #cfe0e8;
+  border-color: var(--border);
   border-radius: 18px;
-  box-shadow: 0 14px 34px rgba(15, 23, 42, 0.06);
+  box-shadow: 0 14px 34px rgba(11, 19, 32, 0.07);
 }
 
 .admin-data-table thead {
-  background: #eef7fa;
+  background: var(--surface-muted);
 }
 
 .admin-data-table th {
-  color: #52647a;
+  color: var(--muted);
   font-size: 11px;
   letter-spacing: 0.08em;
 }
@@ -141,11 +162,11 @@ textarea {
 }
 
 .admin-data-table tbody tr:hover {
-  background: #f4fbfd;
+  background: var(--surface-muted);
 }
 
 ::selection {
-  background: var(--info-container);
+  background: var(--secondary-container);
   color: var(--primary);
 }
 
@@ -181,9 +202,9 @@ textarea {
   gap: 8px;
   min-height: 36px;
   padding: 0 12px;
-  border: 1px solid #d6e0e5;
+  border: 1px solid var(--border);
   border-radius: 8px;
-  color: #00647c;
+  color: var(--primary);
   font-size: 14px;
   font-weight: 600;
   text-decoration: none;
@@ -194,9 +215,9 @@ textarea {
 }
 
 .login-home-link:hover {
-  border-color: #9fb3bd;
-  background: #f3f8fa;
-  color: #004e61;
+  border-color: var(--border-strong);
+  background: var(--surface-muted);
+  color: var(--primary-container);
 }
 
 .login-panel {
@@ -284,13 +305,13 @@ textarea {
 
 .login-demo-hint {
   margin: -4px 0 0;
-  color: #526168;
+  color: var(--muted);
   font-size: 13px;
   line-height: 18px;
 }
 
 .login-demo-hint span {
-  color: #142127;
+  color: var(--foreground);
   font-weight: 600;
 }
 
@@ -302,7 +323,7 @@ textarea {
 .login-submit {
   height: 52px;
   font-size: 16px;
-  box-shadow: 0 12px 26px rgba(0, 100, 124, 0.18);
+  box-shadow: 0 12px 26px rgba(14, 124, 123, 0.18);
 }
 
 .login-visual {
@@ -325,7 +346,7 @@ textarea {
   width: min(100%, 470px);
   border-radius: 12px;
   padding: 28px;
-  box-shadow: 0 24px 58px rgba(15, 23, 42, 0.14);
+  box-shadow: 0 24px 58px rgba(11, 19, 32, 0.16);
 }
 
 .login-info-icon {
@@ -336,7 +357,7 @@ textarea {
   justify-content: center;
   margin-bottom: 32px;
   border-radius: 12px;
-  box-shadow: 0 10px 24px rgba(0, 100, 124, 0.18);
+  box-shadow: 0 10px 24px rgba(14, 124, 123, 0.18);
 }
 
 .login-info-heading {

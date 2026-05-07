@@ -10,7 +10,7 @@ export function Input(props: React.InputHTMLAttributes<HTMLInputElement>) {
       {...props}
       fullWidth
       className={cn(
-        "h-11 w-full rounded-lg border border-[#cbd8e2] bg-[#fbfdff] px-3 text-[15px] text-[var(--on-surface)] shadow-[inset_0_1px_1px_rgba(15,23,42,0.03)] outline-none transition-colors placeholder:text-[#8797a6] hover:border-[#a9bdca] focus:border-[#00758d] focus:ring-3 focus:ring-[#00758d]/15 disabled:cursor-not-allowed disabled:bg-[#eef3f7] disabled:text-[#748394] disabled:opacity-100 data-[disabled=true]:cursor-not-allowed data-[disabled=true]:bg-[#eef3f7] data-[disabled=true]:text-[#748394] data-[focused=true]:border-[#00758d] data-[focused=true]:ring-3 data-[focused=true]:ring-[#00758d]/15 data-[invalid=true]:border-[#ba1a1a] data-[invalid=true]:ring-[#ba1a1a]/10",
+        "h-11 w-full rounded-lg border border-[var(--border)] bg-[var(--surface-elevated)] px-3 text-[15px] text-[var(--on-surface)] shadow-[inset_0_1px_1px_rgba(11,19,32,0.03)] outline-none transition-colors placeholder:text-[var(--muted)] hover:border-[var(--border-strong)] focus:border-[var(--primary)] focus:ring-3 focus:ring-[var(--focus-ring)] disabled:cursor-not-allowed disabled:bg-[var(--surface-muted)] disabled:text-[var(--muted)] disabled:opacity-100 data-[disabled=true]:cursor-not-allowed data-[disabled=true]:bg-[var(--surface-muted)] data-[disabled=true]:text-[var(--muted)] data-[focused=true]:border-[var(--primary)] data-[focused=true]:ring-3 data-[focused=true]:ring-[var(--focus-ring)] data-[invalid=true]:border-[var(--danger)] data-[invalid=true]:ring-3 data-[invalid=true]:ring-[rgba(224,122,95,0.16)]",
         props.className,
       )}
     />

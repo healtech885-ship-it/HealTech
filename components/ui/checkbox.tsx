@@ -55,9 +55,9 @@ export function Checkbox({
       onChange={handleChange}
       isDisabled={disabled}
       isRequired={required}
-      className={cn("group flex items-center gap-2 text-sm font-medium text-[#41546b]", className)}
+      className={cn("group flex items-center gap-2 text-sm font-medium text-[var(--on-surface-variant)]", className)}
     >
-      <HeroUICheckbox.Control className="border border-[#cbd8e2] bg-white shadow-[inset_0_1px_1px_rgba(15,23,42,0.03)] group-data-[focus-visible=true]:ring-3 group-data-[focus-visible=true]:ring-[#00758d]/15 group-data-[selected=true]:border-[#00758d] group-data-[selected=true]:bg-[#00758d]" />
+      <HeroUICheckbox.Control className="border border-[var(--border)] bg-[var(--surface-elevated)] shadow-[inset_0_1px_1px_rgba(11,19,32,0.03)] group-data-[focus-visible=true]:ring-3 group-data-[focus-visible=true]:ring-[var(--focus-ring)] group-data-[selected=true]:border-[var(--primary)] group-data-[selected=true]:bg-[var(--primary)]" />
       <HeroUICheckbox.Indicator />
       {children ? <HeroUICheckbox.Content>{children}</HeroUICheckbox.Content> : null}
     </HeroUICheckbox>

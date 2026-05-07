@@ -16,11 +16,11 @@ const alertStatus: Record<Exclude<FeedbackTone, "neutral">, "success" | "warning
 };
 
 const alertClasses: Record<FeedbackTone, string> = {
-  success: "border-[#a7dfb7] bg-[#edf8ef] text-[#087a35]",
-  warning: "border-[#e6ca83] bg-[#fff7df] text-[#8a5a00]",
-  danger: "border-[#f2aaa4] bg-[#fff1f0] text-[#b42318]",
-  info: "border-[#acd8e4] bg-[#edf9fb] text-[#006d86]",
-  neutral: "border-[#d4e0e8] bg-[#f8fbfd] text-[#41546b]",
+  success: "border-[#b8ded2] bg-[var(--success-container)] text-[var(--success)]",
+  warning: "border-[#ead39a] bg-[var(--warning-container)] text-[var(--warning)]",
+  danger: "border-[#efb7aa] bg-[var(--error-container)] text-[var(--danger)]",
+  info: "border-[#d7d4ef] bg-[var(--tertiary-container)] text-[#5b5797]",
+  neutral: "border-[var(--border)] bg-[var(--surface-muted)] text-[var(--muted)]",
 };
 
 export function LoadingState({
@@ -31,8 +31,8 @@ export function LoadingState({
   className?: string;
 }) {
   return (
-    <div className={cn("flex min-h-32 items-center justify-center gap-3 text-sm font-medium text-[#607084]", className)}>
-      <Spinner color="accent" size="sm" className="text-[#00758d]" />
+    <div className={cn("flex min-h-32 items-center justify-center gap-3 text-sm font-medium text-[var(--muted)]", className)}>
+      <Spinner color="accent" size="sm" className="text-[var(--primary)]" />
       <span>{label}</span>
     </div>
   );
@@ -48,12 +48,12 @@ export function EmptyState({
   className?: string;
 }) {
   return (
-    <div className={cn("rounded-xl border border-dashed border-[#cbd8e2] bg-[#f8fbfd] p-8 text-center", className)}>
-      <span className="mx-auto flex h-10 w-10 items-center justify-center rounded-full bg-[#e5f4f7] text-[#00758d]">
+    <div className={cn("rounded-xl border border-dashed border-[var(--border)] bg-[var(--surface-muted)] p-8 text-center", className)}>
+      <span className="mx-auto flex h-10 w-10 items-center justify-center rounded-full bg-[var(--secondary-container)] text-[var(--primary)]">
         <SearchX className="h-5 w-5" />
       </span>
-      <p className="mt-3 font-semibold text-[#17212f]">{title}</p>
-      <p className="mt-1 text-sm text-[#607084]">{description}</p>
+      <p className="mt-3 font-semibold text-[var(--on-surface)]">{title}</p>
+      <p className="mt-1 text-sm text-[var(--muted)]">{description}</p>
     </div>
   );
 }

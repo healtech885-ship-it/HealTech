@@ -353,11 +353,11 @@ export function WorkspaceClient({ config }: { config: WorkspaceConfig }) {
         <Card className="admin-panel min-w-0 overflow-hidden">
           <CardHeader className="admin-panel-header flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
             <div>
-              <p className="text-xs font-bold uppercase tracking-[0.12em] text-[#00758d]">Live workspace</p>
+              <p className="text-xs font-bold uppercase tracking-[0.12em] text-[var(--primary)]">Live workspace</p>
               <CardTitle className="mt-1 text-2xl">Records</CardTitle>
               <CardDescription>Live rows from `{config.table}` under the current user&apos;s RLS policies.</CardDescription>
             </div>
-            <Button type="button" variant="secondary" onClick={loadData} disabled={loading} className="h-11 rounded-xl border-[#c6d8e0] bg-white shadow-sm">
+            <Button type="button" variant="secondary" onClick={loadData} disabled={loading} className="h-11 rounded-xl border-[var(--border)] bg-[var(--surface-elevated)] shadow-sm">
               <RefreshCcw className="h-4 w-4" />
               Refresh
             </Button>
@@ -380,7 +380,7 @@ export function WorkspaceClient({ config }: { config: WorkspaceConfig }) {
         <div className="min-w-0 space-y-7">
           <Card className="admin-panel admin-form-card min-w-0 overflow-hidden">
             <CardHeader className="admin-panel-header">
-              <p className="text-xs font-bold uppercase tracking-[0.12em] text-[#00758d]">Workflow action</p>
+              <p className="text-xs font-bold uppercase tracking-[0.12em] text-[var(--primary)]">Workflow action</p>
               <CardTitle className="mt-1 text-2xl">{config.actionLabel}</CardTitle>
               <CardDescription>{config.readonly ? "This view is read-only for the current workflow." : "Validated form connected to Supabase or an Edge Function."}</CardDescription>
             </CardHeader>
@@ -412,7 +412,7 @@ export function WorkspaceClient({ config }: { config: WorkspaceConfig }) {
                     />
                   ) : null}
                   {message ? <Notice tone="success" text={message} /> : null}
-                  <Button type="submit" className="h-12 w-full rounded-xl bg-[#00758d] text-[15px] shadow-[0_12px_24px_rgba(0,117,141,0.18)] hover:bg-[#00647c]" disabled={saving}>
+                  <Button type="submit" className="h-12 w-full rounded-xl bg-[var(--primary)] text-[15px] shadow-[0_12px_24px_rgba(14,124,123,0.18)] hover:bg-[var(--primary-container)]" disabled={saving}>
                     {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
                     {config.actionLabel}
                   </Button>
@@ -465,8 +465,8 @@ function CreateVisitView({
             <ArrowLeft className="h-4 w-4" />
             Queued visits
           </Link>
-          <h1 className="mt-2 text-[30px] font-semibold leading-10 tracking-normal text-[#080d10]">{config.title}</h1>
-          <p className="text-[17px] leading-7 text-[#3d4950]">{config.description}</p>
+          <h1 className="mt-2 text-[30px] font-semibold leading-10 tracking-normal text-[var(--healtech-ink)]">{config.title}</h1>
+          <p className="text-[17px] leading-7 text-[var(--on-surface-variant)]">{config.description}</p>
         </div>
       </div>
 
@@ -549,8 +549,8 @@ function ClinicSettingsView({
   return (
     <div className="min-w-0 space-y-6">
       <div>
-        <h1 className="text-[30px] font-semibold leading-10 tracking-normal text-[#080d10]">Clinic Settings</h1>
-        <p className="text-[17px] leading-7 text-[#3d4950]">Manage general clinic configuration used across scheduling, portal, and emergency workflows.</p>
+        <h1 className="text-[30px] font-semibold leading-10 tracking-normal text-[var(--healtech-ink)]">Clinic Settings</h1>
+        <p className="text-[17px] leading-7 text-[var(--on-surface-variant)]">Manage general clinic configuration used across scheduling, portal, and emergency workflows.</p>
       </div>
 
       <section className="grid min-w-0 gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
@@ -673,10 +673,10 @@ function StoreRequestDetailsView({
             Store requests
           </Link>
           <div className="mt-2 flex flex-wrap items-center gap-3">
-            <h1 className="text-[30px] font-semibold leading-10 tracking-normal text-[#080d10]">{request.storeItem}</h1>
+            <h1 className="text-[30px] font-semibold leading-10 tracking-normal text-[var(--healtech-ink)]">{request.storeItem}</h1>
             <StatusBadge value={request.status} />
           </div>
-          <p className="text-[17px] leading-7 text-[#3d4950]">Requested by {request.requesterName} for quantity {request.quantity}.</p>
+          <p className="text-[17px] leading-7 text-[var(--on-surface-variant)]">Requested by {request.requesterName} for quantity {request.quantity}.</p>
         </div>
       </div>
 
@@ -794,12 +794,12 @@ function PatientDetailsView({
             <ArrowLeft className="h-4 w-4" />
             Patient search
           </Link>
-          <h1 className="mt-2 text-[30px] font-semibold leading-10 tracking-normal text-[#080d10]">{patient.fullName}</h1>
-          <p className="text-[17px] leading-7 text-[#3d4950]">
+          <h1 className="mt-2 text-[30px] font-semibold leading-10 tracking-normal text-[var(--healtech-ink)]">{patient.fullName}</h1>
+          <p className="text-[17px] leading-7 text-[var(--on-surface-variant)]">
             {patient.mrn !== "Not set" ? `MRN ${patient.mrn}` : "No MRN"} {patient.studentId !== "Not set" ? `/ Student ID ${patient.studentId}` : ""}
           </p>
         </div>
-        <Link href={createVisitHref({ patientId: patient.id })} className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground transition-colors hover:bg-[#003f82] focus:outline-none focus:ring-3 focus:ring-blue-200">
+        <Link href={createVisitHref({ patientId: patient.id })} className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground transition-colors hover:bg-[var(--primary-container)] focus:outline-none focus:ring-3 focus:ring-[var(--focus-ring)]">
           <ClipboardPlus className="h-4 w-4" />
           Create visit
         </Link>
@@ -951,10 +951,10 @@ function AppointmentRequestDetailsView({
             Appointment requests
           </Link>
           <div className="mt-2 flex flex-wrap items-center gap-3">
-            <h1 className="text-[30px] font-semibold leading-10 tracking-normal text-[#080d10]">{request.patientName}</h1>
+            <h1 className="text-[30px] font-semibold leading-10 tracking-normal text-[var(--healtech-ink)]">{request.patientName}</h1>
             <StatusBadge value={request.status} />
           </div>
-          <p className="text-[17px] leading-7 text-[#3d4950]">Preferred date {request.preferredDate} for {request.requestedDepartment}.</p>
+          <p className="text-[17px] leading-7 text-[var(--on-surface-variant)]">Preferred date {request.preferredDate} for {request.requestedDepartment}.</p>
         </div>
       </div>
 
@@ -1018,7 +1018,7 @@ function AppointmentRequestDetailsView({
                     onValueChange={setDoctorId}
                     placeholder="Select doctor"
                     options={doctors}
-                    triggerClassName="h-12 border-[#bdc8ce] bg-white px-4 text-[#171c1e]"
+                    triggerClassName="h-12 border-[var(--border)] bg-[var(--surface-elevated)] px-4 text-[var(--on-surface)]"
                   />
                 </div>
                 <div className="space-y-2">
@@ -1028,7 +1028,7 @@ function AppointmentRequestDetailsView({
                     value={priority}
                     onValueChange={setPriority}
                     options={["low", "normal", "high", "urgent"].map((option) => ({ value: option, label: option }))}
-                    triggerClassName="h-12 border-[#bdc8ce] bg-white px-4 text-[#171c1e]"
+                    triggerClassName="h-12 border-[var(--border)] bg-[var(--surface-elevated)] px-4 text-[var(--on-surface)]"
                   />
                 </div>
                 <div className="space-y-2">
@@ -1094,10 +1094,10 @@ function EmployeeDetailsView({
             <ArrowLeft className="h-4 w-4" />
             Employees
           </Link>
-          <h1 className="mt-2 text-[30px] font-semibold leading-10 tracking-normal text-[#080d10]">{employee.fullName}</h1>
-          <p className="text-[17px] leading-7 text-[#3d4950]">{employee.jobTitle} {employee.departmentName !== "Not set" ? `in ${employee.departmentName}` : ""}</p>
+          <h1 className="mt-2 text-[30px] font-semibold leading-10 tracking-normal text-[var(--healtech-ink)]">{employee.fullName}</h1>
+          <p className="text-[17px] leading-7 text-[var(--on-surface-variant)]">{employee.jobTitle} {employee.departmentName !== "Not set" ? `in ${employee.departmentName}` : ""}</p>
         </div>
-        <Link href={`/admin/employees/edit/${employee.id}`} className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground transition-colors hover:bg-[#003f82] focus:outline-none focus:ring-3 focus:ring-blue-200">
+        <Link href={`/admin/employees/edit/${employee.id}`} className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground transition-colors hover:bg-[var(--primary-container)] focus:outline-none focus:ring-3 focus:ring-[var(--focus-ring)]">
           <Edit className="h-4 w-4" />
           Edit
         </Link>
@@ -1160,10 +1160,10 @@ function EmployeeEditView({
             <ArrowLeft className="h-4 w-4" />
             Employee details
           </Link>
-          <h1 className="mt-2 text-[30px] font-semibold leading-10 tracking-normal text-[#080d10]">Edit {employee.fullName}</h1>
-          <p className="text-[17px] leading-7 text-[#3d4950]">{employee.email}</p>
+          <h1 className="mt-2 text-[30px] font-semibold leading-10 tracking-normal text-[var(--healtech-ink)]">Edit {employee.fullName}</h1>
+          <p className="text-[17px] leading-7 text-[var(--on-surface-variant)]">{employee.email}</p>
         </div>
-        <Link href={`/admin/employees/${employee.id}`} className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-border bg-white px-4 text-sm font-semibold text-[var(--on-surface)] transition-colors hover:bg-muted focus:outline-none focus:ring-3 focus:ring-blue-200">
+        <Link href={`/admin/employees/${employee.id}`} className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-border bg-white px-4 text-sm font-semibold text-[var(--on-surface)] transition-colors hover:bg-muted focus:outline-none focus:ring-3 focus:ring-[var(--focus-ring)]">
           Cancel
         </Link>
       </div>
@@ -1194,7 +1194,7 @@ function EmployeeEditView({
                   {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
                   {config.actionLabel}
                 </Button>
-                <Link href={`/admin/employees/${employee.id}`} className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-border bg-white px-4 text-sm font-semibold text-[var(--on-surface)] transition-colors hover:bg-muted focus:outline-none focus:ring-3 focus:ring-blue-200">
+                <Link href={`/admin/employees/${employee.id}`} className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-border bg-white px-4 text-sm font-semibold text-[var(--on-surface)] transition-colors hover:bg-muted focus:outline-none focus:ring-3 focus:ring-[var(--focus-ring)]">
                   Cancel
                 </Link>
               </div>
@@ -1257,7 +1257,7 @@ function CreateEmployeeSuccessPanel({
       <div className="space-y-2">
         <p className="text-xs font-semibold uppercase tracking-[0.02em] text-[var(--on-surface-variant)]">Temporary password</p>
         <div className="flex flex-col gap-2 sm:flex-row">
-          <code className="min-w-0 flex-1 break-all rounded-lg border border-[#bdc8ce] bg-white px-3 py-2 font-mono text-sm font-semibold text-[#080d10]">
+          <code className="min-w-0 flex-1 break-all rounded-lg border border-[var(--border)] bg-[var(--surface-elevated)] px-3 py-2 font-mono text-sm font-semibold text-[var(--healtech-ink)]">
             {result.temporaryPassword}
           </code>
           <Button
@@ -1300,14 +1300,14 @@ function AdminDashboardExperience({
 
   return (
     <div className="space-y-8">
-      <div className="rounded-3xl border border-[#cfe0e8] bg-white px-6 py-6 shadow-[0_18px_48px_rgba(15,23,42,0.08)] md:px-7">
+      <div className="rounded-3xl border border-[var(--border)] bg-[var(--surface-elevated)] px-6 py-6 shadow-[0_18px_48px_rgba(11,19,32,0.08)] md:px-7">
       <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <p className="text-xs font-bold uppercase tracking-[0.16em] text-[#00758d]">Admin overview</p>
-          <h1 className="mt-2 text-[34px] font-bold leading-10 tracking-normal text-[#080d10]">Clinical operations dashboard</h1>
-          <p className="mt-2 max-w-3xl text-[16px] leading-7 text-[#3d4950]">Real-time metrics for staffing, visits, patients, inventory, and operational tasks.</p>
+          <p className="text-xs font-bold uppercase tracking-[0.16em] text-[var(--primary)]">Admin overview</p>
+          <h1 className="mt-2 text-[34px] font-bold leading-10 tracking-normal text-[var(--healtech-ink)]">Clinical operations dashboard</h1>
+          <p className="mt-2 max-w-3xl text-[16px] leading-7 text-[var(--on-surface-variant)]">Real-time metrics for staffing, visits, patients, inventory, and operational tasks.</p>
         </div>
-        <p className="flex h-10 items-center gap-2 rounded-full border border-[#cfe0e8] bg-[#f6fbfd] px-4 text-[14px] font-semibold text-[#202a30]">
+        <p className="flex h-10 items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--surface-muted)] px-4 text-[14px] font-semibold text-[var(--healtech-slate)]">
           <RefreshCcw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
           Last updated: Just now
         </p>
@@ -1316,14 +1316,14 @@ function AdminDashboardExperience({
 
       <section className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
         {stats.map((stat) => (
-          <div key={stat.label} className={`min-h-[176px] rounded-2xl border bg-white p-5 shadow-[0_12px_32px_rgba(15,23,42,0.06)] transition hover:-translate-y-0.5 hover:shadow-[0_18px_38px_rgba(15,23,42,0.10)] ${stat.tone === "red" ? "border-[#ffc3bd]" : "border-[#cfe0e8]"}`}>
+          <div key={stat.label} className={`min-h-[176px] rounded-2xl border bg-[var(--surface-elevated)] p-5 shadow-[0_12px_32px_rgba(11,19,32,0.06)] transition hover:-translate-y-0.5 hover:shadow-[0_18px_38px_rgba(11,19,32,0.10)] ${stat.tone === "red" ? "border-[#efb7aa]" : "border-[var(--border)]"}`}>
             <div className={`flex h-11 w-11 items-center justify-center rounded-2xl ${adminToneClasses(stat.tone)}`}>
               <stat.icon className="h-5 w-5" />
             </div>
-            <p className="mt-4 text-[13px] font-bold tracking-[0.10em] text-[#52647a]">{stat.label}</p>
+            <p className="mt-4 text-[13px] font-bold tracking-[0.10em] text-[var(--muted)]">{stat.label}</p>
             <div className="mt-2 flex items-end gap-3">
-              <p className={`table-numeric text-[40px] font-bold leading-[44px] tracking-normal ${stat.tone === "red" ? "text-[#c10010]" : "text-[#080d10]"}`}>{stat.value}</p>
-              {"helper" in stat ? <p className="pb-1 text-[14px] font-semibold text-[#00647c]">+{stat.helper}</p> : null}
+              <p className={`table-numeric text-[40px] font-bold leading-[44px] tracking-normal ${stat.tone === "red" ? "text-[var(--danger)]" : "text-[var(--healtech-ink)]"}`}>{stat.value}</p>
+              {"helper" in stat ? <p className="pb-1 text-[14px] font-semibold text-[var(--primary)]">+{stat.helper}</p> : null}
             </div>
           </div>
         ))}
@@ -1335,16 +1335,16 @@ function AdminDashboardExperience({
       </section>
 
       <section className="grid gap-8 xl:grid-cols-[1fr_386px]">
-        <div className="rounded-2xl border border-[#cfe0e8] bg-white p-5 shadow-[0_12px_32px_rgba(15,23,42,0.06)]">
-          <div className="flex items-center justify-between border-b border-[#d9e1e4] pb-4">
-            <h2 className="text-[27px] font-semibold tracking-normal text-[#080d10]">Recent Activity</h2>
-            <Link href="/admin/audit-logs" className="text-[17px] font-medium text-[#00647c]">View All</Link>
+        <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface-elevated)] p-5 shadow-[0_12px_32px_rgba(11,19,32,0.06)]">
+          <div className="flex items-center justify-between border-b border-[var(--border)] pb-4">
+            <h2 className="text-[27px] font-semibold tracking-normal text-[var(--healtech-ink)]">Recent Activity</h2>
+            <Link href="/admin/audit-logs" className="text-[17px] font-medium text-[var(--primary)]">View All</Link>
           </div>
           <AdminActivityRow icon={UserPlus} title="New Employee Added" text="Dr. Sarah Jenkins was added to General Medicine." time="10 mins ago" />
           <AdminActivityRow icon={Calendar} title="Leave Request Submitted" text="Nurse Mark O. requested 3 days of annual leave." time="45 mins ago" amber />
         </div>
-        <div className="rounded-2xl border border-[#cfe0e8] bg-white p-5 shadow-[0_12px_32px_rgba(15,23,42,0.06)]">
-          <h2 className="border-b border-[#d9e1e4] pb-4 text-[27px] font-semibold tracking-normal text-[#080d10]">Quick Actions</h2>
+        <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface-elevated)] p-5 shadow-[0_12px_32px_rgba(11,19,32,0.06)]">
+          <h2 className="border-b border-[var(--border)] pb-4 text-[27px] font-semibold tracking-normal text-[var(--healtech-ink)]">Quick Actions</h2>
           <div className="mt-5 space-y-3">
             <AdminActionButton href="/admin/employees/new" icon={UserPlus} label="Add Employee" primary />
             <AdminActionButton href="/admin/departments" icon={Building2} label="Create Department" />
@@ -1353,9 +1353,9 @@ function AdminDashboardExperience({
         </div>
       </section>
 
-      <div className="rounded-2xl border border-[#cfe0e8] bg-[#f6fbfd] px-5 py-4">
-        <h2 className="text-[22px] font-semibold tracking-normal text-[#080d10]">Operational Workspace</h2>
-        <p className="mt-1 text-[15px] text-[#3d4950]">Live records and workflow forms remain connected below.</p>
+      <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface-muted)] px-5 py-4">
+        <h2 className="text-[22px] font-semibold tracking-normal text-[var(--healtech-ink)]">Operational Workspace</h2>
+        <p className="mt-1 text-[15px] text-[var(--on-surface-variant)]">Live records and workflow forms remain connected below.</p>
       </div>
     </div>
   );
@@ -1363,25 +1363,25 @@ function AdminDashboardExperience({
 
 function AdminChartCard({ title, subtitle, type }: { title: string; subtitle?: string; type: "line" | "bars" }) {
   return (
-    <div className="h-[384px] rounded-2xl border border-[#cfe0e8] bg-white p-5 shadow-[0_12px_32px_rgba(15,23,42,0.06)]">
+    <div className="h-[384px] rounded-2xl border border-[var(--border)] bg-[var(--surface-elevated)] p-5 shadow-[0_12px_32px_rgba(11,19,32,0.06)]">
       <div className="flex justify-between">
-        <h2 className="text-[27px] font-semibold tracking-normal text-[#080d10]">
-          {title} {subtitle ? <span className="text-[15px] font-normal text-[#3d4950]">{subtitle}</span> : null}
+        <h2 className="text-[27px] font-semibold tracking-normal text-[var(--healtech-ink)]">
+          {title} {subtitle ? <span className="text-[15px] font-normal text-[var(--on-surface-variant)]">{subtitle}</span> : null}
         </h2>
-        <MoreVertical className="h-6 w-6 text-[#202a30]" />
+        <MoreVertical className="h-6 w-6 text-[var(--healtech-slate)]" />
       </div>
       {type === "line" ? (
-        <div className="mt-7 grid h-[270px] grid-cols-[34px_1fr] text-[14px] text-[#4a555b]">
+        <div className="mt-7 grid h-[270px] grid-cols-[34px_1fr] text-[14px] text-[var(--on-surface-variant)]">
           <div className="flex flex-col justify-between pb-7 pt-0">
             <span>150</span>
             <span>100</span>
             <span>50</span>
             <span>0</span>
           </div>
-          <div className="relative border-l border-[#dde5e9] bg-[linear-gradient(to_bottom,transparent_0,transparent_11%,#edf1f4_11%,transparent_12%,transparent_40%,#edf1f4_40%,transparent_41%,transparent_69%,#edf1f4_69%,transparent_70%)]">
+          <div className="relative border-l border-[var(--border)] bg-[linear-gradient(to_bottom,transparent_0,transparent_11%,var(--surface-muted)_11%,transparent_12%,transparent_40%,var(--surface-muted)_40%,transparent_41%,transparent_69%,var(--surface-muted)_69%,transparent_70%)]">
             <svg viewBox="0 0 520 236" className="h-[236px] w-full">
-              <path d="M6 214 C58 186 118 226 160 144 S244 158 286 94 S363 126 413 88 S486 58 516 116" fill="none" stroke="#00647c" strokeWidth="3" />
-              <path d="M6 214 C58 186 118 226 160 144 S244 158 286 94 S363 126 413 88 S486 58 516 116 L516 236 L6 236 Z" fill="#00647c" opacity=".14" />
+              <path d="M6 214 C58 186 118 226 160 144 S244 158 286 94 S363 126 413 88 S486 58 516 116" fill="none" stroke="var(--primary)" strokeWidth="3" />
+              <path d="M6 214 C58 186 118 226 160 144 S244 158 286 94 S363 126 413 88 S486 58 516 116 L516 236 L6 236 Z" fill="var(--primary)" opacity=".14" />
             </svg>
             <div className="absolute bottom-0 left-0 right-0 flex justify-between px-1 text-[14px]">
               <span>1st</span>
@@ -1394,18 +1394,18 @@ function AdminChartCard({ title, subtitle, type }: { title: string; subtitle?: s
       ) : (
         <div className="mt-16 flex h-[205px] items-end justify-center gap-5">
           {[
-            ["Gen", 200, 0.78, "#006f87"],
-            ["Den", 200, 0.60, "#52627a"],
-            ["Derma", 200, 0.40, "#006f87"],
-            ["Peds", 200, 0.70, "#52627a"],
-            ["Int", 200, 0.64, "#006f87"],
+            ["Gen", 200, 0.78, "var(--primary)"],
+            ["Den", 200, 0.60, "var(--healtech-sage)"],
+            ["Derma", 200, 0.40, "var(--primary)"],
+            ["Peds", 200, 0.70, "var(--healtech-sage)"],
+            ["Int", 200, 0.64, "var(--primary)"],
           ].map(([label, total, ratio, color]) => (
             <div key={String(label)} className="flex w-[88px] flex-col items-center gap-2">
-              <div className="relative h-[200px] w-full overflow-hidden rounded-t-sm bg-[#e7eef9]">
-                <div className="absolute inset-x-0 top-0 h-[40px] bg-[#c8dde3]" />
+              <div className="relative h-[200px] w-full overflow-hidden rounded-t-sm bg-[var(--surface-muted)]">
+                <div className="absolute inset-x-0 top-0 h-[40px] bg-[var(--secondary-container)]" />
                 <div className="absolute inset-x-0 bottom-0" style={{ height: Number(total) * Number(ratio), backgroundColor: String(color) }} />
               </div>
-              <span className="text-[14px] text-[#202a30]">{label}</span>
+              <span className="text-[14px] text-[var(--healtech-slate)]">{label}</span>
             </div>
           ))}
         </div>
@@ -1417,13 +1417,13 @@ function AdminChartCard({ title, subtitle, type }: { title: string; subtitle?: s
 function AdminActivityRow({ icon: Icon, title, text, time, amber }: { icon: typeof UserPlus; title: string; text: string; time: string; amber?: boolean }) {
   return (
     <div className="flex gap-5 py-5">
-      <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${amber ? "bg-[#fff0e3] text-[#a86516]" : "bg-[#e8edf0] text-[#56636a]"}`}>
+      <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${amber ? "bg-[var(--warning-container)] text-[var(--warning)]" : "bg-[var(--surface-muted)] text-[var(--muted)]"}`}>
         <Icon className="h-5 w-5" />
       </span>
       <div>
-        <p className="text-[18px] font-semibold text-[#080d10]">{title}</p>
-        <p className="text-[16px] text-[#3d4950]">{text}</p>
-        <p className="mt-1 text-[14px] text-[#202a30]">{time}</p>
+        <p className="text-[18px] font-semibold text-[var(--healtech-ink)]">{title}</p>
+        <p className="text-[16px] text-[var(--on-surface-variant)]">{text}</p>
+        <p className="mt-1 text-[14px] text-[var(--healtech-slate)]">{time}</p>
       </div>
     </div>
   );
@@ -1431,8 +1431,8 @@ function AdminActivityRow({ icon: Icon, title, text, time, amber }: { icon: type
 
 function AdminActionButton({ href, icon: Icon, label, primary, amber }: { href: string; icon: typeof UserPlus; label: string; primary?: boolean; amber?: boolean }) {
   return (
-    <Link href={href} className={`flex h-[52px] items-center gap-4 rounded-lg border px-6 text-[19px] font-semibold ${primary ? "border-[#00758d] bg-[#00758d] text-white" : "border-[#c7d2da] bg-[#f2f7fb] text-[#0a1014]"}`}>
-      <Icon className={`h-6 w-6 ${amber ? "text-[#a84f00]" : ""}`} />
+    <Link href={href} className={`flex h-[52px] items-center gap-4 rounded-lg border px-6 text-[19px] font-semibold ${primary ? "border-[var(--primary)] bg-[var(--primary)] text-white" : "border-[var(--border)] bg-[var(--surface-muted)] text-[var(--healtech-ink)]"}`}>
+      <Icon className={`h-6 w-6 ${amber ? "text-[var(--warning)]" : ""}`} />
       {label}
     </Link>
   );
@@ -1447,11 +1447,11 @@ function counterValue(counters: Record<string, unknown> | null, keys: string[], 
 }
 
 function adminToneClasses(tone: "cyan" | "blue" | "amber" | "red" | "slate") {
-  if (tone === "amber") return "bg-[#ffe0c5] text-[#a86516]";
-  if (tone === "red") return "bg-[#ffd9d4] text-[#d00000]";
-  if (tone === "blue") return "bg-[#d9e8ff] text-[#425b85]";
-  if (tone === "slate") return "bg-[#e5eaed] text-[#56636a]";
-  return "bg-[#cfeff7] text-[#00647c]";
+  if (tone === "amber") return "bg-[var(--warning-container)] text-[var(--warning)]";
+  if (tone === "red") return "bg-[var(--error-container)] text-[var(--danger)]";
+  if (tone === "blue") return "bg-[var(--tertiary-container)] text-[#5b5797]";
+  if (tone === "slate") return "bg-[var(--surface-muted)] text-[var(--muted)]";
+  return "bg-[var(--secondary-container)] text-[var(--primary)]";
 }
 
 function DashboardIntelligence({ config, counters }: { config: WorkspaceConfig; counters: Record<string, unknown> }) {
@@ -1464,7 +1464,7 @@ function DashboardIntelligence({ config, counters }: { config: WorkspaceConfig; 
           <CardDescription>Simple, low-noise visual summary for today&apos;s clinical workload.</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex h-44 items-end gap-2 rounded-xl border border-border bg-[#fbfcff] p-4">
+          <div className="flex h-44 items-end gap-2 rounded-xl border border-border bg-[var(--surface)] p-4">
             {[38, 54, 46, 72, 63, 86, 78, 94, 68, 82, 91, 76].map((height, index) => (
               <div key={index} className="flex flex-1 flex-col items-center gap-2">
                 <span className="w-full rounded-t-md bg-primary/80" style={{ height }} />
@@ -1513,11 +1513,11 @@ function DataToolbar({
   setQuickFilter: (value: QuickFilter) => void;
 }) {
   return (
-    <div className="mb-5 rounded-2xl border border-[#d9e6eb] bg-[#f7fbfd] p-4">
+    <div className="mb-5 rounded-2xl border border-[var(--border)] bg-[var(--surface-muted)] p-4">
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <div className="relative w-full lg:max-w-sm">
-          <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8293a8]" />
-          <Input className="h-11 rounded-xl border-[#cbd8e2] bg-white pl-10 shadow-sm" placeholder="Search by name, status, code, or ID" value={search} onChange={(event) => setSearch(event.target.value)} />
+          <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--muted)]" />
+          <Input className="h-11 rounded-xl border-[var(--border)] bg-[var(--surface-elevated)] pl-10 shadow-sm" placeholder="Search by name, status, code, or ID" value={search} onChange={(event) => setSearch(event.target.value)} />
         </div>
         <div className="flex flex-wrap gap-2">
           {(["All", "Today", "Pending", "Completed"] as QuickFilter[]).map((tab) => (
@@ -1525,7 +1525,7 @@ function DataToolbar({
               key={tab}
               type="button"
               onClick={() => setQuickFilter(tab)}
-              className={`rounded-full border px-4 py-2 text-xs font-semibold transition ${quickFilter === tab ? "border-[#00758d] bg-[#00758d] text-white shadow-[0_8px_18px_rgba(0,117,141,0.16)]" : "border-[#cbd8e2] bg-white text-[#52647a] hover:border-[#00758d] hover:text-[#00647c]"}`}
+              className={`rounded-full border px-4 py-2 text-xs font-semibold transition ${quickFilter === tab ? "border-[var(--primary)] bg-[var(--primary)] text-white shadow-[0_8px_18px_rgba(14,124,123,0.16)]" : "border-[var(--border)] bg-[var(--surface-elevated)] text-[var(--muted)] hover:border-[var(--primary)] hover:text-[var(--primary)]"}`}
             >
               {tab}
             </button>
@@ -1533,10 +1533,10 @@ function DataToolbar({
         </div>
       </div>
       <div className="mt-3 flex flex-wrap gap-2 text-xs">
-        <span className="inline-flex items-center gap-2 rounded-lg border border-[#cbd8e2] bg-white px-3 py-2 font-semibold text-[#52647a]"><Filter className="h-3.5 w-3.5" /> Role-aware filters</span>
-        <span className="inline-flex items-center gap-2 rounded-lg border border-[#cbd8e2] bg-white px-3 py-2 font-semibold text-[#52647a]"><CalendarDays className="h-3.5 w-3.5" /> Date range</span>
-        <span className="inline-flex items-center rounded-lg border border-[#cbd8e2] bg-white px-3 py-2 font-semibold text-[#52647a]">Columns</span>
-        <span className="inline-flex items-center rounded-lg border border-[#cbd8e2] bg-white px-3 py-2 font-semibold text-[#52647a]">Export</span>
+        <span className="inline-flex items-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--surface-elevated)] px-3 py-2 font-semibold text-[var(--muted)]"><Filter className="h-3.5 w-3.5" /> Role-aware filters</span>
+        <span className="inline-flex items-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--surface-elevated)] px-3 py-2 font-semibold text-[var(--muted)]"><CalendarDays className="h-3.5 w-3.5" /> Date range</span>
+        <span className="inline-flex items-center rounded-lg border border-[var(--border)] bg-[var(--surface-elevated)] px-3 py-2 font-semibold text-[var(--muted)]">Columns</span>
+        <span className="inline-flex items-center rounded-lg border border-[var(--border)] bg-[var(--surface-elevated)] px-3 py-2 font-semibold text-[var(--muted)]">Export</span>
       </div>
     </div>
   );
@@ -1561,8 +1561,8 @@ function FieldControl({
   const referenceOptions = field.reference ? references[field.reference] ?? [] : [];
   const registration = register(field.name);
   return (
-    <div className="rounded-2xl border border-[#d9e6eb] bg-[#f8fbfd] p-4">
-      <Label htmlFor={field.name} className="text-[13px] font-bold uppercase tracking-[0.08em] text-[#52647a]">{field.label}{field.required ? " *" : ""}</Label>
+    <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface-muted)] p-4">
+      <Label htmlFor={field.name} className="text-[13px] font-bold uppercase tracking-[0.08em] text-[var(--muted)]">{field.label}{field.required ? " *" : ""}</Label>
       <div className="mt-2">
       {field.reference ? (
         <CustomSelect
@@ -1620,7 +1620,7 @@ function CustomSelect({
         options={options}
         allowEmptyOption
         onValueChange={onChange}
-        triggerClassName="h-12 border-[#bdc8ce] bg-white px-4 text-[#171c1e]"
+        triggerClassName="h-12 border-[var(--border)] bg-[var(--surface-elevated)] px-4 text-[var(--on-surface)]"
       />
     </div>
   );
