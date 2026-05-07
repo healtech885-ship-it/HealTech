@@ -5,7 +5,6 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   AlertCircle,
-  ArrowLeft,
   BriefcaseMedical,
   Building2,
   Calendar,
@@ -29,13 +28,16 @@ import { useEffect, useMemo, useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
 import { DataTable } from "@/components/data-table";
-import { StatCard } from "@/components/dashboard/stat-card";
 import { StatusBadge } from "@/components/status-badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { FeedbackAlert, LoadingState as SharedLoadingState } from "@/components/ui/data-state";
+import { DetailsGrid } from "@/components/ui/details-grid";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { MetricCard } from "@/components/ui/metric-card";
+import { PageHeader } from "@/components/ui/page-header";
+import { PageToolbar } from "@/components/ui/page-toolbar";
+import { SectionCard } from "@/components/ui/section-card";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { createClient } from "@/lib/supabase/client";
@@ -342,7 +344,7 @@ export function WorkspaceClient({ config }: { config: WorkspaceConfig }) {
         <>
           <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
             {Object.entries(counters).slice(0, 8).map(([key, value]) => (
-              <StatCard key={key} label={labelize(key)} value={String(value)} helper="Live Supabase counter" tone="info" />
+              <MetricCard key={key} label={labelize(key)} value={String(value)} helper="Live Supabase counter" tone="info" />
             ))}
           </section>
           <DashboardIntelligence config={config} counters={counters} />
@@ -350,19 +352,24 @@ export function WorkspaceClient({ config }: { config: WorkspaceConfig }) {
       ) : null}
 
       <section className="grid min-w-0 gap-7 xl:grid-cols-[minmax(0,1fr)_minmax(340px,430px)]">
-        <Card className="admin-panel min-w-0 overflow-hidden">
-          <CardHeader className="admin-panel-header flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-            <div>
-              <p className="text-xs font-bold uppercase tracking-[0.12em] text-[var(--primary)]">Live workspace</p>
-              <CardTitle className="mt-1 text-2xl">Records</CardTitle>
-              <CardDescription>Live rows from `{config.table}` under the current user&apos;s RLS policies.</CardDescription>
-            </div>
+        <SectionCard
+          title={(
+            <>
+              <span className="block text-xs font-bold uppercase tracking-[0.12em] text-[var(--primary)]">Live workspace</span>
+              <span className="mt-1 block text-2xl">Records</span>
+            </>
+          )}
+          description={<>Live rows from `{config.table}` under the current user&apos;s RLS policies.</>}
+          action={(
             <Button type="button" variant="secondary" onClick={loadData} disabled={loading} className="h-11 rounded-xl border-[var(--border)] bg-[var(--surface-elevated)] shadow-sm">
               <RefreshCcw className="h-4 w-4" />
               Refresh
             </Button>
-          </CardHeader>
-          <CardContent className="min-w-0">
+          )}
+          className="admin-panel min-w-0 overflow-hidden"
+          headerClassName="admin-panel-header"
+          contentClassName="min-w-0"
+        >
             <DataToolbar search={search} setSearch={setSearch} quickFilter={quickFilter} setQuickFilter={setQuickFilter} />
             {loading ? (
               <LoadingState />
@@ -374,17 +381,21 @@ export function WorkspaceClient({ config }: { config: WorkspaceConfig }) {
                 columnLabels={config.columnLabels}
               />
             )}
-          </CardContent>
-        </Card>
+        </SectionCard>
 
         <div className="min-w-0 space-y-7">
-          <Card className="admin-panel admin-form-card min-w-0 overflow-hidden">
-            <CardHeader className="admin-panel-header">
-              <p className="text-xs font-bold uppercase tracking-[0.12em] text-[var(--primary)]">Workflow action</p>
-              <CardTitle className="mt-1 text-2xl">{config.actionLabel}</CardTitle>
-              <CardDescription>{config.readonly ? "This view is read-only for the current workflow." : "Validated form connected to Supabase or an Edge Function."}</CardDescription>
-            </CardHeader>
-            <CardContent className="min-w-0">
+          <SectionCard
+            title={(
+              <>
+                <span className="block text-xs font-bold uppercase tracking-[0.12em] text-[var(--primary)]">Workflow action</span>
+                <span className="mt-1 block text-2xl">{config.actionLabel}</span>
+              </>
+            )}
+            description={config.readonly ? "This view is read-only for the current workflow." : "Validated form connected to Supabase or an Edge Function."}
+            className="admin-panel admin-form-card min-w-0 overflow-hidden"
+            headerClassName="admin-panel-header"
+            contentClassName="min-w-0"
+          >
               {config.readonly || config.action.kind === "none" ? (
                 <ReadOnlyNotice />
               ) : (
@@ -412,24 +423,23 @@ export function WorkspaceClient({ config }: { config: WorkspaceConfig }) {
                     />
                   ) : null}
                   {message ? <Notice tone="success" text={message} /> : null}
-                  <Button type="submit" className="h-12 w-full rounded-xl bg-[var(--primary)] text-[15px] shadow-[0_12px_24px_rgba(14,124,123,0.18)] hover:bg-[var(--primary-container)]" disabled={saving}>
+                  <Button type="submit" className="h-12 w-full rounded-xl bg-[var(--primary)] text-[15px] text-[var(--primary-foreground)] shadow-sm hover:bg-[var(--primary-container)]" disabled={saving}>
                     {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
                     {config.actionLabel}
                   </Button>
                 </form>
               )}
-            </CardContent>
-          </Card>
+          </SectionCard>
 
-          <Card className="admin-panel min-w-0 overflow-hidden">
-            <CardHeader className="admin-panel-header">
-              <CardTitle className="text-xl">Reference IDs</CardTitle>
-              <CardDescription>Use these visible records for the current role and workflow.</CardDescription>
-            </CardHeader>
-            <CardContent className="min-w-0">
+          <SectionCard
+            title="Reference IDs"
+            description="Use these visible records for the current role and workflow."
+            className="admin-panel min-w-0 overflow-hidden"
+            headerClassName="admin-panel-header"
+            contentClassName="min-w-0"
+          >
               <DataTable rows={referenceRows.length ? referenceRows : [{ state: "No profiles visible" }]} />
-            </CardContent>
-          </Card>
+          </SectionCard>
         </div>
       </section>
     </div>
@@ -459,24 +469,19 @@ function CreateVisitView({
 }) {
   return (
     <div className="min-w-0 space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <Link href="/reception/visits" className="inline-flex items-center gap-2 text-sm font-semibold text-primary hover:underline">
-            <ArrowLeft className="h-4 w-4" />
-            Queued visits
-          </Link>
-          <h1 className="mt-2 text-[30px] font-semibold leading-10 tracking-normal text-[var(--healtech-ink)]">{config.title}</h1>
-          <p className="text-[17px] leading-7 text-[var(--on-surface-variant)]">{config.description}</p>
-        </div>
-      </div>
+      <PageHeader
+        title={config.title}
+        description={config.description}
+        backHref="/reception/visits"
+        backLabel="Queued visits"
+      />
 
       <section className="grid min-w-0 gap-6 xl:grid-cols-[minmax(0,640px)_minmax(260px,1fr)]">
-        <Card className="min-w-0 overflow-hidden">
-          <CardHeader>
-            <CardTitle>Create Visit</CardTitle>
-            <CardDescription>New visits enter the queued visits list for doctor processing.</CardDescription>
-          </CardHeader>
-          <CardContent>
+        <SectionCard
+          title="Create Visit"
+          description="New visits enter the queued visits list for doctor processing."
+          className="min-w-0 overflow-hidden"
+        >
             {loading ? (
               <LoadingState />
             ) : (
@@ -500,22 +505,20 @@ function CreateVisitView({
                 </Button>
               </form>
             )}
-          </CardContent>
-        </Card>
+        </SectionCard>
 
-        <Card className="min-w-0 overflow-hidden">
-          <CardHeader>
-            <CardTitle>Queue Status</CardTitle>
-            <CardDescription>After creation, the visit appears in Reception&apos;s queued visits page.</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3 text-sm">
+        <SectionCard
+          title="Queue Status"
+          description="After creation, the visit appears in Reception's queued visits page."
+          className="min-w-0 overflow-hidden"
+          contentClassName="space-y-3 text-sm"
+        >
             <ReadOnlyLine label="Visit status" value="queued" />
             <ReadOnlyLine label="Required fields" value="Patient and doctor" />
             <Link href="/reception/visits" className="inline-flex h-10 items-center justify-center rounded-lg border border-border bg-white px-4 text-sm font-semibold text-primary hover:bg-muted">
               View queued visits
             </Link>
-          </CardContent>
-        </Card>
+        </SectionCard>
       </section>
     </div>
   );
@@ -548,18 +551,17 @@ function ClinicSettingsView({
 
   return (
     <div className="min-w-0 space-y-6">
-      <div>
-        <h1 className="text-[30px] font-semibold leading-10 tracking-normal text-[var(--healtech-ink)]">Clinic Settings</h1>
-        <p className="text-[17px] leading-7 text-[var(--on-surface-variant)]">Manage general clinic configuration used across scheduling, portal, and emergency workflows.</p>
-      </div>
+      <PageHeader
+        title="Clinic Settings"
+        description="Manage general clinic configuration used across scheduling, portal, and emergency workflows."
+      />
 
       <section className="grid min-w-0 gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
-        <Card className="min-w-0 overflow-hidden">
-          <CardHeader>
-            <CardTitle>General Configuration</CardTitle>
-            <CardDescription>Settings are saved to `clinic_settings` with key `general`.</CardDescription>
-          </CardHeader>
-          <CardContent>
+        <SectionCard
+          title="General Configuration"
+          description="Settings are saved to `clinic_settings` with key `general`."
+          className="min-w-0 overflow-hidden"
+        >
             <form className="space-y-4" onSubmit={form.handleSubmit(onSubmit)}>
               {config.fields.map((field) => (
                 <FieldControl
@@ -579,20 +581,22 @@ function ClinicSettingsView({
                 {config.actionLabel}
               </Button>
             </form>
-          </CardContent>
-        </Card>
+        </SectionCard>
 
-        <Card className="min-w-0 overflow-hidden">
-          <CardHeader>
-            <CardTitle>Last Updated</CardTitle>
-            <CardDescription>Current persisted settings metadata.</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3 text-sm">
-            <ReadOnlyLine label="Settings key" value="general" />
-            <ReadOnlyLine label="Updated at" value={lastUpdated.updatedAt} />
-            <ReadOnlyLine label="Updated by" value={lastUpdated.updatedBy} />
-          </CardContent>
-        </Card>
+        <SectionCard
+          title="Last Updated"
+          description="Current persisted settings metadata."
+          className="min-w-0 overflow-hidden"
+        >
+          <DetailsGrid
+            columns={1}
+            items={[
+              { label: "Settings key", value: "general" },
+              { label: "Updated at", value: formatDetailValue(lastUpdated.updatedAt) },
+              { label: "Updated by", value: formatDetailValue(lastUpdated.updatedBy) },
+            ]}
+          />
+        </SectionCard>
       </section>
     </div>
   );
@@ -666,44 +670,29 @@ function StoreRequestDetailsView({
 
   return (
     <div className="min-w-0 space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <Link href="/admin/store/requests" className="inline-flex items-center gap-2 text-sm font-semibold text-primary hover:underline">
-            <ArrowLeft className="h-4 w-4" />
-            Store requests
-          </Link>
-          <div className="mt-2 flex flex-wrap items-center gap-3">
-            <h1 className="text-[30px] font-semibold leading-10 tracking-normal text-[var(--healtech-ink)]">{request.storeItem}</h1>
-            <StatusBadge value={request.status} />
-          </div>
-          <p className="text-[17px] leading-7 text-[var(--on-surface-variant)]">Requested by {request.requesterName} for quantity {request.quantity}.</p>
-        </div>
-      </div>
+      <PageHeader
+        title={request.storeItem}
+        description={`Requested by ${request.requesterName} for quantity ${request.quantity}.`}
+        metadata={<StatusBadge value={request.status} />}
+        backHref="/admin/store/requests"
+        backLabel="Store requests"
+      />
 
       <section className="grid min-w-0 gap-6 xl:grid-cols-[minmax(0,1fr)_380px]">
-        <Card className="min-w-0 overflow-hidden">
-          <CardHeader>
-            <CardTitle>Request Details</CardTitle>
-            <CardDescription>Review the request and current stock before changing status.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <dl className="grid gap-4 md:grid-cols-2">
-              {details.map(([label, value]) => (
-                <div key={label} className="rounded-lg border border-border bg-white p-4">
-                  <dt className="text-xs font-semibold uppercase tracking-[0.02em] text-[var(--on-surface-variant)]">{label}</dt>
-                  <dd className="mt-2 break-words text-sm font-semibold text-[var(--on-surface)]">{formatDetailValue(value)}</dd>
-                </div>
-              ))}
-            </dl>
-          </CardContent>
-        </Card>
+        <SectionCard
+          title="Request Details"
+          description="Review the request and current stock before changing status."
+          className="min-w-0 overflow-hidden"
+        >
+          <DetailsGrid items={details.map(([label, value]) => ({ label, value: formatDetailValue(value) }))} />
+        </SectionCard>
 
-        <Card className="min-w-0 overflow-hidden">
-          <CardHeader>
-            <CardTitle>Admin Action</CardTitle>
-            <CardDescription>Allowed actions depend on the current request status.</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
+        <SectionCard
+          title="Admin Action"
+          description="Allowed actions depend on the current request status."
+          className="min-w-0 overflow-hidden"
+          contentClassName="space-y-4"
+        >
             {request.status === "pending" ? (
               <>
                 <div className="space-y-2">
@@ -745,8 +734,7 @@ function StoreRequestDetailsView({
             ) : null}
             {actionError ? <Notice tone="danger" text={actionError} /> : null}
             {actionMessage ? <Notice tone="success" text={actionMessage} /> : null}
-          </CardContent>
-        </Card>
+        </SectionCard>
       </section>
     </div>
   );
@@ -788,47 +776,34 @@ function PatientDetailsView({
 
   return (
     <div className="min-w-0 space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <Link href="/reception/patients" className="inline-flex items-center gap-2 text-sm font-semibold text-primary hover:underline">
-            <ArrowLeft className="h-4 w-4" />
-            Patient search
+      <PageHeader
+        title={patient.fullName}
+        description={`${patient.mrn !== "Not set" ? `MRN ${patient.mrn}` : "No MRN"} ${patient.studentId !== "Not set" ? `/ Student ID ${patient.studentId}` : ""}`}
+        backHref="/reception/patients"
+        backLabel="Patient search"
+        actions={(
+          <Link href={createVisitHref({ patientId: patient.id })} className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground transition-colors hover:bg-[var(--primary-container)] focus:outline-none focus:ring-3 focus:ring-[var(--focus-ring)]">
+            <ClipboardPlus className="h-4 w-4" />
+            Create visit
           </Link>
-          <h1 className="mt-2 text-[30px] font-semibold leading-10 tracking-normal text-[var(--healtech-ink)]">{patient.fullName}</h1>
-          <p className="text-[17px] leading-7 text-[var(--on-surface-variant)]">
-            {patient.mrn !== "Not set" ? `MRN ${patient.mrn}` : "No MRN"} {patient.studentId !== "Not set" ? `/ Student ID ${patient.studentId}` : ""}
-          </p>
-        </div>
-        <Link href={createVisitHref({ patientId: patient.id })} className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground transition-colors hover:bg-[var(--primary-container)] focus:outline-none focus:ring-3 focus:ring-[var(--focus-ring)]">
-          <ClipboardPlus className="h-4 w-4" />
-          Create visit
-        </Link>
-      </div>
+        )}
+      />
 
-      <Card className="min-w-0 overflow-hidden">
-        <CardHeader>
-          <CardTitle>Patient Details</CardTitle>
-          <CardDescription>Core registration, contact, and student information for reception workflow.</CardDescription>
-        </CardHeader>
-        <CardContent>
+      <SectionCard
+        title="Patient Details"
+        description="Core registration, contact, and student information for reception workflow."
+        className="min-w-0 overflow-hidden"
+      >
           {error ? <Notice tone="danger" text={error} /> : null}
-          <dl className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-            {details.map(([label, value]) => (
-              <div key={label} className="rounded-lg border border-border bg-white p-4">
-                <dt className="text-xs font-semibold uppercase tracking-[0.02em] text-[var(--on-surface-variant)]">{label}</dt>
-                <dd className="mt-2 break-words text-sm font-semibold text-[var(--on-surface)]">{formatDetailValue(value)}</dd>
-              </div>
-            ))}
-          </dl>
-        </CardContent>
-      </Card>
+          <DetailsGrid columns={3} items={details.map(([label, value]) => ({ label, value: formatDetailValue(value) }))} />
+      </SectionCard>
 
-      <Card className="min-w-0 overflow-hidden">
-        <CardHeader>
-          <CardTitle>Recent Visits</CardTitle>
-          <CardDescription>Latest visits recorded for this patient.</CardDescription>
-        </CardHeader>
-        <CardContent className="min-w-0">
+      <SectionCard
+        title="Recent Visits"
+        description="Latest visits recorded for this patient."
+        className="min-w-0 overflow-hidden"
+        contentClassName="min-w-0"
+      >
           <DataTable
             rows={visits.length ? visits : [{ state: "No visits found for this patient" }]}
             hiddenColumns={["id", "doctor_id"]}
@@ -841,8 +816,7 @@ function PatientDetailsView({
               created_at: "Created at",
             }}
           />
-        </CardContent>
-      </Card>
+      </SectionCard>
     </div>
   );
 }
@@ -944,45 +918,30 @@ function AppointmentRequestDetailsView({
 
   return (
     <div className="min-w-0 space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <Link href="/reception/appointment-requests" className="inline-flex items-center gap-2 text-sm font-semibold text-primary hover:underline">
-            <ArrowLeft className="h-4 w-4" />
-            Appointment requests
-          </Link>
-          <div className="mt-2 flex flex-wrap items-center gap-3">
-            <h1 className="text-[30px] font-semibold leading-10 tracking-normal text-[var(--healtech-ink)]">{request.patientName}</h1>
-            <StatusBadge value={request.status} />
-          </div>
-          <p className="text-[17px] leading-7 text-[var(--on-surface-variant)]">Preferred date {request.preferredDate} for {request.requestedDepartment}.</p>
-        </div>
-      </div>
+      <PageHeader
+        title={request.patientName}
+        description={`Preferred date ${request.preferredDate} for ${request.requestedDepartment}.`}
+        metadata={<StatusBadge value={request.status} />}
+        backHref="/reception/appointment-requests"
+        backLabel="Appointment requests"
+      />
 
       <section className="grid min-w-0 gap-6 xl:grid-cols-[minmax(0,1fr)_380px]">
-        <Card className="min-w-0 overflow-hidden">
-          <CardHeader>
-            <CardTitle>Request Details</CardTitle>
-            <CardDescription>Review patient appointment request information before changing status.</CardDescription>
-          </CardHeader>
-          <CardContent>
+        <SectionCard
+          title="Request Details"
+          description="Review patient appointment request information before changing status."
+          className="min-w-0 overflow-hidden"
+        >
             {error ? <Notice tone="danger" text={error} /> : null}
-            <dl className="grid gap-4 md:grid-cols-2">
-              {details.map(([label, value]) => (
-                <div key={label} className="rounded-lg border border-border bg-white p-4">
-                  <dt className="text-xs font-semibold uppercase tracking-[0.02em] text-[var(--on-surface-variant)]">{label}</dt>
-                  <dd className="mt-2 break-words text-sm font-semibold text-[var(--on-surface)]">{formatDetailValue(value)}</dd>
-                </div>
-              ))}
-            </dl>
-          </CardContent>
-        </Card>
+            <DetailsGrid items={details.map(([label, value]) => ({ label, value: formatDetailValue(value) }))} />
+        </SectionCard>
 
-        <Card className="min-w-0 overflow-hidden">
-          <CardHeader>
-            <CardTitle>Reception Action</CardTitle>
-            <CardDescription>Pending requests can be reviewed. Approved requests can be converted into queued visits.</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
+        <SectionCard
+          title="Reception Action"
+          description="Pending requests can be reviewed. Approved requests can be converted into queued visits."
+          className="min-w-0 overflow-hidden"
+          contentClassName="space-y-4"
+        >
             {request.status === "pending" ? (
               <>
                 <div className="space-y-2">
@@ -1049,8 +1008,7 @@ function AppointmentRequestDetailsView({
             {["rejected", "completed", "cancelled"].includes(request.status) ? <ReadOnlyNotice /> : null}
             {actionError ? <Notice tone="danger" text={actionError} /> : null}
             {actionMessage ? <Notice tone="success" text={actionMessage} /> : null}
-          </CardContent>
-        </Card>
+        </SectionCard>
       </section>
     </div>
   );
@@ -1088,37 +1046,26 @@ function EmployeeDetailsView({
 
   return (
     <div className="min-w-0 space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <Link href="/admin/employees" className="inline-flex items-center gap-2 text-sm font-semibold text-primary hover:underline">
-            <ArrowLeft className="h-4 w-4" />
-            Employees
+      <PageHeader
+        title={employee.fullName}
+        description={`${employee.jobTitle} ${employee.departmentName !== "Not set" ? `in ${employee.departmentName}` : ""}`}
+        backHref="/admin/employees"
+        backLabel="Employees"
+        actions={(
+          <Link href={`/admin/employees/edit/${employee.id}`} className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground transition-colors hover:bg-[var(--primary-container)] focus:outline-none focus:ring-3 focus:ring-[var(--focus-ring)]">
+            <Edit className="h-4 w-4" />
+            Edit
           </Link>
-          <h1 className="mt-2 text-[30px] font-semibold leading-10 tracking-normal text-[var(--healtech-ink)]">{employee.fullName}</h1>
-          <p className="text-[17px] leading-7 text-[var(--on-surface-variant)]">{employee.jobTitle} {employee.departmentName !== "Not set" ? `in ${employee.departmentName}` : ""}</p>
-        </div>
-        <Link href={`/admin/employees/edit/${employee.id}`} className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground transition-colors hover:bg-[var(--primary-container)] focus:outline-none focus:ring-3 focus:ring-[var(--focus-ring)]">
-          <Edit className="h-4 w-4" />
-          Edit
-        </Link>
-      </div>
+        )}
+      />
 
-      <Card className="min-w-0 overflow-hidden">
-        <CardHeader>
-          <CardTitle>Employee Details</CardTitle>
-          <CardDescription>Profile and employment information for this staff account.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <dl className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-            {details.map(([label, value]) => (
-              <div key={label} className="rounded-lg border border-border bg-white p-4">
-                <dt className="text-xs font-semibold uppercase tracking-[0.02em] text-[var(--on-surface-variant)]">{label}</dt>
-                <dd className="mt-2 break-words text-sm font-semibold text-[var(--on-surface)]">{formatDetailValue(value)}</dd>
-              </div>
-            ))}
-          </dl>
-        </CardContent>
-      </Card>
+      <SectionCard
+        title="Employee Details"
+        description="Profile and employment information for this staff account."
+        className="min-w-0 overflow-hidden"
+      >
+        <DetailsGrid columns={3} items={details.map(([label, value]) => ({ label, value: formatDetailValue(value) }))} />
+      </SectionCard>
     </div>
   );
 }
@@ -1154,27 +1101,24 @@ function EmployeeEditView({
 
   return (
     <div className="min-w-0 space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <Link href={`/admin/employees/${employee.id}`} className="inline-flex items-center gap-2 text-sm font-semibold text-primary hover:underline">
-            <ArrowLeft className="h-4 w-4" />
-            Employee details
+      <PageHeader
+        title={`Edit ${employee.fullName}`}
+        description={employee.email}
+        backHref={`/admin/employees/${employee.id}`}
+        backLabel="Employee details"
+        actions={(
+          <Link href={`/admin/employees/${employee.id}`} className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-border bg-white px-4 text-sm font-semibold text-[var(--on-surface)] transition-colors hover:bg-muted focus:outline-none focus:ring-3 focus:ring-[var(--focus-ring)]">
+            Cancel
           </Link>
-          <h1 className="mt-2 text-[30px] font-semibold leading-10 tracking-normal text-[var(--healtech-ink)]">Edit {employee.fullName}</h1>
-          <p className="text-[17px] leading-7 text-[var(--on-surface-variant)]">{employee.email}</p>
-        </div>
-        <Link href={`/admin/employees/${employee.id}`} className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-border bg-white px-4 text-sm font-semibold text-[var(--on-surface)] transition-colors hover:bg-muted focus:outline-none focus:ring-3 focus:ring-[var(--focus-ring)]">
-          Cancel
-        </Link>
-      </div>
+        )}
+      />
 
       <section className="grid min-w-0 gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
-        <Card className="min-w-0 overflow-hidden">
-          <CardHeader>
-            <CardTitle>Employee Profile</CardTitle>
-            <CardDescription>Updates are applied to the existing profile and employee records.</CardDescription>
-          </CardHeader>
-          <CardContent>
+        <SectionCard
+          title="Employee Profile"
+          description="Updates are applied to the existing profile and employee records."
+          className="min-w-0 overflow-hidden"
+        >
             <form className="space-y-4" onSubmit={form.handleSubmit(onSubmit)}>
               {config.fields.map((field) => (
                 <FieldControl
@@ -1199,21 +1143,23 @@ function EmployeeEditView({
                 </Link>
               </div>
             </form>
-          </CardContent>
-        </Card>
+        </SectionCard>
 
-        <Card className="min-w-0 overflow-hidden">
-          <CardHeader>
-            <CardTitle>Current Account</CardTitle>
-            <CardDescription>Email and identifiers are shown for reference only.</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3 text-sm">
-            <ReadOnlyLine label="Employee ID" value={employee.id} />
-            <ReadOnlyLine label="Profile ID" value={employee.profileId} />
-            <ReadOnlyLine label="Email" value={employee.email} />
-            <ReadOnlyLine label="Created" value={employee.createdAt} />
-          </CardContent>
-        </Card>
+        <SectionCard
+          title="Current Account"
+          description="Email and identifiers are shown for reference only."
+          className="min-w-0 overflow-hidden"
+        >
+          <DetailsGrid
+            columns={1}
+            items={[
+              { label: "Employee ID", value: formatDetailValue(employee.id) },
+              { label: "Profile ID", value: formatDetailValue(employee.profileId) },
+              { label: "Email", value: formatDetailValue(employee.email) },
+              { label: "Created", value: formatDetailValue(employee.createdAt) },
+            ]}
+          />
+        </SectionCard>
       </section>
     </div>
   );
@@ -1458,12 +1404,10 @@ function DashboardIntelligence({ config, counters }: { config: WorkspaceConfig; 
   const values = Object.values(counters).map((value) => Number(value) || 0);
   return (
     <section className="grid gap-6 xl:grid-cols-[1.4fr_0.8fr]">
-      <Card>
-        <CardHeader>
-          <CardTitle>Operational Trend</CardTitle>
-          <CardDescription>Simple, low-noise visual summary for today&apos;s clinical workload.</CardDescription>
-        </CardHeader>
-        <CardContent>
+      <SectionCard
+        title="Operational Trend"
+        description="Simple, low-noise visual summary for today's clinical workload."
+      >
           <div className="flex h-44 items-end gap-2 rounded-xl border border-border bg-[var(--surface)] p-4">
             {[38, 54, 46, 72, 63, 86, 78, 94, 68, 82, 91, 76].map((height, index) => (
               <div key={index} className="flex flex-1 flex-col items-center gap-2">
@@ -1472,14 +1416,12 @@ function DashboardIntelligence({ config, counters }: { config: WorkspaceConfig; 
               </div>
             ))}
           </div>
-        </CardContent>
-      </Card>
-      <Card>
-        <CardHeader>
-          <CardTitle>Priority Feed</CardTitle>
-          <CardDescription>Recent events and safety prompts for this workspace.</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-3">
+      </SectionCard>
+      <SectionCard
+        title="Priority Feed"
+        description="Recent events and safety prompts for this workspace."
+        contentClassName="space-y-3"
+      >
           {[
             `${config.title} refreshed from Supabase`,
             `Visible rows are restricted by role policies`,
@@ -1493,8 +1435,7 @@ function DashboardIntelligence({ config, counters }: { config: WorkspaceConfig; 
               </div>
             </div>
           ))}
-        </CardContent>
-      </Card>
+      </SectionCard>
     </section>
   );
 }
@@ -1513,32 +1454,33 @@ function DataToolbar({
   setQuickFilter: (value: QuickFilter) => void;
 }) {
   return (
-    <div className="mb-5 rounded-2xl border border-[var(--border)] bg-[var(--surface-muted)] p-4">
-      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+    <PageToolbar
+      className="mb-5 bg-[var(--surface-muted)]"
+      search={(
         <div className="relative w-full lg:max-w-sm">
           <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--muted)]" />
           <Input className="h-11 rounded-xl border-[var(--border)] bg-[var(--surface-elevated)] pl-10 shadow-sm" placeholder="Search by name, status, code, or ID" value={search} onChange={(event) => setSearch(event.target.value)} />
         </div>
-        <div className="flex flex-wrap gap-2">
-          {(["All", "Today", "Pending", "Completed"] as QuickFilter[]).map((tab) => (
-            <button
-              key={tab}
-              type="button"
-              onClick={() => setQuickFilter(tab)}
-              className={`rounded-full border px-4 py-2 text-xs font-semibold transition ${quickFilter === tab ? "border-[var(--primary)] bg-[var(--primary)] text-white shadow-[0_8px_18px_rgba(14,124,123,0.16)]" : "border-[var(--border)] bg-[var(--surface-elevated)] text-[var(--muted)] hover:border-[var(--primary)] hover:text-[var(--primary)]"}`}
-            >
-              {tab}
-            </button>
-          ))}
+      )}
+      filters={(["All", "Today", "Pending", "Completed"] as QuickFilter[]).map((tab) => (
+        <button
+          key={tab}
+          type="button"
+          onClick={() => setQuickFilter(tab)}
+          className={`rounded-full border px-4 py-2 text-xs font-semibold transition ${quickFilter === tab ? "border-[var(--primary)] bg-[var(--primary)] text-[var(--primary-foreground)] shadow-sm" : "border-[var(--border)] bg-[var(--surface-elevated)] text-[var(--muted)] hover:border-[var(--primary)] hover:text-[var(--primary)]"}`}
+        >
+          {tab}
+        </button>
+      ))}
+      tabs={(
+        <div className="flex flex-wrap gap-2 text-xs">
+          <span className="inline-flex items-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--surface-elevated)] px-3 py-2 font-semibold text-[var(--muted)]"><Filter className="h-3.5 w-3.5" /> Role-aware filters</span>
+          <span className="inline-flex items-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--surface-elevated)] px-3 py-2 font-semibold text-[var(--muted)]"><CalendarDays className="h-3.5 w-3.5" /> Date range</span>
+          <span className="inline-flex items-center rounded-lg border border-[var(--border)] bg-[var(--surface-elevated)] px-3 py-2 font-semibold text-[var(--muted)]">Columns</span>
+          <span className="inline-flex items-center rounded-lg border border-[var(--border)] bg-[var(--surface-elevated)] px-3 py-2 font-semibold text-[var(--muted)]">Export</span>
         </div>
-      </div>
-      <div className="mt-3 flex flex-wrap gap-2 text-xs">
-        <span className="inline-flex items-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--surface-elevated)] px-3 py-2 font-semibold text-[var(--muted)]"><Filter className="h-3.5 w-3.5" /> Role-aware filters</span>
-        <span className="inline-flex items-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--surface-elevated)] px-3 py-2 font-semibold text-[var(--muted)]"><CalendarDays className="h-3.5 w-3.5" /> Date range</span>
-        <span className="inline-flex items-center rounded-lg border border-[var(--border)] bg-[var(--surface-elevated)] px-3 py-2 font-semibold text-[var(--muted)]">Columns</span>
-        <span className="inline-flex items-center rounded-lg border border-[var(--border)] bg-[var(--surface-elevated)] px-3 py-2 font-semibold text-[var(--muted)]">Export</span>
-      </div>
-    </div>
+      )}
+    />
   );
 }
 
