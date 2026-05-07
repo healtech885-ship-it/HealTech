@@ -39,6 +39,7 @@ import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { createClient } from "@/lib/supabase/client";
+import { cn } from "@/lib/utils";
 import type { ModuleRecord } from "@/types/app.types";
 import type { ReferenceKey, WorkspaceConfig, WorkspaceField, WorkspaceFilter } from "@/lib/workspaces";
 
@@ -334,7 +335,7 @@ export function WorkspaceClient({ config }: { config: WorkspaceConfig }) {
   }
 
   return (
-    <div className="min-w-0 space-y-6">
+    <div className={cn("min-w-0 space-y-7", isAdminDashboard && "admin-workspace")}>
       {isAdminDashboard ? (
         <AdminDashboardExperience counters={counters} loading={loading} />
       ) : config.dashboard && counters ? (
@@ -348,14 +349,15 @@ export function WorkspaceClient({ config }: { config: WorkspaceConfig }) {
         </>
       ) : null}
 
-      <section className="grid min-w-0 gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(320px,400px)]">
-        <Card className="min-w-0 overflow-hidden">
-          <CardHeader className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+      <section className="grid min-w-0 gap-7 xl:grid-cols-[minmax(0,1fr)_minmax(340px,430px)]">
+        <Card className="admin-panel min-w-0 overflow-hidden">
+          <CardHeader className="admin-panel-header flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
             <div>
-              <CardTitle>Records</CardTitle>
+              <p className="text-xs font-bold uppercase tracking-[0.12em] text-[#00758d]">Live workspace</p>
+              <CardTitle className="mt-1 text-2xl">Records</CardTitle>
               <CardDescription>Live rows from `{config.table}` under the current user&apos;s RLS policies.</CardDescription>
             </div>
-            <Button type="button" variant="secondary" onClick={loadData} disabled={loading}>
+            <Button type="button" variant="secondary" onClick={loadData} disabled={loading} className="h-11 rounded-xl border-[#c6d8e0] bg-white shadow-sm">
               <RefreshCcw className="h-4 w-4" />
               Refresh
             </Button>
@@ -375,17 +377,18 @@ export function WorkspaceClient({ config }: { config: WorkspaceConfig }) {
           </CardContent>
         </Card>
 
-        <div className="min-w-0 space-y-6">
-          <Card className="min-w-0 overflow-hidden">
-            <CardHeader>
-              <CardTitle>{config.actionLabel}</CardTitle>
+        <div className="min-w-0 space-y-7">
+          <Card className="admin-panel admin-form-card min-w-0 overflow-hidden">
+            <CardHeader className="admin-panel-header">
+              <p className="text-xs font-bold uppercase tracking-[0.12em] text-[#00758d]">Workflow action</p>
+              <CardTitle className="mt-1 text-2xl">{config.actionLabel}</CardTitle>
               <CardDescription>{config.readonly ? "This view is read-only for the current workflow." : "Validated form connected to Supabase or an Edge Function."}</CardDescription>
             </CardHeader>
             <CardContent className="min-w-0">
               {config.readonly || config.action.kind === "none" ? (
                 <ReadOnlyNotice />
               ) : (
-                <form className="space-y-4" onSubmit={form.handleSubmit(onSubmit)}>
+                <form className="space-y-5" onSubmit={form.handleSubmit(onSubmit)}>
                   {config.fields.map((field) => (
                     <FieldControl
                       key={field.name}
@@ -409,7 +412,7 @@ export function WorkspaceClient({ config }: { config: WorkspaceConfig }) {
                     />
                   ) : null}
                   {message ? <Notice tone="success" text={message} /> : null}
-                  <Button type="submit" className="w-full" disabled={saving}>
+                  <Button type="submit" className="h-12 w-full rounded-xl bg-[#00758d] text-[15px] shadow-[0_12px_24px_rgba(0,117,141,0.18)] hover:bg-[#00647c]" disabled={saving}>
                     {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
                     {config.actionLabel}
                   </Button>
@@ -418,9 +421,9 @@ export function WorkspaceClient({ config }: { config: WorkspaceConfig }) {
             </CardContent>
           </Card>
 
-          <Card className="min-w-0 overflow-hidden">
-            <CardHeader>
-              <CardTitle>Reference IDs</CardTitle>
+          <Card className="admin-panel min-w-0 overflow-hidden">
+            <CardHeader className="admin-panel-header">
+              <CardTitle className="text-xl">Reference IDs</CardTitle>
               <CardDescription>Use these visible records for the current role and workflow.</CardDescription>
             </CardHeader>
             <CardContent className="min-w-0">
@@ -1297,27 +1300,30 @@ function AdminDashboardExperience({
 
   return (
     <div className="space-y-8">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+      <div className="rounded-3xl border border-[#cfe0e8] bg-white px-6 py-6 shadow-[0_18px_48px_rgba(15,23,42,0.08)] md:px-7">
+      <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h1 className="text-[30px] font-semibold leading-10 tracking-normal text-[#080d10]">Overview</h1>
-          <p className="text-[17px] leading-7 text-[#3d4950]">Real-time metrics for clinic operations.</p>
+          <p className="text-xs font-bold uppercase tracking-[0.16em] text-[#00758d]">Admin overview</p>
+          <h1 className="mt-2 text-[34px] font-bold leading-10 tracking-normal text-[#080d10]">Clinical operations dashboard</h1>
+          <p className="mt-2 max-w-3xl text-[16px] leading-7 text-[#3d4950]">Real-time metrics for staffing, visits, patients, inventory, and operational tasks.</p>
         </div>
-        <p className="mt-4 flex items-center gap-2 text-[14px] text-[#202a30]">
+        <p className="flex h-10 items-center gap-2 rounded-full border border-[#cfe0e8] bg-[#f6fbfd] px-4 text-[14px] font-semibold text-[#202a30]">
           <RefreshCcw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
           Last updated: Just now
         </p>
       </div>
+      </div>
 
       <section className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
         {stats.map((stat) => (
-          <div key={stat.label} className={`min-h-[168px] rounded-lg border bg-white p-5 ${stat.tone === "red" ? "border-[#ffc3bd]" : "border-[#b9c8d0]"}`}>
-            <div className={`flex h-10 w-10 items-center justify-center rounded-full ${adminToneClasses(stat.tone)}`}>
+          <div key={stat.label} className={`min-h-[176px] rounded-2xl border bg-white p-5 shadow-[0_12px_32px_rgba(15,23,42,0.06)] transition hover:-translate-y-0.5 hover:shadow-[0_18px_38px_rgba(15,23,42,0.10)] ${stat.tone === "red" ? "border-[#ffc3bd]" : "border-[#cfe0e8]"}`}>
+            <div className={`flex h-11 w-11 items-center justify-center rounded-2xl ${adminToneClasses(stat.tone)}`}>
               <stat.icon className="h-5 w-5" />
             </div>
-            <p className="mt-4 text-[14px] font-medium tracking-[0.08em] text-[#202a30]">{stat.label}</p>
+            <p className="mt-4 text-[13px] font-bold tracking-[0.10em] text-[#52647a]">{stat.label}</p>
             <div className="mt-2 flex items-end gap-3">
               <p className={`table-numeric text-[40px] font-bold leading-[44px] tracking-normal ${stat.tone === "red" ? "text-[#c10010]" : "text-[#080d10]"}`}>{stat.value}</p>
-              {"helper" in stat ? <p className="pb-1 text-[14px] font-semibold text-[#00647c]">↗{stat.helper}</p> : null}
+              {"helper" in stat ? <p className="pb-1 text-[14px] font-semibold text-[#00647c]">+{stat.helper}</p> : null}
             </div>
           </div>
         ))}
@@ -1329,7 +1335,7 @@ function AdminDashboardExperience({
       </section>
 
       <section className="grid gap-8 xl:grid-cols-[1fr_386px]">
-        <div className="rounded-xl border border-[#b9c8d0] bg-white p-5">
+        <div className="rounded-2xl border border-[#cfe0e8] bg-white p-5 shadow-[0_12px_32px_rgba(15,23,42,0.06)]">
           <div className="flex items-center justify-between border-b border-[#d9e1e4] pb-4">
             <h2 className="text-[27px] font-semibold tracking-normal text-[#080d10]">Recent Activity</h2>
             <Link href="/admin/audit-logs" className="text-[17px] font-medium text-[#00647c]">View All</Link>
@@ -1337,7 +1343,7 @@ function AdminDashboardExperience({
           <AdminActivityRow icon={UserPlus} title="New Employee Added" text="Dr. Sarah Jenkins was added to General Medicine." time="10 mins ago" />
           <AdminActivityRow icon={Calendar} title="Leave Request Submitted" text="Nurse Mark O. requested 3 days of annual leave." time="45 mins ago" amber />
         </div>
-        <div className="rounded-xl border border-[#b9c8d0] bg-white p-5">
+        <div className="rounded-2xl border border-[#cfe0e8] bg-white p-5 shadow-[0_12px_32px_rgba(15,23,42,0.06)]">
           <h2 className="border-b border-[#d9e1e4] pb-4 text-[27px] font-semibold tracking-normal text-[#080d10]">Quick Actions</h2>
           <div className="mt-5 space-y-3">
             <AdminActionButton href="/admin/employees/new" icon={UserPlus} label="Add Employee" primary />
@@ -1347,7 +1353,7 @@ function AdminDashboardExperience({
         </div>
       </section>
 
-      <div className="pt-2">
+      <div className="rounded-2xl border border-[#cfe0e8] bg-[#f6fbfd] px-5 py-4">
         <h2 className="text-[22px] font-semibold tracking-normal text-[#080d10]">Operational Workspace</h2>
         <p className="mt-1 text-[15px] text-[#3d4950]">Live records and workflow forms remain connected below.</p>
       </div>
@@ -1357,7 +1363,7 @@ function AdminDashboardExperience({
 
 function AdminChartCard({ title, subtitle, type }: { title: string; subtitle?: string; type: "line" | "bars" }) {
   return (
-    <div className="h-[384px] rounded-xl border border-[#b9c8d0] bg-white p-5">
+    <div className="h-[384px] rounded-2xl border border-[#cfe0e8] bg-white p-5 shadow-[0_12px_32px_rgba(15,23,42,0.06)]">
       <div className="flex justify-between">
         <h2 className="text-[27px] font-semibold tracking-normal text-[#080d10]">
           {title} {subtitle ? <span className="text-[15px] font-normal text-[#3d4950]">{subtitle}</span> : null}
@@ -1507,11 +1513,11 @@ function DataToolbar({
   setQuickFilter: (value: QuickFilter) => void;
 }) {
   return (
-    <div className="mb-4 space-y-3">
+    <div className="mb-5 rounded-2xl border border-[#d9e6eb] bg-[#f7fbfd] p-4">
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <div className="relative w-full lg:max-w-sm">
-          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--outline)]" />
-          <Input className="pl-9" placeholder="Search by name, status, code, or ID" value={search} onChange={(event) => setSearch(event.target.value)} />
+          <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8293a8]" />
+          <Input className="h-11 rounded-xl border-[#cbd8e2] bg-white pl-10 shadow-sm" placeholder="Search by name, status, code, or ID" value={search} onChange={(event) => setSearch(event.target.value)} />
         </div>
         <div className="flex flex-wrap gap-2">
           {(["All", "Today", "Pending", "Completed"] as QuickFilter[]).map((tab) => (
@@ -1519,18 +1525,18 @@ function DataToolbar({
               key={tab}
               type="button"
               onClick={() => setQuickFilter(tab)}
-              className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition ${quickFilter === tab ? "border-primary bg-primary text-white" : "border-border bg-white text-[var(--on-surface-variant)] hover:border-primary hover:text-primary"}`}
+              className={`rounded-full border px-4 py-2 text-xs font-semibold transition ${quickFilter === tab ? "border-[#00758d] bg-[#00758d] text-white shadow-[0_8px_18px_rgba(0,117,141,0.16)]" : "border-[#cbd8e2] bg-white text-[#52647a] hover:border-[#00758d] hover:text-[#00647c]"}`}
             >
               {tab}
             </button>
           ))}
         </div>
       </div>
-      <div className="flex flex-wrap gap-2 text-xs">
-        <span className="inline-flex items-center gap-2 rounded-lg border border-border bg-muted px-3 py-2 font-semibold text-[var(--on-surface-variant)]"><Filter className="h-3.5 w-3.5" /> Role-aware filters</span>
-        <span className="inline-flex items-center gap-2 rounded-lg border border-border bg-muted px-3 py-2 font-semibold text-[var(--on-surface-variant)]"><CalendarDays className="h-3.5 w-3.5" /> Date range</span>
-        <span className="inline-flex items-center rounded-lg border border-border bg-muted px-3 py-2 font-semibold text-[var(--on-surface-variant)]">Columns</span>
-        <span className="inline-flex items-center rounded-lg border border-border bg-muted px-3 py-2 font-semibold text-[var(--on-surface-variant)]">Export</span>
+      <div className="mt-3 flex flex-wrap gap-2 text-xs">
+        <span className="inline-flex items-center gap-2 rounded-lg border border-[#cbd8e2] bg-white px-3 py-2 font-semibold text-[#52647a]"><Filter className="h-3.5 w-3.5" /> Role-aware filters</span>
+        <span className="inline-flex items-center gap-2 rounded-lg border border-[#cbd8e2] bg-white px-3 py-2 font-semibold text-[#52647a]"><CalendarDays className="h-3.5 w-3.5" /> Date range</span>
+        <span className="inline-flex items-center rounded-lg border border-[#cbd8e2] bg-white px-3 py-2 font-semibold text-[#52647a]">Columns</span>
+        <span className="inline-flex items-center rounded-lg border border-[#cbd8e2] bg-white px-3 py-2 font-semibold text-[#52647a]">Export</span>
       </div>
     </div>
   );
@@ -1555,8 +1561,9 @@ function FieldControl({
   const referenceOptions = field.reference ? references[field.reference] ?? [] : [];
   const registration = register(field.name);
   return (
-    <div className="space-y-2">
-      <Label htmlFor={field.name}>{field.label}{field.required ? " *" : ""}</Label>
+    <div className="rounded-2xl border border-[#d9e6eb] bg-[#f8fbfd] p-4">
+      <Label htmlFor={field.name} className="text-[13px] font-bold uppercase tracking-[0.08em] text-[#52647a]">{field.label}{field.required ? " *" : ""}</Label>
+      <div className="mt-2">
       {field.reference ? (
         <CustomSelect
           id={field.name}
@@ -1582,6 +1589,7 @@ function FieldControl({
       ) : (
         <Input id={field.name} type={inputType} step={field.step} placeholder={field.placeholder ?? field.label} {...registration} />
       )}
+      </div>
       {error ? <p className="text-xs font-medium text-[var(--error)]">{error}</p> : null}
     </div>
   );

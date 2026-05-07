@@ -140,23 +140,23 @@ function AdminShell({
   const [emergencyOpen, setEmergencyOpen] = useState(false);
 
   return (
-    <div className="min-h-screen overflow-x-clip bg-[#f6fafd] font-[Manrope,Inter,Segoe_UI,Arial,sans-serif] text-[#171c1e] lg:grid lg:grid-cols-[auto_minmax(0,1fr)]">
+    <div className="min-h-screen overflow-x-clip bg-[#eef6f8] font-[Manrope,Inter,Segoe_UI,Arial,sans-serif] text-[#171c1e] lg:grid lg:grid-cols-[auto_minmax(0,1fr)]">
       {mobileOpen ? <button aria-label="Close navigation overlay" className="fixed inset-0 z-20 bg-[#0f172a]/24 lg:hidden" onClick={() => setMobileOpen(false)} /> : null}
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-30 flex w-[300px] -translate-x-full flex-col border-r border-[#d8e2e8] bg-[#f7fbff] px-5 py-6 shadow-[12px_0_30px_rgba(15,23,42,0.08)] transition-[transform,width,padding] duration-300 ease-out lg:sticky lg:top-0 lg:h-screen lg:translate-x-0 lg:shadow-none",
+          "fixed inset-y-0 left-0 z-30 flex w-[300px] -translate-x-full flex-col border-r border-[#cfe0e8] bg-white px-5 py-6 shadow-[18px_0_44px_rgba(15,23,42,0.12)] transition-[transform,width,padding] duration-300 ease-out lg:sticky lg:top-0 lg:h-screen lg:translate-x-0 lg:shadow-none",
           mobileOpen && "translate-x-0",
           collapsed ? "lg:w-[96px] lg:px-5" : "lg:w-[320px]",
         )}
       >
-        <div className={cn("relative flex items-center gap-3", collapsed ? "lg:justify-center" : "justify-between")}>
+        <div className={cn("relative flex items-center gap-3 rounded-2xl border border-[#d8e6eb] bg-[#f6fbfd] p-3", collapsed ? "lg:justify-center" : "justify-between")}>
           <Link
             href="/admin/dashboard"
             onClick={() => setMobileOpen(false)}
             title={collapsed ? "City General" : undefined}
             className={cn("flex min-w-0 items-center gap-4", collapsed && "lg:justify-center")}
           >
-            <span className="flex h-[54px] w-[54px] shrink-0 items-center justify-center rounded-xl bg-[#00758d] text-white shadow-[0_10px_24px_rgba(0,100,124,0.14)]">
+            <span className="flex h-[54px] w-[54px] shrink-0 items-center justify-center rounded-xl bg-[#00758d] text-white shadow-[0_14px_30px_rgba(0,117,141,0.24)]">
               <BriefcaseMedical className="h-7 w-7" />
             </span>
             <span className={cn("min-w-0 overflow-hidden transition-[opacity,width] duration-200", collapsed && "lg:w-0 lg:opacity-0")}>
@@ -169,8 +169,8 @@ function AdminShell({
             aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
             onClick={() => setCollapsed((value) => !value)}
             className={cn(
-              "hidden h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-[#d7e1e8] bg-white text-[#263a54] shadow-[0_8px_18px_rgba(15,23,42,0.06)] transition hover:border-[#9fb4bf] hover:text-[#00647c] lg:flex",
-              collapsed && "lg:absolute lg:-right-[38px] lg:top-2 lg:z-40",
+              "hidden h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-[#cfe0e8] bg-white text-[#263a54] shadow-[0_8px_18px_rgba(15,23,42,0.08)] transition hover:border-[#8fb4c2] hover:text-[#00647c] lg:flex",
+              collapsed && "lg:absolute lg:-right-[38px] lg:top-5 lg:z-40",
             )}
           >
             {collapsed ? <ChevronsRight className="h-5 w-5" /> : <ChevronsLeft className="h-5 w-5" />}
@@ -189,7 +189,7 @@ function AdminShell({
           href="/admin/visits"
           onClick={() => setMobileOpen(false)}
           className={cn(
-            "mt-[42px] flex h-[45px] items-center justify-center gap-3 overflow-hidden rounded-lg bg-[#00758d] text-[16px] font-semibold text-white shadow-[0_8px_20px_rgba(0,100,124,0.12)] transition-all duration-300",
+            "mt-6 flex h-[48px] items-center justify-center gap-3 overflow-hidden rounded-xl bg-[#00758d] text-[16px] font-semibold text-white shadow-[0_14px_28px_rgba(0,117,141,0.20)] transition-all duration-300 hover:bg-[#00647c]",
             collapsed && "lg:mx-auto lg:h-[54px] lg:w-[54px] lg:rounded-xl lg:px-0",
           )}
           title={collapsed ? "New Consultation" : undefined}
@@ -198,7 +198,7 @@ function AdminShell({
           <span className={cn("whitespace-nowrap transition-opacity duration-200", collapsed && "lg:hidden")}>New Consultation</span>
         </Link>
 
-        <nav className={cn("mt-3 space-y-2", collapsed && "lg:flex lg:flex-col lg:items-center")}>
+        <nav className={cn("mt-5 space-y-1.5", collapsed && "lg:flex lg:flex-col lg:items-center")}>
           {adminPrimaryItems.map((item) => {
             const selected = item.href === activeHref;
             return (
@@ -208,14 +208,14 @@ function AdminShell({
                 onClick={() => setMobileOpen(false)}
                 title={collapsed ? item.label : undefined}
                 className={cn(
-                  "flex h-[46px] items-center gap-5 overflow-hidden rounded-lg px-5 text-[16px] font-medium transition-all duration-300",
+                  "relative flex h-[48px] items-center gap-4 overflow-hidden rounded-xl px-4 text-[15px] font-semibold transition-all duration-300",
                   collapsed && "lg:h-[54px] lg:w-[54px] lg:justify-center lg:gap-0 lg:rounded-xl lg:px-0",
                   selected
-                    ? "border border-[#d7e1e8] bg-white text-[#0089a8] shadow-[0_2px_8px_rgba(15,23,42,0.04)]"
-                    : "text-[#263a54] hover:bg-white hover:text-[#00647c]",
+                    ? "border border-[#b8dce5] bg-[#eef9fb] text-[#00647c] shadow-[0_8px_22px_rgba(0,117,141,0.10)] before:absolute before:left-0 before:top-3 before:h-6 before:w-1 before:rounded-r-full before:bg-[#00758d]"
+                    : "text-[#52647a] hover:bg-[#f6fbfd] hover:text-[#00647c]",
                 )}
               >
-                <item.icon className="h-[22px] w-[22px] shrink-0" />
+                <item.icon className={cn("h-5 w-5 shrink-0", selected ? "text-[#00758d]" : "text-[#718394]")} />
                 <span className={cn("whitespace-nowrap transition-opacity duration-200", collapsed && "lg:hidden")}>{item.label}</span>
               </Link>
             );
@@ -229,9 +229,9 @@ function AdminShell({
               onClick={() => setMobileOpen(false)}
               title={collapsed ? settingsItem.label : undefined}
               className={cn(
-                "flex h-[50px] items-center gap-5 overflow-hidden rounded-lg px-5 text-[16px] font-medium transition-all duration-300",
+                "flex h-[50px] items-center gap-4 overflow-hidden rounded-xl px-4 text-[15px] font-semibold transition-all duration-300",
                 collapsed && "lg:h-[54px] lg:w-[54px] lg:justify-center lg:gap-0 lg:rounded-xl lg:px-0",
-                settingsItem.href === activeHref ? "border border-[#d7e1e8] bg-white text-[#0089a8] shadow-sm" : "text-[#263a54]",
+                settingsItem.href === activeHref ? "border border-[#b8dce5] bg-[#eef9fb] text-[#00647c] shadow-sm" : "text-[#52647a] hover:bg-[#f6fbfd] hover:text-[#00647c]",
               )}
             >
               <settingsItem.icon className="h-[22px] w-[22px] shrink-0" />
@@ -240,7 +240,7 @@ function AdminShell({
           ) : null}
           <SignOutButton
             className={cn(
-              "mt-2 !h-[50px] w-full justify-start gap-5 overflow-hidden border-0 bg-transparent px-5 text-[16px] font-medium text-[#263a54] transition-all duration-300 hover:bg-white",
+              "mt-2 !h-[50px] w-full justify-start gap-4 overflow-hidden border-0 bg-transparent px-4 text-[15px] font-semibold text-[#52647a] transition-all duration-300 hover:bg-[#f6fbfd] hover:text-[#00647c]",
               collapsed && "lg:!h-[54px] lg:w-[54px] lg:justify-center lg:gap-0 lg:rounded-xl lg:px-0",
             )}
             iconClassName="h-[22px] w-[22px]"
@@ -251,8 +251,8 @@ function AdminShell({
       </aside>
 
       <main className="min-w-0">
-        <header className="sticky top-0 z-10 border-b border-[#d9e3ea] bg-white shadow-[0_2px_8px_rgba(15,23,42,0.04)]">
-          <div className="flex min-h-20 items-center gap-6 px-5 lg:px-[30px]">
+        <header className="sticky top-0 z-10 border-b border-[#d4e2e9] bg-white/95 shadow-[0_8px_28px_rgba(15,23,42,0.06)] backdrop-blur">
+          <div className="flex min-h-20 items-center gap-6 px-5 lg:px-8">
             <button
               type="button"
               aria-label="Open navigation"
@@ -261,11 +261,14 @@ function AdminShell({
             >
               <Menu className="h-5 w-5" />
             </button>
-            <p className="hidden shrink-0 text-[25px] font-bold tracking-normal text-[#080d10] sm:block">HealTech</p>
+            <div className="hidden shrink-0 sm:block">
+              <p className="text-[23px] font-bold tracking-normal text-[#080d10]">HealTech</p>
+              <p className="text-xs font-semibold uppercase tracking-[0.08em] text-[#607084]">Admin Command Center</p>
+            </div>
             <div className="relative hidden min-w-0 flex-1 md:block lg:max-w-[398px]">
               <Search className="absolute left-5 top-1/2 h-5 w-5 -translate-y-1/2 text-[#8293a8]" />
               <input
-                className="h-12 w-full rounded-full border-0 bg-[#f0f4f7] pl-14 pr-5 text-[16px] outline-none placeholder:text-[#8293a8]"
+                className="h-12 w-full rounded-full border border-[#d4e2e9] bg-[#f6fbfd] pl-14 pr-5 text-[15px] outline-none placeholder:text-[#8293a8] transition focus:border-[#00758d] focus:bg-white focus:ring-3 focus:ring-[#00758d]/15"
                 placeholder="Search patients, records..."
               />
             </div>
@@ -288,7 +291,7 @@ function AdminShell({
                 type="button"
                 aria-label="Open emergency workflow"
                 onClick={() => setEmergencyOpen(true)}
-                className="flex h-10 items-center gap-2 rounded-full border border-[#f2b8b5] bg-white px-3 text-sm font-semibold text-[#c10010] transition hover:bg-[#fff6f5] focus:outline-none focus:ring-2 focus:ring-[#f2b8b5] md:px-5 md:text-[16px]"
+                className="flex h-10 items-center gap-2 rounded-full border border-[#f2b8b5] bg-[#fff7f6] px-3 text-sm font-semibold text-[#b42318] shadow-[0_8px_18px_rgba(186,26,26,0.08)] transition hover:bg-[#fff1ef] focus:outline-none focus:ring-2 focus:ring-[#f2b8b5] md:px-5 md:text-[15px]"
               >
                 <span className="text-[26px] leading-none">*</span>
                 <span className="hidden sm:inline">Emergency</span>
@@ -311,7 +314,7 @@ function AdminShell({
           </nav>
         </header>
 
-        <div className="min-w-0 px-5 py-8 lg:px-[30px] lg:py-9">{children}</div>
+        <div className="min-w-0 px-5 py-8 lg:px-8 lg:py-9">{children}</div>
       </main>
       <EmergencyWorkflowDialog open={emergencyOpen} onClose={() => setEmergencyOpen(false)} />
     </div>

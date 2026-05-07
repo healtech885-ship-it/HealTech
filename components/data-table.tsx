@@ -38,7 +38,13 @@ export function DataTable({
       const value = getValue<unknown>();
       const lower = String(value).toLowerCase();
       const looksLikeStatus = ["status", "priority", "visible"].includes(key.toLowerCase()) || /queued|pending|approved|completed|active|urgent|expired|dispensed|reviewed|submitted/.test(lower);
-      return looksLikeStatus ? <StatusBadge value={String(value)} /> : <span className="table-numeric">{formatCell(value)}</span>;
+      if (looksLikeStatus) return <StatusBadge value={String(value)} />;
+      const formatted = formatCell(value);
+      return (
+        <span title={formatted} className="table-numeric block max-w-[260px] truncate">
+          {formatted}
+        </span>
+      );
     },
   }));
 
@@ -62,7 +68,7 @@ export function DataTable({
   const table = useReactTable({ data: rows, columns, getCoreRowModel: getCoreRowModel() });
 
   return (
-    <TableFrame scrollClassName="max-h-[560px]">
+    <TableFrame className="admin-data-table" scrollClassName="max-h-[620px]">
       <Table>
         <TableHeader className="sticky top-0 z-[1]">
           {table.getHeaderGroups().map((headerGroup) => (
@@ -86,7 +92,7 @@ export function DataTable({
             table.getRowModel().rows.map((row) => (
               <TableRow key={row.id}>
                 {row.getVisibleCells().map((cell) => (
-                  <TableCell key={cell.id} className="max-w-[220px] break-words">
+                  <TableCell key={cell.id} className="max-w-[280px]">
                     {flexRender(cell.column.columnDef.cell, cell.getContext())}
                   </TableCell>
                 ))}
