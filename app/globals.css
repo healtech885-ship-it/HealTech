@@ -313,10 +313,8 @@ textarea {
 }
 
 .login-home-link-inline {
-  position: absolute;
-  top: 32px;
-  left: 28px;
-  z-index: 50;
+  position: static;
+  margin-left: auto;
   width: 38px;
   min-width: 38px;
   height: 38px;
@@ -632,11 +630,6 @@ textarea {
   .login-home-link {
     top: 32px;
     left: clamp(36px, 5vw, 72px);
-  }
-
-  .login-home-link-inline {
-    top: 48px;
-    left: 48px;
   }
 
   .login-visual {

@@ -66,10 +66,6 @@ export default function LoginPage() {
 
         <section className="login-left">
           <div className="login-panel">
-            <Link href="/" className="login-home-link login-home-link-inline" aria-label="Back to home page">
-              <ArrowLeft className="h-4 w-4" />
-            </Link>
-
             <div className="login-brand">
               <div className="login-brand-icon bg-[var(--primary)] text-[var(--primary-foreground)]">
                 <ShieldCheck className="h-7 w-7 stroke-[2.4]" />
@@ -78,6 +74,9 @@ export default function LoginPage() {
                 <p className="login-brand-text text-[var(--healtech-ink)]">HealTech</p>
                 <p className="mt-1 text-sm font-semibold text-[var(--muted)]">Clinical management system</p>
               </div>
+              <Link href="/" className="login-home-link login-home-link-inline" aria-label="Back to home page">
+                <ArrowLeft className="h-4 w-4" />
+              </Link>
             </div>
 
             <div className="login-heading-block">
