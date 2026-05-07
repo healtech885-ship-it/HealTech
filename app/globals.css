@@ -312,6 +312,23 @@ textarea {
   color: var(--primary-container);
 }
 
+.login-home-link-inline {
+  position: static;
+  margin-bottom: 28px;
+  min-height: 42px;
+  padding: 0 16px;
+  border-color: color-mix(in srgb, var(--primary) 38%, var(--border));
+  background: color-mix(in srgb, var(--primary) 9%, var(--surface-elevated));
+  color: var(--primary);
+  box-shadow: 0 12px 28px rgba(12, 116, 110, 0.1);
+}
+
+.login-home-link-inline:hover {
+  border-color: var(--primary);
+  background: color-mix(in srgb, var(--primary) 14%, var(--surface-elevated));
+  color: var(--primary-container);
+}
+
 .login-panel {
   width: min(100%, 510px);
   border: 1px solid color-mix(in srgb, var(--border) 78%, transparent);

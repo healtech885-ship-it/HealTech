@@ -65,12 +65,12 @@ export default function LoginPage() {
         </section>
 
         <section className="login-left">
-          <Link href="/" className="login-home-link" aria-label="Back to home page">
-            <ArrowLeft className="h-4 w-4" />
-            Home
-          </Link>
-
           <div className="login-panel">
+            <Link href="/" className="login-home-link login-home-link-inline" aria-label="Back to home page">
+              <ArrowLeft className="h-4 w-4" />
+              Back to home
+            </Link>
+
             <div className="login-brand">
               <div className="login-brand-icon bg-[var(--primary)] text-[var(--primary-foreground)]">
                 <ShieldCheck className="h-7 w-7 stroke-[2.4]" />
