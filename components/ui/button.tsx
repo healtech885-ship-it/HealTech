@@ -1,5 +1,8 @@
+"use client";
+
 import { cva, type VariantProps } from "class-variance-authority";
 import type * as React from "react";
+import { Button as HeroUIButton } from "@heroui/react/button";
 import { cn } from "@/lib/utils";
 
 const buttonVariants = cva(
@@ -26,8 +29,33 @@ const buttonVariants = cva(
   },
 );
 
-export type ButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> & VariantProps<typeof buttonVariants>;
+const heroButtonVariants = {
+  primary: "primary",
+  secondary: "outline",
+  ghost: "ghost",
+  destructive: "danger",
+} as const;
 
-export function Button({ className, variant, size, ...props }: ButtonProps) {
-  return <button className={cn(buttonVariants({ variant, size }), className)} {...props} />;
+type HeroUIButtonProps = React.ComponentPropsWithoutRef<typeof HeroUIButton>;
+
+export type ButtonProps = Omit<HeroUIButtonProps, "className" | "isDisabled" | "isIconOnly" | "size" | "variant"> &
+  VariantProps<typeof buttonVariants> & {
+    className?: string;
+    disabled?: boolean;
+  };
+
+export function Button({ className, disabled, variant, size, ...props }: ButtonProps) {
+  const resolvedVariant = variant ?? "primary";
+  const resolvedSize = size ?? "md";
+
+  return (
+    <HeroUIButton
+      className={cn(buttonVariants({ variant: resolvedVariant, size: resolvedSize }), className)}
+      isDisabled={disabled}
+      isIconOnly={resolvedSize === "icon"}
+      size={resolvedSize === "icon" ? "md" : resolvedSize}
+      variant={heroButtonVariants[resolvedVariant]}
+      {...props}
+    />
+  );
 }

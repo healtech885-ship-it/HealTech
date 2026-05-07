@@ -1,22 +1,45 @@
+"use client";
+
 import type * as React from "react";
+import {
+  Card as HeroUICard,
+  CardContent as HeroUICardContent,
+  CardDescription as HeroUICardDescription,
+  CardHeader as HeroUICardHeader,
+  CardTitle as HeroUICardTitle,
+} from "@heroui/react/card";
 import { cn } from "@/lib/utils";
 
-export function Card({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
-  return <section className={cn("clinical-card rounded-lg", className)} {...props} />;
+export function Card({ children, className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
+  return (
+    <HeroUICard
+      className={cn("clinical-card gap-0 rounded-lg p-0", className)}
+      render={(renderProps) => <section {...renderProps} />}
+      {...props}
+    >
+      {children}
+    </HeroUICard>
+  );
 }
 
 export function CardHeader({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
-  return <div className={cn("border-b border-border px-6 py-5", className)} {...props} />;
+  return <HeroUICardHeader className={cn("gap-0 border-b border-border px-6 py-5", className)} {...props} />;
 }
 
 export function CardTitle({ className, ...props }: React.HTMLAttributes<HTMLHeadingElement>) {
-  return <h2 className={cn("text-xl font-semibold leading-7 text-[var(--on-surface)]", className)} {...props} />;
+  return (
+    <HeroUICardTitle
+      className={cn("text-xl font-semibold leading-7 text-[var(--on-surface)]", className)}
+      render={(renderProps) => <h2 {...renderProps} />}
+      {...props}
+    />
+  );
 }
 
 export function CardDescription({ className, ...props }: React.HTMLAttributes<HTMLParagraphElement>) {
-  return <p className={cn("mt-1 text-sm leading-5 text-[var(--on-surface-variant)]", className)} {...props} />;
+  return <HeroUICardDescription className={cn("mt-1 text-sm leading-5 text-[var(--on-surface-variant)]", className)} {...props} />;
 }
 
 export function CardContent({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
-  return <div className={cn("p-6", className)} {...props} />;
+  return <HeroUICardContent className={cn("block flex-none gap-0 p-6", className)} {...props} />;
 }
