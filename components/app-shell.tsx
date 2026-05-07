@@ -1,5 +1,6 @@
 "use client";
 
+import { Avatar, Modal } from "@heroui/react";
 import Link from "next/link";
 import {
   AlertTriangle,
@@ -501,15 +502,17 @@ function AdminProfileMenu({
         onClick={() => onOpenChange(!open)}
         className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full border border-[var(--border)] bg-[var(--secondary-container)] text-sm font-semibold text-[var(--primary)] transition hover:border-[var(--border-strong)] focus:outline-none focus:ring-2 focus:ring-[var(--focus-ring)]"
       >
-        {initials(profile.full_name)}
+        <Avatar className="h-full w-full bg-[var(--secondary-container)] text-[var(--primary)]" size="sm">
+          <Avatar.Fallback className="text-sm font-semibold">{initials(profile.full_name)}</Avatar.Fallback>
+        </Avatar>
       </button>
       {open ? (
         <TopbarPanel className="right-0 w-[min(92vw,320px)]">
           <div className="border-b border-[var(--border)] px-4 py-4">
             <div className="flex items-center gap-3">
-              <span className="flex h-11 w-11 items-center justify-center rounded-full bg-[var(--secondary-container)] text-sm font-bold text-[var(--primary)]">
-                {initials(profile.full_name)}
-              </span>
+              <Avatar className="h-11 w-11 bg-[var(--secondary-container)] text-[var(--primary)]" size="sm">
+                <Avatar.Fallback className="text-sm font-bold">{initials(profile.full_name)}</Avatar.Fallback>
+              </Avatar>
               <div className="min-w-0">
                 <p className="truncate text-sm font-bold text-[var(--on-surface)]">{profile.full_name}</p>
                 <p className="truncate text-xs text-[var(--muted)]">{profile.email}</p>
@@ -534,72 +537,49 @@ function AdminProfileMenu({
 }
 
 function EmergencyWorkflowDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const dialogRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!open) return;
-
-    function onKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") onClose();
-    }
-
-    document.addEventListener("keydown", onKeyDown);
-    const previous = document.activeElement;
-    dialogRef.current?.focus();
-    return () => {
-      document.removeEventListener("keydown", onKeyDown);
-      if (previous instanceof HTMLElement) previous.focus();
-    };
-  }, [open, onClose]);
-
-  if (!open) return null;
-
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(11,19,32,0.45)] p-4" role="presentation" onMouseDown={(event) => {
-      if (event.target === event.currentTarget) onClose();
+    <Modal isOpen={open} onOpenChange={(isOpen) => {
+      if (!isOpen) onClose();
     }}>
-      <div
-        ref={dialogRef}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="emergency-workflow-title"
-        tabIndex={-1}
-        className="w-full max-w-xl rounded-xl bg-[var(--surface-elevated)] shadow-xl outline-none"
-      >
-        <div className="flex items-start justify-between gap-4 border-b border-[var(--danger)] px-5 py-4">
-          <div className="flex items-start gap-3">
-            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[var(--error-container)] text-[var(--danger)]">
-              <AlertTriangle className="h-6 w-6" />
-            </span>
-            <div>
-              <h2 id="emergency-workflow-title" className="text-lg font-bold text-[var(--on-surface)]">Emergency Workflow</h2>
-              <p className="mt-1 text-sm leading-6 text-[var(--muted)]">Clinic workflow shortcuts for urgent cases. This does not call external emergency services.</p>
-            </div>
-          </div>
-          <button type="button" onClick={onClose} aria-label="Close emergency workflow" className="rounded-lg p-2 text-[var(--muted)] transition hover:bg-[var(--surface-muted)] hover:text-[var(--healtech-slate)]">
-            <X className="h-5 w-5" />
-          </button>
-        </div>
-        <div className="space-y-3 px-5 py-5">
-          <p className="rounded-lg border border-[var(--danger)] bg-[var(--error-container)] px-4 py-3 text-sm leading-6 text-[var(--danger)]">
-            Use these shortcuts to find or create the appropriate clinic record for an urgent visit. No database record is created until you use the normal visit or patient workflow.
-          </p>
-          <Link href="/admin/visits" onClick={onClose} className="flex items-center gap-3 rounded-lg border border-[var(--border)] px-4 py-3 text-sm font-semibold text-[var(--healtech-slate)] transition hover:border-[var(--danger)] hover:bg-[var(--error-container)]">
-            <ClipboardList className="h-5 w-5 text-[var(--danger)]" />
-            Go to Visits page
-          </Link>
-          <Link href="/admin/patients" onClick={onClose} className="flex items-center gap-3 rounded-lg border border-[var(--border)] px-4 py-3 text-sm font-semibold text-[var(--healtech-slate)] transition hover:border-[var(--danger)] hover:bg-[var(--error-container)]">
-            <UserRound className="h-5 w-5 text-[var(--danger)]" />
-            Go to Patients page
-          </Link>
-        </div>
-        <div className="flex justify-end gap-3 border-t border-[var(--border)] px-5 py-4">
-          <button type="button" onClick={onClose} className="h-10 rounded-lg border border-[var(--border)] px-4 text-sm font-semibold text-[var(--healtech-slate)] transition hover:bg-[var(--surface-muted)]">
-            Cancel
-          </button>
-        </div>
-      </div>
-    </div>
+      <Modal.Backdrop className="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(11,19,32,0.45)] p-4" isDismissable>
+        <Modal.Container className="w-full max-w-xl" placement="center">
+          <Modal.Dialog aria-labelledby="emergency-workflow-title" className="overflow-hidden rounded-xl bg-[var(--surface-elevated)] text-[var(--on-surface)] shadow-xl outline-none">
+            <Modal.Header className="flex items-start justify-between gap-4 border-b border-[var(--danger)] px-5 py-4">
+              <div className="flex items-start gap-3">
+                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[var(--error-container)] text-[var(--danger)]">
+                  <AlertTriangle className="h-6 w-6" />
+                </span>
+                <div>
+                  <Modal.Heading id="emergency-workflow-title" className="text-lg font-bold text-[var(--on-surface)]">Emergency Workflow</Modal.Heading>
+                  <p className="mt-1 text-sm leading-6 text-[var(--muted)]">Clinic workflow shortcuts for urgent cases. This does not call external emergency services.</p>
+                </div>
+              </div>
+              <Modal.CloseTrigger aria-label="Close emergency workflow" className="rounded-lg p-2 text-[var(--muted)] transition hover:bg-[var(--surface-muted)] hover:text-[var(--healtech-slate)]">
+                <X className="h-5 w-5" />
+              </Modal.CloseTrigger>
+            </Modal.Header>
+            <Modal.Body className="space-y-3 px-5 py-5">
+              <p className="rounded-lg border border-[var(--danger)] bg-[var(--error-container)] px-4 py-3 text-sm leading-6 text-[var(--danger)]">
+                Use these shortcuts to find or create the appropriate clinic record for an urgent visit. No database record is created until you use the normal visit or patient workflow.
+              </p>
+              <Link href="/admin/visits" onClick={onClose} className="flex items-center gap-3 rounded-lg border border-[var(--border)] px-4 py-3 text-sm font-semibold text-[var(--healtech-slate)] transition hover:border-[var(--danger)] hover:bg-[var(--error-container)]">
+                <ClipboardList className="h-5 w-5 text-[var(--danger)]" />
+                Go to Visits page
+              </Link>
+              <Link href="/admin/patients" onClick={onClose} className="flex items-center gap-3 rounded-lg border border-[var(--border)] px-4 py-3 text-sm font-semibold text-[var(--healtech-slate)] transition hover:border-[var(--danger)] hover:bg-[var(--error-container)]">
+                <UserRound className="h-5 w-5 text-[var(--danger)]" />
+                Go to Patients page
+              </Link>
+            </Modal.Body>
+            <Modal.Footer className="flex justify-end gap-3 border-t border-[var(--border)] px-5 py-4">
+              <button type="button" onClick={onClose} className="h-10 rounded-lg border border-[var(--border)] px-4 text-sm font-semibold text-[var(--healtech-slate)] transition hover:bg-[var(--surface-muted)]">
+                Cancel
+              </button>
+            </Modal.Footer>
+          </Modal.Dialog>
+        </Modal.Container>
+      </Modal.Backdrop>
+    </Modal>
   );
 }
 
