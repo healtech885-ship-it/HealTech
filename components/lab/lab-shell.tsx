@@ -17,6 +17,9 @@ import {
   X,
 } from "lucide-react";
 import { Badge, badgeTone } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { navigationByRole } from "@/lib/constants/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
@@ -246,9 +249,9 @@ function LabTopbar({ profile }: { profile: AppProfile }) {
         </Link>
         <div className="relative hidden w-full max-w-md sm:block">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#7a8ca1]" />
-          <input
+          <Input
             aria-label="Search lab workspace"
-            className="h-10 w-full rounded-lg border border-[#cbd8e2] bg-[#f4f8fb] pl-10 pr-3 text-sm outline-none focus:border-[#00758d]"
+            className="h-10 bg-[#f4f8fb] pl-10 pr-3"
             placeholder="Search patients, visits, or lab tests"
           />
         </div>
@@ -627,26 +630,27 @@ function ResultEntryForm({
           {submitError ? <ErrorState message={submitError} /> : null}
 
           <div className="grid gap-4">
-            <label className="grid gap-2 text-sm font-medium">
-              Result Value *
-              <input
+            <div className="grid gap-2">
+              <Label htmlFor="lab_result_value">Result Value *</Label>
+              <Input
+                id="lab_result_value"
                 value={resultValue}
                 onChange={(event) => setResultValue(event.target.value)}
                 disabled={readOnly || submitting}
-                className="h-11 rounded-lg border border-[#cbd8e2] px-3 outline-none focus:border-[#00758d] disabled:bg-[#eef3f7]"
                 placeholder="Enter result value"
               />
-            </label>
-            <label className="grid gap-2 text-sm font-medium">
-              Result Notes
-              <textarea
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="lab_result_notes">Result Notes</Label>
+              <Textarea
+                id="lab_result_notes"
                 value={resultNotes}
                 onChange={(event) => setResultNotes(event.target.value)}
                 disabled={readOnly || submitting}
-                className="min-h-28 resize-y rounded-lg border border-[#cbd8e2] p-3 outline-none focus:border-[#00758d] disabled:bg-[#eef3f7]"
+                className="resize-y"
                 placeholder="Optional notes for this result"
               />
-            </label>
+            </div>
           </div>
         </div>
 
@@ -787,10 +791,10 @@ function SearchBox({ value, onChange, placeholder }: { value: string; onChange: 
   return (
     <div className="relative w-full max-w-xl">
       <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#7a8ca1]" />
-      <input
+      <Input
         value={value}
         onChange={(event) => onChange(event.target.value)}
-        className="h-10 w-full rounded-lg border border-[#cbd8e2] bg-white pl-10 pr-3 text-sm outline-none focus:border-[#00758d]"
+        className="h-10 bg-white pl-10 pr-3"
         placeholder={placeholder}
       />
     </div>

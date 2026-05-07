@@ -16,6 +16,9 @@ import {
   Settings,
 } from "lucide-react";
 import { Badge, badgeTone } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { navigationByRole } from "@/lib/constants/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
@@ -423,9 +426,9 @@ function PatientTopbar({ profile, patient }: { profile: AppProfile; patient: Pat
         </Link>
         <div className="relative hidden w-full max-w-md sm:block">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#7a8ca1]" />
-          <input
+          <Input
             aria-label="Search patient portal"
-            className="h-10 w-full rounded-lg border border-[#cbd8e2] bg-[#f4f8fb] pl-10 pr-3 text-sm outline-none focus:border-[#00758d]"
+            className="h-10 bg-[#f4f8fb] pl-10 pr-3"
             placeholder="Search your visits, labs, or medicines"
           />
         </div>
@@ -617,34 +620,37 @@ function PatientProfilePage({
         ) : (
           <form onSubmit={handleSubmit} className="grid gap-5">
             <div className="grid gap-4 lg:grid-cols-2">
-              <label className="grid gap-2 text-sm font-medium text-[#41546b]">
-                Phone
-                <input
+              <div className="grid gap-2">
+                <Label htmlFor="patient_phone">Phone</Label>
+                <Input
+                  id="patient_phone"
                   value={form.phone}
                   onChange={(event) => setForm((current) => ({ ...current, phone: event.target.value }))}
-                  className="h-11 rounded-lg border border-[#cbd8e2] bg-[#f4f8fb] px-3 text-sm text-[#17212f] outline-none focus:border-[#00758d]"
+                  className="bg-[#f4f8fb] text-[#17212f]"
                   disabled={saving}
                 />
-              </label>
-              <label className="grid gap-2 text-sm font-medium text-[#41546b]">
-                Emergency Phone
-                <input
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="patient_emergency_phone">Emergency Phone</Label>
+                <Input
+                  id="patient_emergency_phone"
                   value={form.emergency_phone}
                   onChange={(event) => setForm((current) => ({ ...current, emergency_phone: event.target.value }))}
-                  className="h-11 rounded-lg border border-[#cbd8e2] bg-[#f4f8fb] px-3 text-sm text-[#17212f] outline-none focus:border-[#00758d]"
+                  className="bg-[#f4f8fb] text-[#17212f]"
                   disabled={saving}
                 />
-              </label>
+              </div>
             </div>
-            <label className="grid gap-2 text-sm font-medium text-[#41546b]">
-              Address
-              <textarea
+            <div className="grid gap-2">
+              <Label htmlFor="patient_address">Address</Label>
+              <Textarea
+                id="patient_address"
                 value={form.address}
                 onChange={(event) => setForm((current) => ({ ...current, address: event.target.value }))}
-                className="min-h-28 rounded-lg border border-[#cbd8e2] bg-[#f4f8fb] px-3 py-2 text-sm text-[#17212f] outline-none focus:border-[#00758d]"
+                className="bg-[#f4f8fb] text-[#17212f]"
                 disabled={saving}
               />
-            </label>
+            </div>
             {formError ? <ErrorState message={formError} /> : null}
             <div className="flex flex-wrap justify-end gap-3">
               <button type="button" onClick={cancelEditing} disabled={saving} className="h-10 rounded-lg border border-[#cbd8e2] px-4 text-sm font-semibold text-[#41546b]">
@@ -944,12 +950,13 @@ function PatientAppointmentRequestsPage({ supabase, patient }: { supabase: Patie
       <DataCard title="Request Appointment">
         <form onSubmit={handleSubmit} className="grid gap-5">
           <div className="grid gap-4 lg:grid-cols-2">
-            <label className="grid gap-2 text-sm font-medium text-[#41546b]">
-              Department
+            <div className="grid gap-2">
+              <Label htmlFor="appointment_department">Department</Label>
               <select
+                id="appointment_department"
                 value={form.requested_department_id}
                 onChange={(event) => setForm((current) => ({ ...current, requested_department_id: event.target.value }))}
-                className="h-11 rounded-lg border border-[#cbd8e2] bg-[#f4f8fb] px-3 text-sm text-[#17212f] outline-none focus:border-[#00758d]"
+                className="h-11 rounded-lg border border-[#cbd8e2] bg-[#f4f8fb] px-3 text-sm text-[#17212f] outline-none focus:border-[#00758d] focus:ring-3 focus:ring-[#00758d]/15"
                 disabled={saving || departmentsState.loading}
               >
                 <option value="">No department preference</option>
@@ -964,31 +971,33 @@ function PatientAppointmentRequestsPage({ supabase, patient }: { supabase: Patie
               {!departmentsState.loading && !departmentsState.error && departmentsState.data.length === 0 ? (
                 <span className="text-xs text-[#607084]">No active departments are available to select.</span>
               ) : null}
-            </label>
+            </div>
 
-            <label className="grid gap-2 text-sm font-medium text-[#41546b]">
-              Preferred Date
-              <input
+            <div className="grid gap-2">
+              <Label htmlFor="appointment_preferred_date">Preferred Date</Label>
+              <Input
+                id="appointment_preferred_date"
                 type="date"
                 value={form.preferred_date}
                 min={todayDateInputValue()}
                 onChange={(event) => setForm((current) => ({ ...current, preferred_date: event.target.value }))}
-                className="h-11 rounded-lg border border-[#cbd8e2] bg-[#f4f8fb] px-3 text-sm text-[#17212f] outline-none focus:border-[#00758d]"
+                className="bg-[#f4f8fb] text-[#17212f]"
                 disabled={saving}
               />
-            </label>
+            </div>
           </div>
 
-          <label className="grid gap-2 text-sm font-medium text-[#41546b]">
-            Reason
-            <textarea
+          <div className="grid gap-2">
+            <Label htmlFor="appointment_reason">Reason</Label>
+            <Textarea
+              id="appointment_reason"
               value={form.reason}
               onChange={(event) => setForm((current) => ({ ...current, reason: event.target.value }))}
-              className="min-h-28 rounded-lg border border-[#cbd8e2] bg-[#f4f8fb] px-3 py-2 text-sm text-[#17212f] outline-none focus:border-[#00758d]"
+              className="bg-[#f4f8fb] text-[#17212f]"
               placeholder="Briefly describe the reason for your appointment request"
               disabled={saving}
             />
-          </label>
+          </div>
 
           {formError ? <ErrorState message={formError} /> : null}
           {successMessage ? <div className="rounded-lg border border-[#a8dfb7] bg-[#effaf2] p-4 text-sm text-[#087a35]">{successMessage}</div> : null}
@@ -1405,10 +1414,10 @@ function SearchField({ value, onChange, placeholder }: { value: string; onChange
   return (
     <span className="relative block">
       <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#7a8ca1]" />
-      <input
+      <Input
         value={value}
         onChange={(event) => onChange(event.target.value)}
-        className="h-10 w-full rounded-lg border border-[#cbd8e2] bg-[#f4f8fb] pl-10 pr-3 text-sm outline-none focus:border-[#00758d]"
+        className="h-10 bg-[#f4f8fb] pl-10 pr-3"
         placeholder={placeholder}
       />
     </span>

@@ -19,6 +19,9 @@ import {
   Settings,
 } from "lucide-react";
 import { Badge, badgeTone } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { navigationByRole } from "@/lib/constants/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
@@ -346,9 +349,9 @@ function PharmacyTopbar({ profile }: { profile: AppProfile }) {
         </Link>
         <div className="relative hidden w-full max-w-md sm:block">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#7a8ca1]" />
-          <input
+          <Input
             aria-label="Search pharmacy workspace"
-            className="h-10 w-full rounded-lg border border-[#cbd8e2] bg-[#f4f8fb] pl-10 pr-3 text-sm outline-none focus:border-[#00758d]"
+            className="h-10 bg-[#f4f8fb] pl-10 pr-3"
             placeholder="Search prescriptions, patients, or medicines"
           />
         </div>
@@ -705,12 +708,13 @@ function AddStockBatchPanel({
         {!medicines.loading && !medicines.error && medicines.data.length > 0 ? (
           <>
             <div className="grid gap-5 lg:grid-cols-3">
-              <label className="grid gap-2 text-sm font-medium lg:col-span-2">
-                Medicine
+              <div className="grid gap-2 lg:col-span-2">
+                <Label htmlFor="stock_medicine">Medicine</Label>
                 <select
+                  id="stock_medicine"
                   value={values.medicine_id}
                   onChange={(event) => updateField("medicine_id", event.target.value)}
-                  className="h-11 rounded-lg border border-[#cbd8e2] px-3 outline-none focus:border-[#00758d]"
+                  className="h-11 rounded-lg border border-[#cbd8e2] px-3 outline-none focus:border-[#00758d] focus:ring-3 focus:ring-[#00758d]/15"
                 >
                   <option value="">Select active medicine</option>
                   {medicines.data.map((medicine) => (
@@ -719,13 +723,14 @@ function AddStockBatchPanel({
                     </option>
                   ))}
                 </select>
-              </label>
-              <label className="grid gap-2 text-sm font-medium">
-                Status
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="stock_status">Status</Label>
                 <select
+                  id="stock_status"
                   value={values.status}
                   onChange={(event) => updateField("status", event.target.value as BatchFormStatus)}
-                  className="h-11 rounded-lg border border-[#cbd8e2] px-3 outline-none focus:border-[#00758d]"
+                  className="h-11 rounded-lg border border-[#cbd8e2] px-3 outline-none focus:border-[#00758d] focus:ring-3 focus:ring-[#00758d]/15"
                 >
                   {batchStatusOptions.map((status) => (
                     <option key={status} value={status}>
@@ -733,48 +738,48 @@ function AddStockBatchPanel({
                     </option>
                   ))}
                 </select>
-              </label>
-              <label className="grid gap-2 text-sm font-medium">
-                Quantity
-                <input
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="stock_quantity">Quantity</Label>
+                <Input
+                  id="stock_quantity"
                   value={values.quantity}
                   onChange={(event) => updateField("quantity", event.target.value)}
                   inputMode="numeric"
-                  className="h-11 rounded-lg border border-[#cbd8e2] px-3 outline-none focus:border-[#00758d]"
                   placeholder="Required"
                 />
-              </label>
-              <label className="grid gap-2 text-sm font-medium">
-                Unit Price
-                <input
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="stock_unit_price">Unit Price</Label>
+                <Input
+                  id="stock_unit_price"
                   value={values.unit_price}
                   onChange={(event) => updateField("unit_price", event.target.value)}
                   inputMode="decimal"
-                  className="h-11 rounded-lg border border-[#cbd8e2] px-3 outline-none focus:border-[#00758d]"
                   placeholder="Optional"
                 />
-              </label>
-              <label className="grid gap-2 text-sm font-medium">
-                Expiry Date
-                <input
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="stock_expiry_date">Expiry Date</Label>
+                <Input
+                  id="stock_expiry_date"
                   type="date"
                   value={values.expiry_date}
                   onChange={(event) => updateField("expiry_date", event.target.value)}
-                  className="h-11 rounded-lg border border-[#cbd8e2] px-3 outline-none focus:border-[#00758d]"
                 />
-              </label>
-              <label className="grid gap-2 text-sm font-medium">
-                Batch Number
-                <input value={values.batch_number} onChange={(event) => updateField("batch_number", event.target.value)} className="h-11 rounded-lg border border-[#cbd8e2] px-3 outline-none focus:border-[#00758d]" placeholder="Optional" />
-              </label>
-              <label className="grid gap-2 text-sm font-medium">
-                Receipt Number
-                <input value={values.receipt_number} onChange={(event) => updateField("receipt_number", event.target.value)} className="h-11 rounded-lg border border-[#cbd8e2] px-3 outline-none focus:border-[#00758d]" placeholder="Optional" />
-              </label>
-              <label className="grid gap-2 text-sm font-medium">
-                Manufacturer
-                <input value={values.manufacturer} onChange={(event) => updateField("manufacturer", event.target.value)} className="h-11 rounded-lg border border-[#cbd8e2] px-3 outline-none focus:border-[#00758d]" placeholder="Optional" />
-              </label>
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="stock_batch_number">Batch Number</Label>
+                <Input id="stock_batch_number" value={values.batch_number} onChange={(event) => updateField("batch_number", event.target.value)} placeholder="Optional" />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="stock_receipt_number">Receipt Number</Label>
+                <Input id="stock_receipt_number" value={values.receipt_number} onChange={(event) => updateField("receipt_number", event.target.value)} placeholder="Optional" />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="stock_manufacturer">Manufacturer</Label>
+                <Input id="stock_manufacturer" value={values.manufacturer} onChange={(event) => updateField("manufacturer", event.target.value)} placeholder="Optional" />
+              </div>
             </div>
 
             <div className="flex flex-wrap items-center gap-3 border-t border-[#d4e0e8] pt-5">
@@ -844,30 +849,30 @@ function NewMedicineForm({ profile }: { profile: AppProfile }) {
         <form onSubmit={handleSubmit} className="grid max-w-3xl gap-5">
           {error ? <ErrorState message={error} /> : null}
           {message ? <SuccessState message={message} /> : null}
-          <label className="grid gap-2 text-sm font-medium">
-            Name
-            <input value={name} onChange={(event) => setName(event.target.value)} className="h-11 rounded-lg border border-[#cbd8e2] px-3 outline-none focus:border-[#00758d]" placeholder="Medicine name" />
-          </label>
-          <label className="grid gap-2 text-sm font-medium">
-            Category
-            <input value={category} onChange={(event) => setCategory(event.target.value)} className="h-11 rounded-lg border border-[#cbd8e2] px-3 outline-none focus:border-[#00758d]" placeholder="Optional category" />
-          </label>
-          <label className="grid gap-2 text-sm font-medium">
-            Description
-            <textarea
+          <div className="grid gap-2">
+            <Label htmlFor="medicine_name">Name</Label>
+            <Input id="medicine_name" value={name} onChange={(event) => setName(event.target.value)} placeholder="Medicine name" />
+          </div>
+          <div className="grid gap-2">
+            <Label htmlFor="medicine_category">Category</Label>
+            <Input id="medicine_category" value={category} onChange={(event) => setCategory(event.target.value)} placeholder="Optional category" />
+          </div>
+          <div className="grid gap-2">
+            <Label htmlFor="medicine_description">Description</Label>
+            <Textarea
+              id="medicine_description"
               value={description}
               onChange={(event) => setDescription(event.target.value)}
-              className="min-h-28 rounded-lg border border-[#cbd8e2] px-3 py-2 outline-none focus:border-[#00758d]"
               placeholder="Optional description"
             />
-          </label>
-          <label className="grid gap-2 text-sm font-medium">
-            Status
-            <select value={status} onChange={(event) => setStatus(event.target.value)} className="h-11 rounded-lg border border-[#cbd8e2] px-3 outline-none focus:border-[#00758d]">
+          </div>
+          <div className="grid gap-2">
+            <Label htmlFor="medicine_status">Status</Label>
+            <select id="medicine_status" value={status} onChange={(event) => setStatus(event.target.value)} className="h-11 rounded-lg border border-[#cbd8e2] px-3 outline-none focus:border-[#00758d] focus:ring-3 focus:ring-[#00758d]/15">
               <option value="active">Active</option>
               <option value="inactive">Inactive</option>
             </select>
-          </label>
+          </div>
           <div className="flex items-center gap-3">
             <button disabled={saving} className="inline-flex h-11 items-center gap-2 rounded-lg bg-[#006d86] px-5 text-sm font-semibold text-white disabled:opacity-60">
               {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <PackagePlus className="h-4 w-4" />}
@@ -1132,16 +1137,16 @@ function DispenseModal({
             </div>
           </div>
 
-          <label className="grid max-w-xs gap-2 text-sm font-medium">
-            Quantity to dispense
-            <input
+          <div className="grid max-w-xs gap-2">
+            <Label htmlFor="dispense_quantity">Quantity to dispense</Label>
+            <Input
+              id="dispense_quantity"
               value={quantity}
               onChange={(event) => setQuantity(event.target.value)}
               inputMode="numeric"
-              className="h-11 rounded-lg border border-[#cbd8e2] px-3 outline-none focus:border-[#00758d]"
               placeholder="Enter quantity"
             />
-          </label>
+          </div>
 
           <div className="flex flex-wrap items-center gap-3 border-t border-[#d4e0e8] pt-5">
             <button disabled={submitting || stockState.loading} className="inline-flex h-11 items-center gap-2 rounded-lg bg-[#006d86] px-5 text-sm font-semibold text-white disabled:opacity-60">
@@ -1316,10 +1321,10 @@ function SearchInput({ value, onChange, placeholder }: { value: string; onChange
   return (
     <span className="relative block">
       <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#7a8ca1]" />
-      <input
+      <Input
         value={value}
         onChange={(event) => onChange(event.target.value)}
-        className="h-10 w-full rounded-lg border border-[#cbd8e2] bg-[#f4f8fb] pl-10 pr-3 text-sm outline-none focus:border-[#00758d]"
+        className="h-10 bg-[#f4f8fb] pl-10 pr-3"
         placeholder={placeholder}
       />
     </span>

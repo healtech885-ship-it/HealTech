@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { AlertTriangle, Info, UserPlus } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 export function ReceptionAddPatientView() {
   return (
@@ -89,10 +91,10 @@ export function ReceptionAddPatientView() {
             </legend>
             <div className="mt-2">
               <div className="flex items-center justify-between">
-                <p className="text-sm font-medium">Medical Record Number (MRN)</p>
+                <Label htmlFor="pending_mrn">Medical Record Number (MRN)</Label>
                 <span className="rounded bg-[#e8ecf1] px-2 py-0.5 text-xs text-[#64717a]">Auto-generated</span>
               </div>
-              <input className="mt-1 h-10 w-full rounded-lg border border-[#d7e1e7] bg-[#f5f9fc] px-3 text-sm" value="Pending Creation..." disabled />
+              <Input id="pending_mrn" className="mt-1" value="Pending Creation..." disabled />
             </div>
             <div className="mt-4">
               <p className="text-sm font-medium">Patient Type <span className="text-[#d32f2f]">*</span></p>
@@ -143,16 +145,18 @@ export function ReceptionAddPatientView() {
 function FormField({ label, required, type = "text", placeholder, defaultValue, options }: {
   label: string; required?: boolean; type?: string; placeholder?: string; defaultValue?: string; options?: string[];
 }) {
+  const id = label.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "");
+
   return (
-    <label className="block">
-      <span className="text-sm font-medium">{label}{required && <span className="text-[#d32f2f]"> *</span>}</span>
+    <div className="grid gap-1.5">
+      <Label htmlFor={id}>{label}{required && <span className="text-[#d32f2f]"> *</span>}</Label>
       {type === "select" ? (
-        <select className="mt-1 h-10 w-full rounded-lg border border-[#c8d5de] bg-white px-3 text-sm outline-none focus:border-[#0b9ab5]" defaultValue={defaultValue}>
+        <select id={id} className="h-11 w-full rounded-lg border border-[#c8d5de] bg-white px-3 text-sm outline-none focus:border-[#0b9ab5] focus:ring-3 focus:ring-[#00758d]/15" defaultValue={defaultValue}>
           {(options ?? []).map((o) => <option key={o}>{o}</option>)}
         </select>
       ) : (
-        <input type={type} className="mt-1 h-10 w-full rounded-lg border border-[#c8d5de] bg-white px-3 text-sm outline-none focus:border-[#0b9ab5]" placeholder={placeholder} defaultValue={defaultValue} />
+        <Input id={id} type={type} placeholder={placeholder} defaultValue={defaultValue} />
       )}
-    </label>
+    </div>
   );
 }

@@ -1,5 +1,8 @@
 import Link from "next/link";
 import { AlertCircle, Calendar, Clock3, Info, Search, Stethoscope, UserPlus } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { AvatarCircle } from "./reception-shell";
 
 const recentPatients = [
@@ -46,7 +49,7 @@ export function ReceptionCreateVisitView() {
             <div className="mt-4 flex gap-3">
               <div className="relative flex-1">
                 <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8293a8]" />
-                <input className="h-11 w-full rounded-lg border border-[#c8d5de] bg-white pl-11 pr-4 text-sm outline-none placeholder:text-[#8293a8] focus:border-[#0b9ab5]" placeholder="Search patient by name, MRN, or phone..." />
+                <Input className="pl-11 pr-4" placeholder="Search patient by name, MRN, or phone..." />
               </div>
               <button className="h-11 rounded-lg bg-[#0b9ab5] px-5 text-sm font-semibold text-white">Search</button>
             </div>
@@ -75,10 +78,10 @@ export function ReceptionCreateVisitView() {
               <FormField label="Department" type="select" options={["General Practice", "Internal Medicine", "Pediatrics", "Orthopedics", "Cardiology"]} defaultValue="General Practice" />
             </div>
             <div className="mt-4">
-              <label className="block">
-                <span className="text-sm font-medium">Chief Complaint <span className="text-[#d32f2f]">*</span></span>
-                <textarea className="mt-1 min-h-[100px] w-full rounded-lg border border-[#c8d5de] bg-white p-3 text-sm outline-none focus:border-[#0b9ab5]" placeholder="Describe the patient's primary reason for the visit..." defaultValue="Routine checkup, patient reports mild headache for 3 days." />
-              </label>
+              <div className="grid gap-1.5">
+                <Label htmlFor="chief_complaint">Chief Complaint <span className="text-[#d32f2f]">*</span></Label>
+                <Textarea id="chief_complaint" placeholder="Describe the patient's primary reason for the visit..." defaultValue="Routine checkup, patient reports mild headache for 3 days." />
+              </div>
             </div>
             <div className="mt-4">
               <FormField label="Symptoms (optional)" placeholder="e.g. Headache, Fatigue, Mild fever" />
@@ -157,16 +160,18 @@ export function ReceptionCreateVisitView() {
 function FormField({ label, required, type = "text", placeholder, defaultValue, options }: {
   label: string; required?: boolean; type?: string; placeholder?: string; defaultValue?: string; options?: string[];
 }) {
+  const id = label.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "");
+
   return (
-    <label className="block">
-      <span className="text-sm font-medium">{label}{required && <span className="text-[#d32f2f]"> *</span>}</span>
+    <div className="grid gap-1.5">
+      <Label htmlFor={id}>{label}{required && <span className="text-[#d32f2f]"> *</span>}</Label>
       {type === "select" ? (
-        <select className="mt-1 h-10 w-full rounded-lg border border-[#c8d5de] bg-white px-3 text-sm outline-none focus:border-[#0b9ab5]" defaultValue={defaultValue}>
+        <select id={id} className="h-11 w-full rounded-lg border border-[#c8d5de] bg-white px-3 text-sm outline-none focus:border-[#0b9ab5] focus:ring-3 focus:ring-[#00758d]/15" defaultValue={defaultValue}>
           {(options ?? []).map((o) => <option key={o}>{o}</option>)}
         </select>
       ) : (
-        <input type={type} className="mt-1 h-10 w-full rounded-lg border border-[#c8d5de] bg-white px-3 text-sm outline-none focus:border-[#0b9ab5]" placeholder={placeholder} defaultValue={defaultValue} />
+        <Input id={id} type={type} placeholder={placeholder} defaultValue={defaultValue} />
       )}
-    </label>
+    </div>
   );
 }
