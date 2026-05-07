@@ -55,10 +55,10 @@ export function Checkbox({
       onChange={handleChange}
       isDisabled={disabled}
       isRequired={required}
-      className={cn("group flex items-center gap-2 text-sm font-medium text-[var(--on-surface-variant)]", className)}
+      className={cn("group flex items-center gap-2 text-sm font-medium text-[var(--on-surface-variant)] data-[disabled=true]:cursor-not-allowed data-[disabled=true]:text-[var(--muted)]", className)}
     >
-      <HeroUICheckbox.Control className="border border-[var(--border)] bg-[var(--surface-elevated)] shadow-[inset_0_1px_1px_rgba(11,19,32,0.03)] group-data-[focus-visible=true]:ring-3 group-data-[focus-visible=true]:ring-[var(--focus-ring)] group-data-[selected=true]:border-[var(--primary)] group-data-[selected=true]:bg-[var(--primary)]" />
-      <HeroUICheckbox.Indicator />
+      <HeroUICheckbox.Control className="border border-[var(--field-border)] bg-[var(--field-background)] shadow-sm group-data-[disabled=true]:bg-[var(--surface-muted)] group-data-[focus-visible=true]:ring-3 group-data-[focus-visible=true]:ring-[var(--focus-ring)] group-data-[selected=true]:border-[var(--primary)] group-data-[selected=true]:bg-[var(--primary)]" />
+      <HeroUICheckbox.Indicator className="text-[var(--primary-foreground)]" />
       {children ? <HeroUICheckbox.Content>{children}</HeroUICheckbox.Content> : null}
     </HeroUICheckbox>
   );

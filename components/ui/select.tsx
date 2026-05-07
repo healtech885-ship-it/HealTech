@@ -87,14 +87,14 @@ export function Select({
     >
       <HeroUISelect.Trigger
         className={cn(
-          "h-11 w-full rounded-lg border border-[var(--border)] bg-[var(--surface-elevated)] px-3 text-[15px] text-[var(--on-surface)] shadow-[inset_0_1px_1px_rgba(11,19,32,0.03)] outline-none transition-colors hover:border-[var(--border-strong)] data-[focus-visible=true]:border-[var(--primary)] data-[focus-visible=true]:ring-3 data-[focus-visible=true]:ring-[var(--focus-ring)] data-[disabled=true]:cursor-not-allowed data-[disabled=true]:bg-[var(--surface-muted)] data-[disabled=true]:text-[var(--muted)]",
+          "h-11 w-full rounded-lg border border-[var(--field-border)] bg-[var(--field-background)] px-3 text-[15px] text-[var(--field-foreground)] shadow-sm outline-none transition-colors hover:border-[var(--border-strong)] data-[focus-visible=true]:border-[var(--focus)] data-[focus-visible=true]:ring-3 data-[focus-visible=true]:ring-[var(--focus-ring)] data-[disabled=true]:cursor-not-allowed data-[disabled=true]:bg-[var(--surface-muted)] data-[disabled=true]:text-[var(--muted)]",
           triggerClassName,
         )}
       >
-        <HeroUISelect.Value className="truncate data-[placeholder=true]:text-[var(--muted)]" />
+        <HeroUISelect.Value className="truncate data-[placeholder=true]:text-[var(--field-placeholder)]" />
         <HeroUISelect.Indicator className="text-[var(--on-surface-variant)]" />
       </HeroUISelect.Trigger>
-      <HeroUISelect.Popover className={cn("rounded-xl border border-[var(--border)] bg-[var(--surface-elevated)] p-1 shadow-[0_18px_40px_rgba(11,19,32,0.16)]", popoverClassName)}>
+      <HeroUISelect.Popover className={cn("rounded-xl border border-[var(--border)] bg-[var(--surface-elevated)] p-1 shadow-lg", popoverClassName)}>
         <ListBox>
           {renderedOptions.map((option) => (
             <ListBox.Item
@@ -102,7 +102,7 @@ export function Select({
               id={option.value}
               textValue={option.label}
               isDisabled={option.disabled}
-              className="min-h-10 rounded-lg px-3 py-2 text-sm text-[var(--on-surface)] outline-none hover:bg-[var(--surface-muted)] data-[focused=true]:bg-[var(--surface-muted)] data-[selected=true]:bg-[var(--secondary-container)] data-[selected=true]:font-semibold data-[selected=true]:text-[var(--primary)]"
+              className="min-h-10 rounded-lg px-3 py-2 text-sm text-[var(--on-surface)] outline-none hover:bg-[var(--surface-muted)] data-[disabled=true]:text-[var(--muted)] data-[focused=true]:bg-[var(--surface-muted)] data-[selected=true]:bg-[var(--secondary-container)] data-[selected=true]:font-semibold data-[selected=true]:text-[var(--primary)]"
             >
               {option.label}
             </ListBox.Item>

@@ -1,13 +1,14 @@
+import type * as React from "react";
 import { Chip as HeroUIChip } from "@heroui/react/chip";
 import { cn } from "@/lib/utils";
 import type { StatusTone } from "@/types/app.types";
 
 const toneClasses: Record<StatusTone, string> = {
-  neutral: "border-[var(--border)] bg-[var(--surface-muted)] text-[var(--muted)]",
-  info: "border-[#d7d4ef] bg-[var(--tertiary-container)] text-[#5b5797]",
-  success: "border-[#b8ded2] bg-[var(--success-container)] text-[var(--success)]",
-  warning: "border-[#ead39a] bg-[var(--warning-container)] text-[var(--warning)]",
-  danger: "border-[#efb7aa] bg-[var(--error-container)] text-[var(--danger)]",
+  neutral: "border-[var(--border)] bg-[var(--surface-muted)] text-[var(--on-surface-variant)]",
+  info: "border-[var(--info)] bg-[var(--info-container)] text-[var(--info)]",
+  success: "border-[var(--success)] bg-[var(--success-container)] text-[var(--success)]",
+  warning: "border-[var(--warning)] bg-[var(--warning-container)] text-[var(--warning)]",
+  danger: "border-[var(--danger)] bg-[var(--danger-container)] text-[var(--danger)]",
 };
 
 export function badgeTone(status: string): StatusTone {

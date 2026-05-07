@@ -13,7 +13,7 @@ import { cn } from "@/lib/utils";
 export function Card({ children, className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
   return (
     <HeroUICard
-      className={cn("clinical-card gap-0 rounded-lg p-0", className)}
+      className={cn("clinical-card gap-0 rounded-lg border border-[var(--border)] bg-[var(--surface-elevated)] p-0 text-[var(--on-surface)]", className)}
       render={(renderProps) => <section {...renderProps} />}
       {...props}
     >
@@ -23,7 +23,7 @@ export function Card({ children, className, ...props }: React.HTMLAttributes<HTM
 }
 
 export function CardHeader({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
-  return <HeroUICardHeader className={cn("gap-0 border-b border-border px-6 py-5", className)} {...props} />;
+  return <HeroUICardHeader className={cn("gap-0 border-b border-[var(--border)] px-6 py-5", className)} {...props} />;
 }
 
 export function CardTitle({ className, ...props }: React.HTMLAttributes<HTMLHeadingElement>) {

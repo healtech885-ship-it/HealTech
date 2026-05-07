@@ -16,11 +16,11 @@ const alertStatus: Record<Exclude<FeedbackTone, "neutral">, "success" | "warning
 };
 
 const alertClasses: Record<FeedbackTone, string> = {
-  success: "border-[#b8ded2] bg-[var(--success-container)] text-[var(--success)]",
-  warning: "border-[#ead39a] bg-[var(--warning-container)] text-[var(--warning)]",
-  danger: "border-[#efb7aa] bg-[var(--error-container)] text-[var(--danger)]",
-  info: "border-[#d7d4ef] bg-[var(--tertiary-container)] text-[#5b5797]",
-  neutral: "border-[var(--border)] bg-[var(--surface-muted)] text-[var(--muted)]",
+  success: "border-[var(--success)] bg-[var(--success-container)] text-[var(--success)]",
+  warning: "border-[var(--warning)] bg-[var(--warning-container)] text-[var(--warning)]",
+  danger: "border-[var(--danger)] bg-[var(--danger-container)] text-[var(--danger)]",
+  info: "border-[var(--info)] bg-[var(--info-container)] text-[var(--info)]",
+  neutral: "border-[var(--border)] bg-[var(--surface-muted)] text-[var(--on-surface-variant)]",
 };
 
 export function LoadingState({

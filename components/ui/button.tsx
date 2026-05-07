@@ -6,14 +6,14 @@ import { Button as HeroUIButton } from "@heroui/react/button";
 import { cn } from "@/lib/utils";
 
 const buttonVariants = cva(
-  "inline-flex h-10 items-center justify-center gap-2 rounded-lg px-4 text-sm font-semibold transition-colors focus:outline-none focus:ring-3 focus:ring-[var(--focus-ring)] disabled:pointer-events-none disabled:opacity-50",
+  "inline-flex h-10 items-center justify-center gap-2 rounded-lg px-4 text-sm font-semibold transition-colors focus:outline-none focus:ring-3 focus:ring-[var(--focus-ring)] disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-60 data-[disabled=true]:pointer-events-none data-[disabled=true]:cursor-not-allowed data-[disabled=true]:opacity-60",
   {
     variants: {
       variant: {
-        primary: "bg-primary text-primary-foreground shadow-[0_10px_22px_rgba(14,124,123,0.16)] hover:bg-[var(--primary-container)]",
+        primary: "bg-primary text-primary-foreground shadow-sm hover:bg-[var(--primary-container)]",
         secondary: "border border-border bg-[var(--surface-elevated)] text-[var(--on-surface)] hover:bg-[var(--surface-muted)]",
         ghost: "text-[var(--on-surface-variant)] hover:bg-muted",
-        destructive: "bg-destructive text-white hover:bg-[#963924]",
+        destructive: "bg-danger text-danger-foreground shadow-sm hover:brightness-95",
       },
       size: {
         sm: "h-8 px-3 text-xs",

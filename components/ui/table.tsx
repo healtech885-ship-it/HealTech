@@ -16,7 +16,7 @@ export function TableFrame({
   return (
     <HeroUITable.Root
       variant="primary"
-      className={cn("overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--surface-elevated)] shadow-sm", className)}
+      className={cn("overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--surface-elevated)] text-[var(--on-surface)] shadow-sm", className)}
     >
       <HeroUITable.ScrollContainer className={cn("max-w-full overflow-auto overscroll-contain", scrollClassName)}>
         {children}

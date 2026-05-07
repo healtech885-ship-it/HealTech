@@ -49,9 +49,9 @@ export function Switch({
       defaultSelected={defaultChecked}
       onChange={handleChange}
       isDisabled={disabled}
-      className={cn("group inline-flex items-center gap-3 text-sm font-medium text-[var(--on-surface-variant)]", className)}
+      className={cn("group inline-flex items-center gap-3 text-sm font-medium text-[var(--on-surface-variant)] data-[disabled=true]:cursor-not-allowed data-[disabled=true]:text-[var(--muted)]", className)}
     >
-      <HeroUISwitch.Control className="bg-[var(--border)] group-data-[focus-visible=true]:ring-3 group-data-[focus-visible=true]:ring-[var(--focus-ring)] group-data-[selected=true]:bg-[var(--primary)]" />
+      <HeroUISwitch.Control className="bg-[var(--field-border)] group-data-[disabled=true]:bg-[var(--border)] group-data-[focus-visible=true]:ring-3 group-data-[focus-visible=true]:ring-[var(--focus-ring)] group-data-[selected=true]:bg-[var(--primary)]" />
       <HeroUISwitch.Thumb />
       {children ? <HeroUISwitch.Content>{children}</HeroUISwitch.Content> : null}
     </HeroUISwitch>
