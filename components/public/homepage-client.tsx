@@ -806,16 +806,17 @@ export function HomepageClient() {
         </div>
       </section>
 
-      <section id="explore" className="mx-auto w-[min(1200px,calc(100%_-_32px))] py-16 lg:py-24">
+      <section id="explore" className="-mt-px bg-[#181818] py-16 text-white lg:py-24">
+        <div className="mx-auto w-[min(1200px,calc(100%_-_32px))]">
         <div className="flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
           <div>
-            <h2 className="text-[32px] font-bold leading-tight text-[#181818] md:text-[42px]">Explore clinic workflow families</h2>
-            <p className="mt-3 max-w-[660px] text-base leading-7 text-[#5e6d55]">
+            <h2 className="text-[32px] font-bold leading-tight text-white md:text-[42px]">Explore clinic workflow families</h2>
+            <p className="mt-3 max-w-[660px] text-base font-semibold leading-7 text-white/58">
               Browse the operational areas HealTech connects from first patient contact to follow-up.
             </p>
           </div>
           {activeSearch ? (
-            <p className="rounded-full bg-[#f2f7f2] px-4 py-2 text-sm font-semibold text-[#13544e]">
+            <p className="rounded-full border border-white/12 bg-white/8 px-4 py-2 text-sm font-semibold text-[#b7f4ad]">
               Highlighting: {activeSearch}
             </p>
           ) : null}
@@ -829,31 +830,32 @@ export function HomepageClient() {
               <a
                 key={category.title}
                 href={category.href}
-                className={`group flex min-h-[228px] flex-col rounded-[20px] border bg-white p-6 transition ${
+                className={`group flex min-h-[228px] flex-col rounded-[22px] border bg-white/[0.055] p-6 shadow-[0_18px_50px_rgba(0,0,0,0.18)] transition ${
                   isMatched
-                    ? "border-[#d9d9d9] shadow-[0_10px_30px_rgba(0,0,0,0.04)] hover:-translate-y-1 hover:border-[#14a800] hover:shadow-[0_16px_40px_rgba(0,0,0,0.08)]"
-                    : "border-[#eef1ee] opacity-45"
+                    ? "border-white/12 hover:-translate-y-1 hover:border-[#14a800] hover:bg-white/[0.075] hover:shadow-[0_28px_70px_rgba(0,0,0,0.26)]"
+                    : "border-white/8 opacity-45"
                 }`}
               >
-                <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#f2f7f2] text-[#13544e] transition group-hover:bg-[#14a800] group-hover:text-white">
+                <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/10 text-[#b7f4ad] transition group-hover:bg-[#14a800] group-hover:text-white">
                   <Icon className="h-6 w-6" />
                 </span>
-                <h3 className="mt-5 text-xl font-bold text-[#181818]">{category.title}</h3>
-                <p className="mt-2 flex-1 text-sm leading-6 text-[#5e6d55]">{category.description}</p>
-                <span className="mt-5 inline-flex items-center gap-2 text-sm font-bold text-[#108a00]">
+                <h3 className="mt-5 text-xl font-bold text-white">{category.title}</h3>
+                <p className="mt-2 flex-1 text-sm leading-6 text-white/58">{category.description}</p>
+                <span className="mt-5 inline-flex items-center gap-2 text-sm font-bold text-[#66e45b]">
                   View workflow <ArrowRight className="h-4 w-4" />
                 </span>
               </a>
             );
           })}
         </div>
+        </div>
       </section>
 
-      <section className="bg-[#f2f7f2] py-14">
-        <div className="mx-auto grid w-[min(1200px,calc(100%_-_32px))] gap-6 rounded-[28px] border border-[#cddfcb] bg-white p-6 md:grid-cols-[0.85fr_1.15fr] md:p-8">
+      <section className="bg-[#181818] py-10 text-white">
+        <div className="mx-auto grid w-[min(1200px,calc(100%_-_32px))] gap-6 rounded-[28px] border border-white/12 bg-[linear-gradient(135deg,rgba(255,255,255,0.07),rgba(20,168,0,0.10))] p-6 shadow-[0_28px_90px_rgba(0,0,0,0.24)] md:grid-cols-[0.85fr_1.15fr] md:p-8">
           <div>
-            <h2 className="text-[28px] font-bold text-[#181818]">Find workflows by need, category, or goal</h2>
-            <p className="mt-3 text-base leading-7 text-[#5e6d55]">
+            <h2 className="text-[28px] font-bold text-white">Find workflows by need, category, or goal</h2>
+            <p className="mt-3 text-base font-semibold leading-7 text-white/58">
               Search for a workflow and HealTech will highlight the matching areas on this page.
             </p>
           </div>
@@ -862,13 +864,13 @@ export function HomepageClient() {
               <label htmlFor="discovery-search" className="sr-only">
                 Search workflow categories
               </label>
-              <div className="flex flex-col gap-3 rounded-full border border-[#d9d9d9] p-2 sm:flex-row">
+              <div className="flex flex-col gap-3 rounded-full border border-white/14 bg-black/20 p-2 sm:flex-row">
                 <input
                   id="discovery-search"
                   value={query}
                   onChange={(event) => setQuery(event.target.value)}
                   placeholder="Search workflows, roles, services, or reports"
-                  className="min-h-12 flex-1 rounded-full px-5 text-base outline-none"
+                  className="min-h-12 flex-1 rounded-full bg-transparent px-5 text-base text-white outline-none placeholder:text-white/42"
                 />
                 <button type="submit" className="min-h-12 rounded-full bg-[#14a800] px-6 text-sm font-bold text-white hover:bg-[#108a00]">
                   Find matches
@@ -880,7 +882,7 @@ export function HomepageClient() {
                 <button
                   key={suggestion}
                   type="button"
-                  className="rounded-full bg-[#f7f7f7] px-4 py-2 text-sm font-semibold text-[#13544e] hover:bg-[#e6f4e4]"
+                  className="rounded-full bg-white/10 px-4 py-2 text-sm font-semibold text-white/68 transition hover:bg-white/16 hover:text-white"
                   onClick={() => applySuggestion(suggestion)}
                 >
                   {suggestion}
@@ -891,21 +893,22 @@ export function HomepageClient() {
         </div>
       </section>
 
-      <section id="how-it-works" className="mx-auto grid w-[min(1200px,calc(100%_-_32px))] gap-10 py-16 lg:grid-cols-[0.9fr_1.1fr] lg:items-center lg:py-24">
+      <section id="how-it-works" className="bg-[#181818] py-16 text-white lg:py-24">
+        <div className="mx-auto grid w-[min(1200px,calc(100%_-_32px))] gap-10 lg:grid-cols-[0.9fr_1.1fr] lg:items-center">
         <div>
-          <h2 className="text-[32px] font-bold leading-tight text-[#181818] md:text-[42px]">How HealTech keeps clinic work moving</h2>
-          <p className="mt-4 text-base leading-7 text-[#5e6d55]">
+          <h2 className="text-[32px] font-bold leading-tight text-white md:text-[42px]">How HealTech keeps clinic work moving</h2>
+          <p className="mt-4 text-base font-semibold leading-7 text-white/58">
             The system follows the real care path: intake, clinical decisions, lab and pharmacy actions, then patient follow-up.
           </p>
           <div className="mt-8 grid gap-4">
             {steps.map((step, index) => (
-              <article key={step.title} className="grid grid-cols-[48px_1fr] gap-4 rounded-2xl border border-[#d9d9d9] bg-white p-5">
-                <span className="flex h-12 w-12 items-center justify-center rounded-full bg-[#13544e] text-lg font-bold text-white">
+              <article key={step.title} className="grid grid-cols-[48px_1fr] gap-4 rounded-2xl border border-white/12 bg-white/[0.055] p-5 shadow-[0_18px_50px_rgba(0,0,0,0.18)]">
+                <span className="flex h-12 w-12 items-center justify-center rounded-full bg-[#14a800] text-lg font-bold text-white">
                   {index + 1}
                 </span>
                 <div>
-                  <h3 className="text-lg font-bold text-[#181818]">{step.title}</h3>
-                  <p className="mt-1 text-sm leading-6 text-[#5e6d55]">{step.description}</p>
+                  <h3 className="text-lg font-bold text-white">{step.title}</h3>
+                  <p className="mt-1 text-sm leading-6 text-white/58">{step.description}</p>
                 </div>
               </article>
             ))}
@@ -918,15 +921,16 @@ export function HomepageClient() {
           height={900}
           loading="lazy"
           sizes="(min-width: 1024px) 50vw, 100vw"
-          className="h-auto w-full rounded-[32px] border border-[#d9d9d9] bg-[#f7f7f7] shadow-[0_24px_70px_rgba(0,0,0,0.10)]"
+          className="h-auto w-full rounded-[32px] border border-white/12 bg-white/[0.055] shadow-[0_30px_100px_rgba(0,0,0,0.32)]"
         />
+        </div>
       </section>
 
-      <section id="pricing" className="bg-[#f7f7f7] py-16 lg:py-24">
+      <section id="pricing" className="bg-[#181818] py-16 text-white lg:py-24">
         <div className="mx-auto w-[min(1200px,calc(100%_-_32px))]">
           <div className="max-w-[680px]">
-            <h2 className="text-[32px] font-bold leading-tight text-[#181818] md:text-[42px]">Simple paths from demo to clinic rollout</h2>
-            <p className="mt-4 text-base leading-7 text-[#5e6d55]">
+            <h2 className="text-[32px] font-bold leading-tight text-white md:text-[42px]">Simple paths from demo to clinic rollout</h2>
+            <p className="mt-4 text-base font-semibold leading-7 text-white/58">
               Pricing is scoped to your clinic setup, modules, and rollout needs. Start with demo access before making a commitment.
             </p>
           </div>
@@ -934,8 +938,8 @@ export function HomepageClient() {
             {pricingPlans.map((plan) => (
               <article
                 key={plan.name}
-                className={`rounded-[24px] border bg-white p-7 ${
-                  plan.featured ? "border-[#14a800] shadow-[0_24px_70px_rgba(20,168,0,0.16)]" : "border-[#d9d9d9]"
+                className={`rounded-[24px] border bg-white/[0.055] p-7 shadow-[0_22px_70px_rgba(0,0,0,0.22)] ${
+                  plan.featured ? "border-[#14a800] bg-[linear-gradient(145deg,rgba(20,168,0,0.18),rgba(255,255,255,0.06))] shadow-[0_28px_90px_rgba(20,168,0,0.14)]" : "border-white/12"
                 }`}
               >
                 {plan.featured ? (
@@ -943,12 +947,12 @@ export function HomepageClient() {
                     Recommended
                   </span>
                 ) : null}
-                <h3 className="mt-5 text-2xl font-bold text-[#181818]">{plan.name}</h3>
-                <p className="mt-2 text-sm leading-6 text-[#5e6d55]">{plan.subtitle}</p>
-                <p className="mt-6 text-[30px] font-bold text-[#13544e]">{plan.price}</p>
+                <h3 className="mt-5 text-2xl font-bold text-white">{plan.name}</h3>
+                <p className="mt-2 text-sm leading-6 text-white/58">{plan.subtitle}</p>
+                <p className="mt-6 text-[30px] font-bold text-[#b7f4ad]">{plan.price}</p>
                 <ul className="mt-6 grid gap-3">
                   {plan.bullets.map((bullet) => (
-                    <li key={bullet} className="flex gap-3 text-sm leading-6 text-[#181818]">
+                    <li key={bullet} className="flex gap-3 text-sm leading-6 text-white/72">
                       <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-[#14a800]" />
                       {bullet}
                     </li>
@@ -959,7 +963,7 @@ export function HomepageClient() {
                   className={`mt-7 inline-flex h-11 w-full items-center justify-center rounded-full text-sm font-bold transition ${
                     plan.featured
                       ? "bg-[#14a800] text-white hover:bg-[#108a00]"
-                      : "border border-[#181818] text-[#181818] hover:border-[#14a800] hover:text-[#108a00]"
+                      : "border border-white/70 text-white hover:border-[#14a800] hover:text-[#b7f4ad]"
                   }`}
                 >
                   {plan.cta}
