@@ -7,12 +7,10 @@ import type { LucideIcon } from "lucide-react";
 import {
   Activity,
   ArrowRight,
-  Building2,
   CheckCircle2,
   ChevronDown,
   ClipboardCheck,
   FlaskConical,
-  HeartPulse,
   LockKeyhole,
   Menu,
   MonitorCog,
@@ -22,8 +20,14 @@ import {
   Stethoscope,
   TrendingDown,
   TrendingUp,
+  Apple,
+  Facebook,
+  Instagram,
+  Linkedin,
+  Smartphone,
+  Twitter,
   UserRound,
-  UsersRound,
+  Youtube,
   X,
 } from "lucide-react";
 
@@ -286,20 +290,59 @@ const proofCards = [
 
 const footerColumns = [
   {
-    title: "For clinic teams",
-    links: ["Reception", "Doctors", "Lab teams", "Pharmacy", "Admins"],
+    title: "For clinics",
+    links: [
+      "How to start",
+      "Clinic workspace",
+      "Patient intake",
+      "Appointment flow",
+      "Visit management",
+      "Lab coordination",
+      "Pharmacy operations",
+      "Admin controls",
+      "Clinic reports",
+      "Secure rollout",
+    ],
   },
   {
-    title: "Solutions",
-    links: ["Appointments", "Visits", "Patient records", "Inventory", "Reports"],
+    title: "For care teams",
+    links: [
+      "Reception desk",
+      "Doctor workspace",
+      "Lab orders",
+      "Pharmacy stock",
+      "Patient portal",
+      "Role permissions",
+      "Follow-up care",
+      "Audit visibility",
+    ],
   },
   {
     title: "Resources",
-    links: ["How it works", "Pricing", "Security", "Demo mode", "Help"],
+    links: [
+      "Help and support",
+      "Success workflows",
+      "HealTech reviews",
+      "Resources",
+      "Blog",
+      "Implementation guide",
+      "Release notes",
+      "Security model",
+    ],
   },
   {
     title: "Company",
-    links: ["About", "Contact", "Privacy", "Terms", "Security"],
+    links: [
+      "About us",
+      "Leadership",
+      "Our impact",
+      "Careers",
+      "Press",
+      "Contact us",
+      "Partners",
+      "Trust and security",
+      "Compliance statement",
+    ],
   },
 ];
 
@@ -504,7 +547,7 @@ export function HomepageClient() {
           poster="/homepage/clinic-hero-video-poster.webp"
           aria-hidden="true"
         >
-          <source src="/homepage/clinic-hero-loop.mp4" type="video/mp4" />
+          <source src="/homepage/healtech-hero-background.mp4" type="video/mp4" />
         </video>
         <div className="absolute inset-0 -z-10 bg-[linear-gradient(90deg,rgba(0,0,0,0.74)_0%,rgba(0,0,0,0.58)_34%,rgba(0,0,0,0.22)_68%,rgba(0,0,0,0.30)_100%)]" />
         <div className="absolute inset-x-0 bottom-0 -z-10 h-44 bg-[linear-gradient(0deg,rgba(0,0,0,0.82),rgba(0,0,0,0))]" />
@@ -992,53 +1035,73 @@ export function HomepageClient() {
         </div>
       </section>
 
-      <footer id="resources" className="bg-[#181818] py-14 text-white">
-        <div className="mx-auto grid w-[min(1200px,calc(100%_-_32px))] gap-10 lg:grid-cols-[1.1fr_2fr]">
-          <div>
-            <p className="text-3xl font-bold text-white">HealTech</p>
-            <p className="mt-4 max-w-[360px] text-sm leading-6 text-white/70">
-              Clinic workflow management for teams that need clearer queues, safer handoffs, and connected patient operations.
-            </p>
-            <div className="mt-6 flex gap-3">
-              {[Building2, HeartPulse, UsersRound].map((Icon, index) => (
-                <span key={index} className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10">
-                  <Icon className="h-5 w-5" />
-                </span>
-              ))}
-            </div>
-          </div>
-          <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
+      <footer id="resources" className="border-t border-white/10 bg-[#181818] text-white">
+        <div className="mx-auto w-[min(1440px,calc(100%_-_64px))] py-16 md:py-20">
+          <div className="grid gap-12 md:grid-cols-2 lg:grid-cols-4">
             {footerColumns.map((column) => (
-              <div key={column.title}>
-                <h3 className="text-sm font-bold uppercase tracking-[0.08em] text-white">{column.title}</h3>
-                <ul className="mt-4 grid gap-3">
+              <nav key={column.title} aria-label={column.title}>
+                <h3 className="text-sm font-medium text-white/34">{column.title}</h3>
+                <ul className="mt-5 grid gap-4">
                   {column.links.map((link) => (
                     <li key={link}>
-                      <a href="#main-content" className="text-sm text-white/68 hover:text-white">
+                      <a href="#main-content" className="text-sm font-semibold leading-none text-white transition hover:text-[#14a800]">
                         {link}
                       </a>
                     </li>
                   ))}
                 </ul>
-              </div>
+              </nav>
             ))}
           </div>
-        </div>
-        <div className="mx-auto mt-10 flex w-[min(1200px,calc(100%_-_32px))] flex-col gap-3 border-t border-white/12 pt-6 text-sm text-white/60 sm:flex-row sm:items-center sm:justify-between">
-          <p>© 2026 HealTech. Clinic operations software.</p>
-          <div className="flex flex-wrap gap-5">
-            <a href="#resources" className="hover:text-white">
-              Privacy
-            </a>
-            <a href="#resources" className="hover:text-white">
-              Terms
-            </a>
-            <a href="#security" className="hover:text-white">
-              Security
-            </a>
-            <a href="#resources" className="hover:text-white">
-              Contact
-            </a>
+          <div className="mt-16 flex flex-col gap-8 md:flex-row md:items-center md:justify-between">
+            <div className="flex flex-wrap items-center gap-6">
+              <p className="text-sm font-medium text-white/34">Follow us</p>
+              {[
+                { label: "Facebook", icon: Facebook },
+                { label: "LinkedIn", icon: Linkedin },
+                { label: "X", icon: Twitter },
+                { label: "YouTube", icon: Youtube },
+                { label: "Instagram", icon: Instagram },
+              ].map((item) => {
+                const Icon = item.icon;
+                return (
+                  <a key={item.label} href="#resources" aria-label={item.label} className="text-white transition hover:text-[#14a800]">
+                    <Icon className="h-5 w-5" />
+                  </a>
+                );
+              })}
+            </div>
+
+            <div className="flex flex-wrap items-center gap-6">
+              <p className="text-sm font-medium text-white/34">Mobile app</p>
+              <a href="#resources" aria-label="iOS app" className="text-white transition hover:text-[#14a800]">
+                <Apple className="h-5 w-5" />
+              </a>
+              <a href="#resources" aria-label="Mobile app" className="text-white transition hover:text-[#14a800]">
+                <Smartphone className="h-5 w-5" />
+              </a>
+            </div>
+          </div>
+
+          <div className="mt-7 flex flex-col gap-5 border-t border-white/14 pt-5 text-sm md:flex-row md:items-center">
+            <p className="text-white/32">Copyright 2026 HealTech Global LLC</p>
+            <div className="flex flex-wrap gap-x-6 gap-y-3 text-white">
+              <a href="#resources" className="hover:text-[#14a800]">
+                Terms of Service
+              </a>
+              <a href="#resources" className="hover:text-[#14a800]">
+                Privacy Policy
+              </a>
+              <a href="#resources" className="hover:text-[#14a800]">
+                Data Protection
+              </a>
+              <a href="#security" className="hover:text-[#14a800]">
+                Accessibility
+              </a>
+              <a href="#resources" className="hover:text-[#14a800]">
+                Sitemap
+              </a>
+            </div>
           </div>
         </div>
       </footer>
