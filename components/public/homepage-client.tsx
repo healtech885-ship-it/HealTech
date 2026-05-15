@@ -7,7 +7,6 @@ import type { LucideIcon } from "lucide-react";
 import {
   Activity,
   ArrowRight,
-  BadgeCheck,
   Building2,
   CheckCircle2,
   ChevronDown,
@@ -82,11 +81,25 @@ const exploreGroups = [
   },
 ];
 
-const trustItems = [
-  { value: "Role-based", label: "clinic workspaces" },
-  { value: "End-to-end", label: "visit flow coverage" },
-  { value: "RLS-ready", label: "Supabase security model" },
-  { value: "Demo mode", label: "available without setup" },
+const trendingWorkflows = [
+  { label: "Visit queues", change: "+42%", positive: true },
+  { label: "Lab results", change: "+31%", positive: true },
+  { label: "Patient portal", change: "+54%", positive: true },
+  { label: "Pharmacy stock", change: "+28%", positive: true },
+  { label: "Audit logs", change: "+19%", positive: true },
+  { label: "Appointment flow", change: "+46%", positive: true },
+  { label: "Inventory review", change: "-12%", positive: false },
+  { label: "Secure access", change: "+36%", positive: true },
+];
+
+const trustLogos = [
+  "Reception",
+  "Doctors",
+  "Labs",
+  "Pharmacy",
+  "Patients",
+  "Admin",
+  "Audit",
 ];
 
 const categories: Category[] = [
@@ -500,17 +513,63 @@ export function HomepageClient() {
         </div>
       </section>
 
-      <section aria-label="HealTech credibility" className="border-y border-[#d9d9d9] bg-[#f7f7f7]">
-        <div className="mx-auto grid w-[min(1200px,calc(100%_-_32px))] gap-5 py-8 md:grid-cols-4">
-          {trustItems.map((item) => (
-            <div key={item.value} className="flex items-center gap-3">
-              <BadgeCheck className="h-6 w-6 shrink-0 text-[#14a800]" />
-              <p className="text-sm text-[#5e6d55]">
-                <span className="block text-lg font-bold text-[#181818]">{item.value}</span>
-                {item.label}
-              </p>
+      <section aria-label="Trending clinic workflows" className="-mt-px overflow-hidden bg-[#181818] text-white">
+        <style>{`
+          @keyframes healtech-marquee {
+            from { transform: translateX(0); }
+            to { transform: translateX(-50%); }
+          }
+
+          @media (prefers-reduced-motion: reduce) {
+            .healtech-marquee {
+              animation: none !important;
+              transform: none !important;
+            }
+          }
+        `}</style>
+        <div className="mx-auto w-[min(1200px,calc(100%_-_32px))] pt-18 pb-14 md:pt-24 md:pb-20">
+          <div className="flex flex-col gap-5 md:flex-row md:items-center">
+            <p className="flex shrink-0 items-center gap-2 text-sm font-bold uppercase tracking-[0.08em] text-[#14a800]">
+              <span className="h-2.5 w-2.5 rounded-full bg-[#14a800]" />
+              Trending workflows
+            </p>
+            <div className="relative min-w-0 flex-1 overflow-hidden">
+              <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-16 bg-gradient-to-r from-[#181818] to-transparent" />
+              <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-16 bg-gradient-to-l from-[#181818] to-transparent" />
+              <div className="healtech-marquee flex w-max gap-5 [animation:healtech-marquee_30s_linear_infinite]">
+                {[...trendingWorkflows, ...trendingWorkflows].map((item, index) => (
+                  <button
+                    key={`${item.label}-${index}`}
+                    type="button"
+                    className="inline-flex h-10 items-center gap-2 rounded-full bg-white/12 px-5 text-base font-semibold text-white transition hover:bg-white/18"
+                    onClick={() => applySuggestion(item.label)}
+                  >
+                    <span>{item.label}</span>
+                    <span className={item.positive ? "text-[#14a800]" : "text-[#f2c94c]"}>{item.positive ? "↗" : "↘"}</span>
+                    <span>{item.change}</span>
+                  </button>
+                ))}
+              </div>
             </div>
-          ))}
+          </div>
+
+          <div className="mt-20">
+            <p className="text-sm font-bold uppercase tracking-[0.16em] text-white/42">Trusted across daily clinic operations</p>
+            <div className="mt-8 grid grid-cols-2 gap-x-8 gap-y-6 text-2xl font-bold text-white/92 sm:grid-cols-3 lg:grid-cols-7">
+              {trustLogos.map((logo) => (
+                <span key={logo} className="whitespace-nowrap tracking-[-0.02em]">
+                  {logo}
+                </span>
+              ))}
+            </div>
+          </div>
+
+          <div className="mx-auto mt-20 max-w-[780px] text-center">
+            <h2 className="text-[34px] font-bold leading-tight tracking-normal text-white md:text-[46px]">Operate for where care is headed</h2>
+            <p className="mt-4 text-lg font-semibold leading-8 text-white/82">
+              From front desk queues to pharmacy stock, see the key workflows that keep every clinic role aligned.
+            </p>
+          </div>
         </div>
       </section>
 
