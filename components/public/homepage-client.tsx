@@ -20,6 +20,8 @@ import {
   Search,
   ShieldCheck,
   Stethoscope,
+  TrendingDown,
+  TrendingUp,
   UserRound,
   UsersRound,
   X,
@@ -100,6 +102,58 @@ const trustLogos = [
   "Patients",
   "Admin",
   "Audit",
+];
+
+const emergingClinicRoles = [
+  {
+    title: "Care coordinator",
+    description: "Keeps visit queues, follow-ups, and patient handoffs aligned.",
+    change: "+24%",
+    positive: true,
+  },
+  {
+    title: "Clinic operations lead",
+    description: "Reviews throughput, approvals, inventory, and daily reports.",
+    change: "+18%",
+    positive: true,
+  },
+  {
+    title: "Lab workflow owner",
+    description: "Tracks test orders, result submission, and doctor review loops.",
+    change: "+15%",
+    positive: true,
+  },
+  {
+    title: "Pharmacy stock controller",
+    description: "Monitors batches, dispensing, low stock, and expiry risk.",
+    change: "+12%",
+    positive: true,
+  },
+  {
+    title: "Manual paper handoff",
+    description: "Shrinks as role-based digital queues replace scattered notes.",
+    change: "-21%",
+    positive: false,
+  },
+];
+
+const demandWorkflowGroups = [
+  {
+    title: "Front desk",
+    skills: ["Patient intake", "Appointments", "Visit queue", "Triage"],
+  },
+  {
+    title: "Clinical care",
+    skills: ["Diagnosis", "Lab requests", "Prescriptions", "Visit history"],
+  },
+  {
+    title: "Operations",
+    skills: ["Inventory", "Store requests", "Reports", "Audit logs"],
+  },
+  {
+    title: "Patient experience",
+    skills: ["Portal access", "Lab results", "Medicines", "Follow-up"],
+  },
 ];
 
 const categories: Category[] = [
@@ -545,7 +599,11 @@ export function HomepageClient() {
                     onClick={() => applySuggestion(item.label)}
                   >
                     <span>{item.label}</span>
-                    <span className={item.positive ? "text-[#14a800]" : "text-[#f2c94c]"}>{item.positive ? "↗" : "↘"}</span>
+                    {item.positive ? (
+                      <TrendingUp className="h-4 w-4 text-[#14a800]" aria-hidden="true" />
+                    ) : (
+                      <TrendingDown className="h-4 w-4 text-[#f2c94c]" aria-hidden="true" />
+                    )}
                     <span>{item.change}</span>
                   </button>
                 ))}
@@ -569,6 +627,60 @@ export function HomepageClient() {
             <p className="mt-4 text-lg font-semibold leading-8 text-white/82">
               From front desk queues to pharmacy stock, see the key workflows that keep every clinic role aligned.
             </p>
+            <Link
+              href="/login"
+              className="mt-8 inline-flex h-11 items-center justify-center rounded-full bg-[#14a800] px-7 text-sm font-bold text-white shadow-[0_0_22px_rgba(20,168,0,0.24)] transition hover:bg-[#108a00]"
+            >
+              Start clinic demo
+            </Link>
+          </div>
+
+          <div className="mt-20 grid gap-10 lg:grid-cols-[1.08fr_0.92fr] lg:items-start">
+            <article className="rounded-[26px] bg-[radial-gradient(circle_at_78%_18%,rgba(20,168,0,0.25),transparent_34%),linear-gradient(135deg,#102518,#0f3a1f_44%,#101b14)] p-7 shadow-[0_28px_90px_rgba(0,0,0,0.28)] md:p-10">
+              <h3 className="text-[28px] font-bold tracking-normal text-white">Emerging clinic roles</h3>
+              <div className="mt-8 divide-y divide-white/28">
+                {emergingClinicRoles.map((role) => (
+                  <button
+                    key={role.title}
+                    type="button"
+                    className="grid w-full gap-3 py-5 text-left transition hover:bg-white/[0.03] sm:grid-cols-[1fr_auto]"
+                    onClick={() => applySuggestion(role.title)}
+                  >
+                    <span>
+                      <span className="block text-base font-bold text-white">{role.title}</span>
+                      <span className="mt-2 block text-sm leading-6 text-white/58">{role.description}</span>
+                    </span>
+                    <span className={`inline-flex items-center gap-2 text-sm font-bold ${role.positive ? "text-[#66e45b]" : "text-[#f2c94c]"}`}>
+                      {role.positive ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />}
+                      {role.change}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </article>
+
+            <article className="py-4 lg:py-10">
+              <h3 className="text-[28px] font-bold tracking-normal text-white">In-demand workflows</h3>
+              <div className="mt-8 grid gap-8">
+                {demandWorkflowGroups.map((group) => (
+                  <div key={group.title}>
+                    <h4 className="text-base font-bold text-white">{group.title}</h4>
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {group.skills.map((skill) => (
+                        <button
+                          key={skill}
+                          type="button"
+                          className="rounded-md bg-white/10 px-4 py-2 text-sm font-semibold text-white/58 transition hover:bg-white/16 hover:text-white"
+                          onClick={() => applySuggestion(skill)}
+                        >
+                          {skill}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </article>
           </div>
         </div>
       </section>
