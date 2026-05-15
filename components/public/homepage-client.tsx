@@ -544,10 +544,9 @@ export function HomepageClient() {
           muted
           loop
           playsInline
-          poster="/homepage/clinic-hero-video-poster.webp"
           aria-hidden="true"
         >
-          <source src="/homepage/healtech-hero-background.mp4" type="video/mp4" />
+          <source src="/homepage/mp_ (1).mp4" type="video/mp4" />
         </video>
         <div className="absolute inset-0 -z-10 bg-[linear-gradient(90deg,rgba(0,0,0,0.74)_0%,rgba(0,0,0,0.58)_34%,rgba(0,0,0,0.22)_68%,rgba(0,0,0,0.30)_100%)]" />
         <div className="absolute inset-x-0 bottom-0 -z-10 h-44 bg-[linear-gradient(0deg,rgba(0,0,0,0.82),rgba(0,0,0,0))]" />
@@ -754,13 +753,9 @@ export function HomepageClient() {
                   </button>
                 </div>
                 <div className="relative mt-6 min-h-[260px] overflow-hidden rounded-[22px] md:mt-0">
-                  <Image
-                    src="/homepage/clinic-hero-video-poster.webp"
-                    alt="Illustrated clinic team working around a connected operations desk."
-                    fill
-                    sizes="(min-width: 1024px) 420px, 100vw"
-                    className="object-cover"
-                  />
+                  <video className="h-full min-h-[260px] w-full object-cover" autoPlay muted loop playsInline aria-label="Clinic operations video preview">
+                    <source src="/homepage/mp_ (1).mp4" type="video/mp4" />
+                  </video>
                   <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(0,0,0,0),rgba(0,0,0,0.18))]" />
                 </div>
               </article>
