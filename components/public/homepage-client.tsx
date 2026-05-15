@@ -156,6 +156,13 @@ const demandWorkflowGroups = [
   },
 ];
 
+const impactStats = [
+  { value: "6", label: "role workspaces connected" },
+  { value: "24h", label: "demo-ready workflow review" },
+  { value: "8", label: "core clinic modules covered" },
+  { value: "1", label: "secure patient record path" },
+];
+
 const categories: Category[] = [
   {
     title: "Reception",
@@ -681,6 +688,82 @@ export function HomepageClient() {
                 ))}
               </div>
             </article>
+          </div>
+
+          <div className="mt-24">
+            <div className="grid gap-8 lg:grid-cols-[1.9fr_0.9fr]">
+              <article className="grid min-h-[360px] overflow-hidden rounded-[24px] bg-[linear-gradient(135deg,rgba(255,255,255,0.08),rgba(20,168,0,0.16))] p-6 shadow-[0_30px_100px_rgba(0,0,0,0.30)] md:grid-cols-[0.9fr_1.1fr] md:p-9">
+                <div className="flex flex-col justify-between gap-8">
+                  <div>
+                    <h3 className="max-w-[320px] text-[30px] font-bold leading-tight tracking-normal text-white">
+                      Nimble clinics, notable impact
+                    </h3>
+                    <p className="mt-5 max-w-[320px] text-lg font-semibold leading-7 text-white/86">
+                      See how a connected clinic workspace can scale daily operations without adding more manual follow-up.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    aria-label="Expand impact story"
+                    className="hidden h-10 w-10 items-center justify-center rounded-full border border-white/24 text-white transition hover:bg-white/10 md:flex"
+                  >
+                    <ArrowRight className="h-5 w-5 rotate-45" />
+                  </button>
+                </div>
+                <div className="relative mt-6 min-h-[260px] overflow-hidden rounded-[22px] md:mt-0">
+                  <Image
+                    src="/homepage/clinic-hero-video-poster.webp"
+                    alt="Illustrated clinic team working around a connected operations desk."
+                    fill
+                    sizes="(min-width: 1024px) 420px, 100vw"
+                    className="object-cover"
+                  />
+                  <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(0,0,0,0),rgba(0,0,0,0.18))]" />
+                </div>
+              </article>
+
+              <article className="flex min-h-[360px] flex-col justify-between rounded-[24px] bg-[linear-gradient(145deg,rgba(255,255,255,0.08),rgba(20,168,0,0.12))] p-7 shadow-[0_30px_100px_rgba(0,0,0,0.24)] md:p-9">
+                <div>
+                  <div className="flex items-center gap-5">
+                    <div className="flex h-24 w-24 shrink-0 items-center justify-center rounded-full bg-[radial-gradient(circle_at_30%_20%,#8af17d,#13544e_72%)] text-2xl font-bold text-white">
+                      HT
+                    </div>
+                    <div>
+                      <p className="text-xl font-bold text-white">Operations story</p>
+                      <p className="mt-2 text-sm font-semibold leading-5 text-white/45">Example designed outcome</p>
+                    </div>
+                  </div>
+                  <p className="mt-9 text-xl font-bold leading-8 text-white">
+                    &ldquo;HealTech is built to close the gaps between reception, clinical care, lab, pharmacy, and patient follow-up.&rdquo;
+                  </p>
+                </div>
+                <div className="mt-10 flex items-center justify-between">
+                  <button
+                    type="button"
+                    aria-label="Previous impact story"
+                    className="flex h-10 w-10 items-center justify-center rounded-full text-white transition hover:bg-white/10"
+                  >
+                    <ArrowRight className="h-5 w-5 rotate-180" />
+                  </button>
+                  <button
+                    type="button"
+                    aria-label="Next impact story"
+                    className="flex h-10 w-10 items-center justify-center rounded-full text-white transition hover:bg-white/10"
+                  >
+                    <ArrowRight className="h-5 w-5" />
+                  </button>
+                </div>
+              </article>
+            </div>
+
+            <div className="mt-20 grid gap-8 text-center sm:grid-cols-2 lg:grid-cols-4">
+              {impactStats.map((stat) => (
+                <div key={stat.value}>
+                  <p className="text-[44px] font-bold leading-none tracking-normal text-white md:text-[52px]">{stat.value}</p>
+                  <p className="mx-auto mt-3 max-w-[170px] text-sm font-bold leading-5 text-white/45">{stat.label}</p>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </section>
