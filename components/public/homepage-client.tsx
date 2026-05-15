@@ -296,44 +296,37 @@ export function HomepageClient() {
         Skip to content
       </a>
 
-      <div className="bg-[#13544e] px-4 py-2.5 text-center text-sm font-medium text-white">
-        New: Explore HealTech in demo mode before clinic setup.{" "}
-        <Link href="/login" className="font-bold underline underline-offset-4">
-          Open demo
-        </Link>
-      </div>
-
-      <header className="sticky top-0 z-50 border-b border-[#d9d9d9] bg-white/95 backdrop-blur">
-        <div className="mx-auto flex h-20 w-[min(1200px,calc(100%_-_32px))] items-center justify-between gap-6">
-          <div className="flex items-center gap-8">
-            <Link href="/" className="text-[30px] font-bold leading-none tracking-normal text-[#13544e]">
+      <header className="sticky top-0 z-50 border-b border-white/10 bg-[#181818] text-white">
+        <div className="mx-auto flex h-20 w-[min(1440px,calc(100%_-_48px))] items-center justify-between gap-5">
+          <div className="flex items-center gap-7">
+            <Link href="/" className="text-[30px] font-bold leading-none tracking-normal text-white">
               HealTech
             </Link>
-            <nav aria-label="Primary navigation" className="hidden items-center gap-7 text-[15px] font-semibold lg:flex">
+            <nav aria-label="Primary navigation" className="hidden items-center gap-6 whitespace-nowrap text-[15px] font-semibold lg:flex">
               <div ref={exploreRef} className="relative">
                 <button
                   type="button"
-                  className="inline-flex items-center gap-1 rounded-full px-2 py-2 text-[#181818] transition hover:text-[#108a00] focus-visible:outline focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-[#005fcc]"
+                  className="inline-flex items-center gap-1 rounded-full px-2 py-2 text-white transition hover:text-[#b7f4ad] focus-visible:outline focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-[#b7f4ad]"
                   aria-expanded={exploreOpen}
                   aria-controls="explore-menu"
                   onClick={() => setExploreOpen((value) => !value)}
                 >
-                  Explore <ChevronDown className={`h-4 w-4 transition ${exploreOpen ? "rotate-180" : ""}`} />
+                  Workflows <ChevronDown className={`h-4 w-4 transition ${exploreOpen ? "rotate-180" : ""}`} />
                 </button>
                 {exploreOpen ? (
                   <div
                     id="explore-menu"
-                    className="absolute left-0 top-12 grid w-[520px] grid-cols-2 gap-6 rounded-2xl border border-[#d9d9d9] bg-white p-6 shadow-[0_24px_80px_rgba(0,0,0,0.14)]"
+                    className="absolute left-0 top-12 grid w-[520px] grid-cols-2 gap-6 rounded-2xl border border-white/10 bg-[#181818] p-6 shadow-[0_24px_80px_rgba(0,0,0,0.34)]"
                   >
                     {exploreGroups.map((group) => (
                       <div key={group.title}>
-                        <p className="text-xs font-bold uppercase tracking-[0.08em] text-[#5e6d55]">{group.title}</p>
+                        <p className="text-xs font-bold uppercase tracking-[0.08em] text-white/55">{group.title}</p>
                         <div className="mt-4 grid gap-2">
                           {group.links.map((link) => (
                             <a
                               key={link.label}
                               href={link.href}
-                              className="rounded-lg px-3 py-2 text-sm text-[#181818] transition hover:bg-[#f2f7f2] hover:text-[#108a00]"
+                              className="rounded-lg px-3 py-2 text-sm text-white/82 transition hover:bg-white/10 hover:text-[#b7f4ad]"
                               onClick={() => setExploreOpen(false)}
                             >
                               {link.label}
@@ -345,28 +338,35 @@ export function HomepageClient() {
                   </div>
                 ) : null}
               </div>
-              <a href="#how-it-works" className="hover:text-[#108a00]">
-                How it works
+              <a href="#how-it-works" className="hover:text-[#b7f4ad]">
+                Outcomes
               </a>
-              <a href="#pricing" className="hover:text-[#108a00]">
+              <a href="#explore" className="hover:text-[#b7f4ad]">
+                Roles
+              </a>
+              <a href="#security" className="hover:text-[#b7f4ad]">
+                Why HealTech
+              </a>
+              <a href="#pricing" className="hover:text-[#b7f4ad]">
                 Pricing
-              </a>
-              <a href="#security" className="hover:text-[#108a00]">
-                Security
-              </a>
-              <a href="#resources" className="hover:text-[#108a00]">
-                Resources
               </a>
             </nav>
           </div>
 
-          <div className="hidden items-center gap-5 sm:flex">
-            <Link href="/login" className="text-[15px] font-semibold text-[#13544e] hover:text-[#108a00]">
+          <div className="hidden items-center gap-5 md:flex">
+            <a
+              href="#explore"
+              className="hidden h-12 min-w-[250px] items-center gap-3 rounded-full border border-white/36 px-5 text-base text-white/82 xl:flex"
+            >
+              <Search className="h-5 w-5" />
+              Search clinic workflows
+            </a>
+            <Link href="/login" className="whitespace-nowrap text-[15px] font-semibold text-white hover:text-[#b7f4ad]">
               Log in
             </Link>
             <Link
               href="/login"
-              className="inline-flex h-11 items-center justify-center rounded-full bg-[#14a800] px-6 text-[15px] font-bold text-white transition hover:bg-[#108a00]"
+              className="inline-flex h-12 items-center justify-center whitespace-nowrap rounded-full bg-[#14a800] px-6 text-[15px] font-bold text-white shadow-[0_0_24px_rgba(20,168,0,0.28)] transition hover:bg-[#108a00]"
             >
               Request a demo
             </Link>
@@ -374,7 +374,7 @@ export function HomepageClient() {
 
           <button
             type="button"
-            className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-[#d9d9d9] text-[#181818] lg:hidden"
+            className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/25 text-white lg:hidden"
             aria-label="Open navigation menu"
             onClick={() => setMobileOpen(true)}
           >
@@ -384,14 +384,14 @@ export function HomepageClient() {
       </header>
 
       {mobileOpen ? (
-        <div className="fixed inset-0 z-[80] bg-white px-6 py-5 lg:hidden" role="dialog" aria-modal="true" aria-label="Mobile navigation">
+        <div className="fixed inset-0 z-[80] bg-[#181818] px-6 py-5 text-white lg:hidden" role="dialog" aria-modal="true" aria-label="Mobile navigation">
           <div className="flex items-center justify-between">
-            <Link href="/" className="text-[28px] font-bold text-[#13544e]" onClick={() => setMobileOpen(false)}>
+            <Link href="/" className="text-[28px] font-bold text-white" onClick={() => setMobileOpen(false)}>
               HealTech
             </Link>
             <button
               type="button"
-              className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-[#d9d9d9]"
+              className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/25"
               aria-label="Close navigation menu"
               onClick={() => setMobileOpen(false)}
             >
@@ -403,7 +403,7 @@ export function HomepageClient() {
               <a
                 key={item}
                 href={item === "Explore" ? "#explore" : `#${item.toLowerCase().replaceAll(" ", "-")}`}
-                className="rounded-xl border border-[#d9d9d9] px-4 py-4"
+                className="rounded-xl border border-white/14 px-4 py-4 text-white"
                 onClick={() => setMobileOpen(false)}
               >
                 {item}
@@ -420,92 +420,83 @@ export function HomepageClient() {
         </div>
       ) : null}
 
-      <section id="main-content" className="mx-auto grid w-[min(1200px,calc(100%_-_32px))] gap-12 py-14 lg:grid-cols-[0.92fr_1.08fr] lg:items-center lg:py-20">
-        <div>
-          <h1 className="max-w-[690px] text-[38px] font-bold leading-[1.04] tracking-normal text-[#181818] sm:text-[54px] lg:text-[64px]">
+      <section id="main-content" className="relative isolate flex min-h-[calc(100svh-80px)] overflow-hidden bg-[#181818]">
+        <video
+          className="absolute inset-0 -z-20 h-full w-full object-cover"
+          autoPlay
+          muted
+          loop
+          playsInline
+          poster="/homepage/clinic-hero-video-poster.webp"
+          aria-hidden="true"
+        >
+          <source src="/homepage/clinic-hero-loop.mp4" type="video/mp4" />
+        </video>
+        <div className="absolute inset-0 -z-10 bg-[linear-gradient(90deg,rgba(0,0,0,0.74)_0%,rgba(0,0,0,0.58)_34%,rgba(0,0,0,0.22)_68%,rgba(0,0,0,0.30)_100%)]" />
+        <div className="absolute inset-x-0 bottom-0 -z-10 h-44 bg-[linear-gradient(0deg,rgba(0,0,0,0.82),rgba(0,0,0,0))]" />
+
+        <div className="mx-auto flex w-[min(1200px,calc(100%_-_32px))] items-center py-16 md:py-20">
+          <div className="max-w-[760px] text-white">
+            <div className="inline-flex rounded-full bg-white/35 p-1.5 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.18)] backdrop-blur-md">
+              {heroModes.map((item) => (
+                <button
+                  key={item.id}
+                  type="button"
+                  aria-pressed={activeMode === item.id}
+                  className={`min-h-11 rounded-full px-9 text-sm font-bold transition md:px-16 ${
+                    activeMode === item.id ? "bg-[#181818] text-white shadow-sm" : "text-white hover:bg-white/18"
+                  }`}
+                  onClick={() => setActiveMode(item.id)}
+                >
+                  {item.id === "teams" ? "Clinic teams" : "Patients"}
+                </button>
+              ))}
+            </div>
+
+            <h1 className="mt-8 max-w-[760px] text-[48px] font-bold leading-[1.02] tracking-normal text-white sm:text-[68px] lg:text-[82px]">
             Connect every clinic workflow in one secure workspace
           </h1>
-          <p className="mt-6 max-w-[620px] text-lg leading-8 text-[#5e6d55]">{mode.headlineSupport}</p>
+            <p className="mt-7 max-w-[640px] text-xl font-semibold leading-8 text-white md:text-[28px] md:leading-[1.28]">
+              {mode.headlineSupport}
+            </p>
 
-          <div className="mt-8 inline-flex rounded-full border border-[#d9d9d9] bg-[#f7f7f7] p-1">
-            {heroModes.map((item) => (
-              <button
-                key={item.id}
-                type="button"
-                aria-pressed={activeMode === item.id}
-                className={`min-h-11 rounded-full px-5 text-sm font-bold transition ${
-                  activeMode === item.id ? "bg-[#13544e] text-white shadow-sm" : "text-[#181818] hover:bg-white"
-                }`}
-                onClick={() => setActiveMode(item.id)}
-              >
-                {item.label}
-              </button>
-            ))}
-          </div>
-
-          <form onSubmit={submitSearch} className="mt-7 max-w-[650px]">
+          <form onSubmit={submitSearch} className="mt-9 max-w-[720px]">
             <label htmlFor="hero-search" className="sr-only">
               Search HealTech workflows
             </label>
-            <div className="flex flex-col gap-3 rounded-[28px] border border-[#d9d9d9] bg-white p-2 shadow-[0_14px_40px_rgba(0,0,0,0.08)] sm:flex-row">
-              <div className="flex min-h-12 flex-1 items-center gap-3 px-4">
-                <Search className="h-5 w-5 text-[#5e6d55]" aria-hidden="true" />
+            <div className="flex flex-col overflow-hidden rounded-[26px] bg-white p-1.5 shadow-[0_18px_60px_rgba(0,0,0,0.28)] sm:flex-row">
+              <div className="flex min-h-14 flex-1 items-center gap-3 px-5">
+                <Search className="h-5 w-5 text-[#7b8476]" aria-hidden="true" />
                 <input
                   id="hero-search"
                   value={query}
                   onChange={(event) => setQuery(event.target.value)}
                   placeholder={mode.searchPlaceholder}
-                  className="min-w-0 flex-1 bg-transparent text-base text-[#181818] outline-none placeholder:text-[#5e6d55]"
+                  className="min-w-0 flex-1 bg-transparent text-base text-[#181818] outline-none placeholder:text-[#8a9287]"
                 />
               </div>
               <button
                 type="submit"
-                className="inline-flex min-h-12 items-center justify-center rounded-full bg-[#14a800] px-6 text-sm font-bold text-white transition hover:bg-[#108a00]"
+                className="inline-flex min-h-14 items-center justify-center rounded-full bg-[#14a800] px-9 text-lg font-bold text-white transition hover:bg-[#108a00]"
               >
-                Search
+                {activeMode === "teams" ? "Find workflows" : "Find services"}
               </button>
             </div>
           </form>
 
-          <div className="mt-5 flex flex-wrap gap-2" aria-label="Popular searches">
+          <div className="mt-5 flex max-w-[640px] flex-wrap gap-2" aria-label="Popular searches">
             {mode.chips.map((chip) => (
               <button
                 key={chip}
                 type="button"
-                className="rounded-full border border-[#d9d9d9] bg-white px-4 py-2 text-sm font-semibold text-[#13544e] transition hover:border-[#14a800] hover:bg-[#f2f7f2]"
+                className="rounded-full border border-white/24 bg-black/18 px-4 py-2 text-sm font-semibold text-white backdrop-blur-sm transition hover:border-[#b7f4ad] hover:bg-white/12"
                 onClick={() => applySuggestion(chip)}
               >
                 {chip}
               </button>
             ))}
           </div>
-
-          <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-            <Link
-              href="/login"
-              className="inline-flex h-12 items-center justify-center rounded-full bg-[#14a800] px-7 text-base font-bold text-white transition hover:bg-[#108a00]"
-            >
-              {mode.primaryCta}
-            </Link>
-            <a
-              href="#explore"
-              className="inline-flex h-12 items-center justify-center rounded-full border border-[#181818] px-7 text-base font-bold text-[#181818] transition hover:border-[#14a800] hover:text-[#108a00]"
-            >
-              Explore workflows
-            </a>
           </div>
-        </div>
-
-        <div className="relative">
-          <Image
-            src="/homepage/hero-clinic-ops.webp"
-            alt="Illustrated clinic team reviewing connected HealTech workflow dashboards."
-            width={1600}
-            height={1120}
-            priority
-            sizes="(min-width: 1024px) 50vw, 100vw"
-            className="h-auto w-full rounded-[32px] border border-[#d9d9d9] bg-[#f7f7f7] shadow-[0_24px_70px_rgba(0,0,0,0.12)]"
-          />
         </div>
       </section>
 
