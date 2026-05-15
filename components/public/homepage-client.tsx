@@ -47,7 +47,7 @@ const heroModes: HeroMode[] = [
   {
     id: "teams",
     label: "For clinic teams",
-    headlineSupport: "Run reception, clinical care, lab orders, pharmacy, and admin controls without handoffs breaking down.",
+    headlineSupport: "Manage reception, care, labs, pharmacy, and admin handoffs in one place.",
     searchPlaceholder: "Search clinic workflows or roles",
     primaryCta: "Request a demo",
     chips: ["Reception queue", "Doctor workspace", "Lab orders", "Pharmacy stock", "Admin reports"],
@@ -55,7 +55,7 @@ const heroModes: HeroMode[] = [
   {
     id: "patients",
     label: "For patients",
-    headlineSupport: "Give patients a clearer path to appointments, records, lab results, medicines, and follow-up care.",
+    headlineSupport: "Give patients one clear path to visits, results, medicines, and follow-up.",
     searchPlaceholder: "Search patient services or records",
     primaryCta: "View patient portal",
     chips: ["Appointments", "Visit history", "Lab results", "Medicines", "Secure profile"],
@@ -435,7 +435,7 @@ export function HomepageClient() {
         <div className="absolute inset-0 -z-10 bg-[linear-gradient(90deg,rgba(0,0,0,0.74)_0%,rgba(0,0,0,0.58)_34%,rgba(0,0,0,0.22)_68%,rgba(0,0,0,0.30)_100%)]" />
         <div className="absolute inset-x-0 bottom-0 -z-10 h-44 bg-[linear-gradient(0deg,rgba(0,0,0,0.82),rgba(0,0,0,0))]" />
 
-        <div className="mx-auto flex w-[min(1200px,calc(100%_-_32px))] items-center py-16 md:py-20">
+        <div className="mx-auto flex w-[min(1200px,calc(100%_-_32px))] items-start pt-20 pb-12 md:pt-24 lg:pt-28">
           <div className="max-w-[760px] text-white">
             <div className="inline-flex rounded-full bg-white/35 p-1.5 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.18)] backdrop-blur-md">
               {heroModes.map((item) => (
@@ -453,14 +453,14 @@ export function HomepageClient() {
               ))}
             </div>
 
-            <h1 className="mt-8 max-w-[760px] text-[48px] font-bold leading-[1.02] tracking-normal text-white sm:text-[68px] lg:text-[82px]">
-            Connect every clinic workflow in one secure workspace
+            <h1 className="mt-6 max-w-[720px] text-[42px] font-bold leading-[1.02] tracking-normal text-white sm:text-[58px] lg:text-[68px]">
+            Connect clinic workflows in one secure workspace
           </h1>
-            <p className="mt-7 max-w-[640px] text-xl font-semibold leading-8 text-white md:text-[28px] md:leading-[1.28]">
+            <p className="mt-5 max-w-[580px] text-lg font-semibold leading-7 text-white md:text-[22px] md:leading-[1.28]">
               {mode.headlineSupport}
             </p>
 
-          <form onSubmit={submitSearch} className="mt-9 max-w-[720px]">
+          <form onSubmit={submitSearch} className="mt-6 max-w-[720px]">
             <label htmlFor="hero-search" className="sr-only">
               Search HealTech workflows
             </label>
