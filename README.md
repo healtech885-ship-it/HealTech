@@ -51,6 +51,27 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=
 
 `SUPABASE_SERVICE_ROLE_KEY` is only needed for trusted server environments and Supabase Edge Functions. Do not expose it as a `NEXT_PUBLIC_` variable.
 
+## Azure AI Foundry Workflow
+
+HealTech routes AI chat requests through a server-side Next.js API route. The browser calls `/api/healtech-chat`; the frontend must never call Azure AI Foundry directly.
+
+Add these values to `.env.local` for local development:
+
+```bash
+AZURE_FOUNDRY_WORKFLOW_ENDPOINT=
+AZURE_FOUNDRY_API_VERSION=2025-11-15-preview
+```
+
+Use the published workflow endpoint for `AZURE_FOUNDRY_WORKFLOW_ENDPOINT`. Do not prefix Azure variables with `NEXT_PUBLIC_`, and do not commit real endpoint values, tenant IDs, secrets, or tokens.
+
+For local authentication, run:
+
+```bash
+az login
+```
+
+For deployment, configure a service principal or managed identity. The caller identity needs Azure AI User permission on the published Agent Application, or an equivalent scope that can invoke the workflow.
+
 After deploying, add the Vercel domain to Supabase Auth redirect URLs, including:
 
 ```text

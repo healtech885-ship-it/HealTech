@@ -16,6 +16,7 @@ import {
   Settings,
 } from "lucide-react";
 import { Badge, badgeTone } from "@/components/ui/badge";
+import { HealTechAIChat } from "@/components/healtech-ai-chat";
 import { EmptyState as SharedEmptyState, FeedbackAlert, LoadingState as SharedLoadingState } from "@/components/ui/data-state";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -500,6 +501,9 @@ function PatientDashboard({ supabase, profile, patient }: { supabase: PatientPor
         <StatCard title="Prescriptions" value={counts.prescriptions} icon={Pill} />
         <StatCard title="Appointment Requests" value={counts.appointmentRequests} icon={CalendarClock} tone="warning" />
       </div>
+      <DataCard title="AI Care Coordinator">
+        <HealTechAIChat />
+      </DataCard>
       <div className="grid gap-6 xl:grid-cols-[1fr_360px]">
         <DataCard title="Latest Visits">
           {state.loading ? <LoadingState label="Loading latest visits" /> : null}
