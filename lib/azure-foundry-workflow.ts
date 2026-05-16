@@ -15,6 +15,7 @@ export type FoundryWorkflowErrorCode =
   | "forbidden"
   | "rate_limited"
   | "azure_unavailable"
+  | "protocol_unavailable"
   | "request_failed"
   | "invalid_response";
 
@@ -143,6 +144,9 @@ function throwFoundryHttpError(status: number): never {
   }
   if (status >= 500) {
     throw new FoundryWorkflowError("azure_unavailable", "Azure Foundry is temporarily unavailable.", status);
+  }
+  if (status === 404 || status === 405) {
+    throw new FoundryWorkflowError("protocol_unavailable", "Azure Foundry workflow protocol endpoint is unavailable.", status);
   }
   throw new FoundryWorkflowError("request_failed", "Azure Foundry request failed.", status);
 }

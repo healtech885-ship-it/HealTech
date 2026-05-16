@@ -29,6 +29,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: true, reply: result.text });
   } catch (error) {
     const safeError = getSafeErrorResponse(error);
+    logChatError(error);
     return NextResponse.json({ ok: false, error: safeError.message }, { status: safeError.status });
   }
 }
@@ -97,6 +98,11 @@ function getSafeErrorResponse(error: unknown) {
         status: 503,
         message: "The AI assistant is temporarily unavailable. Please try again shortly.",
       };
+    case "protocol_unavailable":
+      return {
+        status: 502,
+        message: "The Azure workflow protocol is not available. Republish the Agent Application with the Responses protocol.",
+      };
     case "invalid_response":
       return {
         status: 502,
@@ -109,4 +115,16 @@ function getSafeErrorResponse(error: unknown) {
         message: "The AI assistant could not reach the Azure workflow.",
       };
   }
+}
+
+function logChatError(error: unknown) {
+  if (error instanceof FoundryWorkflowError) {
+    console.error("HealTech AI chat Azure error", {
+      code: error.code,
+      status: error.status ?? null,
+    });
+    return;
+  }
+
+  console.error("HealTech AI chat unexpected error");
 }
