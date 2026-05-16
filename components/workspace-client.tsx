@@ -4,7 +4,9 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
+  Activity,
   AlertCircle,
+  BarChart3,
   BriefcaseMedical,
   Building2,
   Calendar,
@@ -12,9 +14,11 @@ import {
   Check,
   ClipboardPlus,
   Copy,
+  Download,
   Edit,
   FileText,
   Filter,
+  FileUp,
   Loader2,
   RefreshCcw,
   Search,
@@ -39,7 +43,10 @@ import { PageToolbar } from "@/components/ui/page-toolbar";
 import { SectionCard } from "@/components/ui/section-card";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { normalizeOperationalReportData, emptyOperationalReportData, type OperationalReportData } from "@/lib/reports/operational-reports";
+import { buildClinicalFilePath, validateClinicalFile } from "@/lib/storage/clinical-files";
 import { createClient } from "@/lib/supabase/client";
+import { getRealtimeTablesForWorkspace, realtimeChannelName } from "@/lib/supabase/realtime";
 import { cn } from "@/lib/utils";
 import type { ModuleRecord } from "@/types/app.types";
 import type { ReferenceKey, WorkspaceConfig, WorkspaceField, WorkspaceFilter } from "@/lib/workspaces";
@@ -50,6 +57,29 @@ type CreateEmployeeSuccess = {
   employeeId: string;
   profileId: string;
   temporaryPassword: string;
+};
+type ClinicalReportFile = {
+  path: string;
+  name: string;
+  createdAt: string | null;
+  size: number | null;
+};
+type StorageListItem = {
+  id?: string | null;
+  name: string;
+  created_at?: string | null;
+  updated_at?: string | null;
+  metadata?: { size?: number | string | null } | null;
+};
+type StorageBucketLike = {
+  list: (path: string, options?: Record<string, unknown>) => Promise<{ data: unknown; error: { message: string } | null }>;
+  upload: (path: string, file: File, options?: Record<string, unknown>) => Promise<{ data: unknown; error: { message: string } | null }>;
+  createSignedUrl: (path: string, expiresIn: number) => Promise<{ data: { signedUrl: string } | null; error: { message: string } | null }>;
+};
+type StorageClientLike = {
+  storage: {
+    from: (bucket: string) => StorageBucketLike;
+  };
 };
 type ClinicSettingsValues = {
   clinic_name: string;
@@ -182,6 +212,8 @@ export function WorkspaceClient({ config }: { config: WorkspaceConfig }) {
   }
 
   useEffect(() => {
+    if (config.mode === "reports") return;
+
     let active = true;
     void Promise.resolve().then(() => {
       if (active) void loadData();
@@ -191,6 +223,26 @@ export function WorkspaceClient({ config }: { config: WorkspaceConfig }) {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [config.table, config.select, config.mode, config.recordId]);
+
+  useEffect(() => {
+    if (config.mode === "reports") return;
+
+    const tables = getRealtimeTablesForWorkspace(config);
+    if (!tables.length) return;
+
+    const channel = supabase.channel(realtimeChannelName(tables));
+    for (const table of tables) {
+      channel.on("postgres_changes", { event: "*", schema: "public", table }, () => {
+        void loadData();
+      });
+    }
+    channel.subscribe();
+
+    return () => {
+      void supabase.removeChannel(channel);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [supabase, config.table, config.mode, config.recordId]);
 
   useEffect(() => {
     if (config.mode !== "create-visit") return;
@@ -269,6 +321,10 @@ export function WorkspaceClient({ config }: { config: WorkspaceConfig }) {
 
   const isAdminDashboard = config.dashboard && config.title === "Administration Dashboard";
   const isEmployeeRecordMode = config.table === "employees" && Boolean(config.recordId) && (config.mode === "details" || config.mode === "edit");
+
+  if (config.mode === "reports") {
+    return <ReportsView config={config} />;
+  }
 
   if (config.mode === "settings") {
     return (
@@ -1225,6 +1281,274 @@ function CreateEmployeeSuccessPanel({
   );
 }
 
+function ReportsView({ config }: { config: WorkspaceConfig }) {
+  const supabase = useMemo(() => createClient(), []);
+  const [report, setReport] = useState<OperationalReportData>(() => emptyOperationalReportData());
+  const [files, setFiles] = useState<ClinicalReportFile[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [storageError, setStorageError] = useState<string | null>(null);
+  const [storageMessage, setStorageMessage] = useState<string | null>(null);
+
+  async function loadReports() {
+    setLoading(true);
+    setError(null);
+    const client = supabase as unknown as SupabaseLike;
+    const storageClient = supabase as unknown as StorageClientLike;
+
+    const [reportResult, fileResult] = await Promise.all([
+      client.rpc("get_operational_reports"),
+      listClinicalReportFiles(storageClient),
+    ]);
+
+    setReport(normalizeOperationalReportData(reportResult.data));
+    setFiles(fileResult.files);
+    setError(reportResult.error?.message ?? fileResult.error);
+    setLoading(false);
+  }
+
+  useEffect(() => {
+    let active = true;
+    void Promise.resolve().then(async () => {
+      if (active) await loadReports();
+    });
+    return () => {
+      active = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    const tables = getRealtimeTablesForWorkspace(config);
+    if (!tables.length) return;
+
+    const channel = supabase.channel(realtimeChannelName(tables));
+    for (const table of tables) {
+      channel.on("postgres_changes", { event: "*", schema: "public", table }, () => {
+        void loadReports();
+      });
+    }
+    channel.subscribe();
+
+    return () => {
+      void supabase.removeChannel(channel);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [supabase, config.table, config.mode]);
+
+  async function uploadReportFile(file: File) {
+    const validationError = validateClinicalFile("medical-reports", file);
+    if (validationError) {
+      setStorageError(validationError);
+      setStorageMessage(null);
+      return;
+    }
+
+    setUploading(true);
+    setStorageError(null);
+    setStorageMessage(null);
+
+    const path = buildClinicalFilePath({ bucket: "medical-reports", ownerId: "admin-reports", fileName: file.name });
+    const storage = (supabase as unknown as StorageClientLike).storage.from("medical-reports");
+    const { error: uploadError } = await storage.upload(path, file, {
+      cacheControl: "3600",
+      contentType: file.type || undefined,
+      upsert: false,
+    });
+
+    setUploading(false);
+    if (uploadError) {
+      setStorageError(uploadError.message);
+      return;
+    }
+
+    setStorageMessage("Report file uploaded");
+    await loadReports();
+  }
+
+  async function openReportFile(path: string) {
+    setStorageError(null);
+    const storage = (supabase as unknown as StorageClientLike).storage.from("medical-reports");
+    const { data, error: signedUrlError } = await storage.createSignedUrl(path, 300);
+    if (signedUrlError || !data?.signedUrl) {
+      setStorageError(signedUrlError?.message ?? "Could not open report file");
+      return;
+    }
+    window.open(data.signedUrl, "_blank", "noopener,noreferrer");
+  }
+
+  return (
+    <div className="min-w-0 space-y-6">
+      <PageHeader
+        title="Operational Reports"
+        description="Clinic workload, laboratory throughput, pharmacy stock, admin queues, and attached report files."
+        backHref="/admin/dashboard"
+        backLabel="Admin dashboard"
+      />
+
+      {error ? <Notice tone="danger" text={error} /> : null}
+      <ReportMetricGrid report={report} loading={loading} />
+
+      <section className="grid min-w-0 gap-6 xl:grid-cols-[minmax(0,1fr)_390px]">
+        <div className="min-w-0 space-y-6">
+          <SectionCard
+            title="Clinical Flow"
+            description="Current visit and lab activity from the operational database."
+            className="min-w-0 overflow-hidden"
+            contentClassName="space-y-5"
+          >
+            {loading ? <LoadingState /> : null}
+            <ReportRows title="Visits by doctor" rows={report.visits.byDoctor.map((row) => ({ label: row.doctorName, total: row.total }))} />
+            <ReportRows title="Most requested lab tests" rows={report.lab.topTests.map((row) => ({ label: row.testName, total: row.total }))} />
+          </SectionCard>
+
+          <SectionCard
+            title="Pharmacy Stock"
+            description="Inventory levels, low stock, expired batches, and commonly prescribed medicines."
+            className="min-w-0 overflow-hidden"
+            contentClassName="space-y-5"
+          >
+            {loading ? <LoadingState /> : null}
+            <ReportRows title="Current medicine stock" rows={report.pharmacy.stockLevels.map((row) => ({ label: row.medicineName, total: row.quantity }))} />
+            <ReportRows title="Most prescribed medicines" rows={report.pharmacy.topMedicines.map((row) => ({ label: row.medicineName, total: row.total }))} />
+          </SectionCard>
+        </div>
+
+        <StorageReportsPanel
+          files={files}
+          uploading={uploading}
+          storageError={storageError}
+          storageMessage={storageMessage}
+          onUpload={(file) => void uploadReportFile(file)}
+          onOpen={(path) => void openReportFile(path)}
+        />
+      </section>
+    </div>
+  );
+}
+
+function ReportMetricGrid({ report, loading }: { report: OperationalReportData; loading: boolean }) {
+  const metrics = [
+    { label: "Visits today", value: report.visits.today, helper: "Created today", icon: CalendarDays, tone: "info" },
+    { label: "Pending visits", value: report.visits.pending, helper: "Queued or in progress", icon: Activity, tone: "warning" },
+    { label: "Completed visits", value: report.visits.completed, helper: "Clinical flow completed", icon: Check, tone: "success" },
+    { label: "Pending lab results", value: report.lab.pendingResults, helper: "Awaiting result entry", icon: BarChart3, tone: "warning" },
+    { label: "Low stock medicines", value: report.pharmacy.lowStockMedicines, helper: "Quantity at or under threshold", icon: BriefcaseMedical, tone: "danger" },
+    { label: "Expired medicines", value: report.pharmacy.expiredMedicines, helper: "Expired batches", icon: AlertCircle, tone: "danger" },
+    { label: "Pending leaves", value: report.admin.pendingLeaveRequests, helper: "Admin review queue", icon: Calendar, tone: "warning" },
+    { label: "Store requests", value: report.admin.pendingStoreRequests, helper: "Pending store approvals", icon: FileText, tone: "info" },
+  ] as const;
+
+  return (
+    <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      {metrics.map((metric) => (
+        <MetricCard
+          key={metric.label}
+          label={metric.label}
+          value={metric.value.toLocaleString()}
+          helper={metric.helper}
+          icon={metric.icon}
+          tone={metric.tone}
+          loading={loading}
+        />
+      ))}
+    </section>
+  );
+}
+
+function ReportRows({ title, rows }: { title: string; rows: Array<{ label: string; total: number }> }) {
+  const max = Math.max(1, ...rows.map((row) => row.total));
+
+  return (
+    <div className="min-w-0 rounded-lg border border-[var(--border)] bg-[var(--surface-muted)] p-4">
+      <div className="flex items-center justify-between gap-3">
+        <h3 className="text-sm font-bold uppercase tracking-[0.08em] text-[var(--muted)]">{title}</h3>
+        <span className="text-xs font-semibold text-[var(--on-surface-variant)]">{rows.length} rows</span>
+      </div>
+      <div className="mt-4 space-y-3">
+        {rows.length ? rows.slice(0, 8).map((row) => (
+          <div key={row.label} className="min-w-0">
+            <div className="flex items-center justify-between gap-3 text-sm">
+              <span className="min-w-0 truncate font-semibold text-[var(--on-surface)]">{row.label}</span>
+              <span className="table-numeric shrink-0 font-bold text-[var(--healtech-ink)]">{row.total.toLocaleString()}</span>
+            </div>
+            <div className="mt-2 h-2 overflow-hidden rounded-full bg-[var(--surface-elevated)]">
+              <span className="block h-full rounded-full bg-[var(--primary)]" style={{ width: `${Math.max(6, (row.total / max) * 100)}%` }} />
+            </div>
+          </div>
+        )) : (
+          <p className="rounded-lg border border-dashed border-[var(--border)] bg-[var(--surface-elevated)] px-3 py-4 text-sm text-[var(--on-surface-variant)]">No report rows available.</p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function StorageReportsPanel({
+  files,
+  uploading,
+  storageError,
+  storageMessage,
+  onUpload,
+  onOpen,
+}: {
+  files: ClinicalReportFile[];
+  uploading: boolean;
+  storageError: string | null;
+  storageMessage: string | null;
+  onUpload: (file: File) => void;
+  onOpen: (path: string) => void;
+}) {
+  return (
+    <SectionCard
+      title="Report Files"
+      description="PDF and image files stored in the Supabase medical reports bucket."
+      className="min-w-0 overflow-hidden"
+      contentClassName="space-y-4"
+    >
+      <label htmlFor="report_file_upload" className="inline-flex h-11 w-full cursor-pointer items-center justify-center gap-2 rounded-lg border border-[var(--primary)] bg-[var(--primary)] px-4 text-sm font-semibold text-[var(--primary-foreground)] transition hover:bg-[var(--primary-container)]">
+        {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileUp className="h-4 w-4" />}
+        {uploading ? "Uploading" : "Upload report"}
+        <input
+          id="report_file_upload"
+          type="file"
+          accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png"
+          className="sr-only"
+          disabled={uploading}
+          onChange={(event) => {
+            const input = event.currentTarget;
+            const file = input.files?.[0];
+            if (file) onUpload(file);
+            input.value = "";
+          }}
+        />
+      </label>
+
+      {storageError ? <Notice tone="danger" text={storageError} /> : null}
+      {storageMessage ? <Notice tone="success" text={storageMessage} /> : null}
+
+      <div className="space-y-3">
+        {files.length ? files.map((file) => (
+          <div key={file.path} className="rounded-lg border border-[var(--border)] bg-[var(--surface-muted)] p-3">
+            <div className="flex min-w-0 items-start justify-between gap-3">
+              <div className="min-w-0">
+                <p className="truncate text-sm font-bold text-[var(--on-surface)]">{file.name}</p>
+                <p className="mt-1 text-xs text-[var(--on-surface-variant)]">{file.createdAt ? formatDateTime(file.createdAt) : "Date not available"}{file.size ? ` / ${formatBytes(file.size)}` : ""}</p>
+              </div>
+              <Button type="button" variant="secondary" className="h-9 shrink-0 px-3" onClick={() => onOpen(file.path)}>
+                <Download className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        )) : (
+          <p className="rounded-lg border border-dashed border-[var(--border)] bg-[var(--surface-muted)] px-3 py-4 text-sm text-[var(--on-surface-variant)]">No report files uploaded.</p>
+        )}
+      </div>
+    </SectionCard>
+  );
+}
+
 function AdminDashboardExperience({
   counters,
   loading,
@@ -1734,6 +2058,75 @@ function unwrapFunctionData(value: unknown): Record<string, unknown> | null {
   if (nested && typeof nested === "object" && !Array.isArray(nested)) return nested as Record<string, unknown>;
 
   return null;
+}
+
+async function listClinicalReportFiles(client: StorageClientLike): Promise<{ files: ClinicalReportFile[]; error: string | null }> {
+  const bucket = client.storage.from("medical-reports");
+  const { data, error } = await bucket.list("admin-reports", {
+    limit: 30,
+    sortBy: { column: "name", order: "desc" },
+  });
+
+  if (error) return { files: [], error: error.message };
+
+  const files: ClinicalReportFile[] = [];
+  for (const item of asStorageListItems(data)) {
+    if (isStorageFile(item)) {
+      files.push(storageFileFromItem("admin-reports", item));
+      continue;
+    }
+
+    const folderPath = `admin-reports/${item.name}`;
+    const { data: nestedData, error: nestedError } = await bucket.list(folderPath, {
+      limit: 50,
+      sortBy: { column: "created_at", order: "desc" },
+    });
+    if (nestedError) return { files, error: nestedError.message };
+
+    for (const nestedItem of asStorageListItems(nestedData).filter(isStorageFile)) {
+      files.push(storageFileFromItem(folderPath, nestedItem));
+    }
+  }
+
+  return {
+    files: files.sort((left, right) => String(right.createdAt ?? "").localeCompare(String(left.createdAt ?? ""))).slice(0, 20),
+    error: null,
+  };
+}
+
+function asStorageListItems(value: unknown): StorageListItem[] {
+  return Array.isArray(value)
+    ? value.filter((item): item is StorageListItem => Boolean(item && typeof item === "object" && typeof (item as StorageListItem).name === "string"))
+    : [];
+}
+
+function isStorageFile(item: StorageListItem) {
+  return Boolean(item.id || item.metadata);
+}
+
+function storageFileFromItem(prefix: string, item: StorageListItem): ClinicalReportFile {
+  return {
+    path: `${prefix}/${item.name}`,
+    name: item.name,
+    createdAt: item.created_at ?? item.updated_at ?? null,
+    size: storageFileSize(item),
+  };
+}
+
+function storageFileSize(item: StorageListItem) {
+  const size = item.metadata?.size;
+  if (typeof size === "number") return size;
+  if (typeof size === "string") {
+    const parsed = Number(size);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+  return null;
+}
+
+function formatBytes(bytes: number) {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
 }
 
 type ReferenceOption = {
