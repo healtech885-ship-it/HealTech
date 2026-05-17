@@ -1,6 +1,5 @@
-import { getToolsForRole } from "@/lib/agents/tools";
-import { executeToolCall } from "@/lib/agents/tool-handlers";
-import { generateTraceId } from "@/lib/agents/types";
+import { getToolsForRole } from "./agents/tools.ts";
+import { generateTraceId } from "./agents/types.ts";
 
 // Direct HTTP token acquisition - no @azure/identity dependency needed
 
@@ -377,6 +376,7 @@ async function invokeFoundryChatCompletions(
 
         console.log(`[Agent Tool] trace=${traceId} role=${userRole} tool=${tc.function.name} args=${JSON.stringify(args)}`);
 
+        const { executeToolCall } = await import("@/lib/agents/tool-handlers");
         const result = await executeToolCall(tc.function.name, args, {
           userRole: userRole ?? "unknown",
           userId,
