@@ -115,7 +115,7 @@ async function handleGetTodayVisits(status?: string): Promise<ToolResult> {
     .order("created_at", { ascending: false });
 
   if (status) {
-    query = query.eq("status", status);
+    query = query.eq("status", status as any);
   }
 
   const { data, error } = await query.limit(50);
@@ -336,7 +336,7 @@ async function handleGetLeaveRequests(status?: string): Promise<ToolResult> {
     .limit(20);
 
   if (status) {
-    query = query.eq("status", status);
+    query = query.eq("status", status as any);
   }
 
   const { data, error } = await query;
