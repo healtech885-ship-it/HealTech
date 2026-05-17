@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { Badge, badgeTone } from "@/components/ui/badge";
 import { EmptyState as SharedEmptyState, FeedbackAlert, LoadingState as SharedLoadingState } from "@/components/ui/data-state";
+import { HealTechAIChat } from "@/components/healtech-ai-chat";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableFrame, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -329,6 +330,16 @@ function LabDashboard() {
         <StatCard title="Visible To Patient" value={counts.visible} icon={BadgeCheck} tone="success" />
         <StatCard title="Active Lab Tests" value={counts.activeTests} icon={Beaker} tone="neutral" />
       </div>
+
+      <section className="mt-8 rounded-xl border border-[#d4e0e8] bg-white shadow-sm">
+        <div className="border-b border-[#d4e0e8] px-5 py-4">
+          <h2 className="text-lg font-semibold">AI Care Coordinator</h2>
+          <p className="text-sm text-[#607084]">Lab-scoped AI support for pending orders, result-entry drafts, abnormal flags, and workload summaries.</p>
+        </div>
+        <div className="p-5">
+          <HealTechAIChat userRole="lab" />
+        </div>
+      </section>
 
       <section className="mt-8 rounded-xl border border-[#d4e0e8] bg-white shadow-sm">
         <div className="flex items-center justify-between border-b border-[#d4e0e8] px-5 py-4">

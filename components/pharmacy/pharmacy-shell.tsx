@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { Badge, badgeTone } from "@/components/ui/badge";
 import { EmptyState as SharedEmptyState, FeedbackAlert, LoadingState as SharedLoadingState } from "@/components/ui/data-state";
+import { HealTechAIChat } from "@/components/healtech-ai-chat";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
@@ -436,6 +437,11 @@ function PharmacyDashboard() {
         <StatCard title="Low Stock Batches" value={counts.lowStockBatches} icon={AlertTriangle} tone="warning" />
         <StatCard title="Out / Expired Batches" value={counts.outOfStockBatches + counts.expiredBatches} icon={Inbox} tone="danger" />
       </div>
+
+      <DataCard title="AI Care Coordinator">
+        <p className="mb-4 text-sm text-[#607084]">Pharmacy-scoped AI support for prescription review, stock checks, dispense drafts, and restock request drafts.</p>
+        <HealTechAIChat userRole="pharmacy" />
+      </DataCard>
 
       <DataCard
         title="Recent Pending Prescriptions"
