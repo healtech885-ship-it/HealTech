@@ -6,6 +6,7 @@ import { Bot, Loader2, Send, UserRound } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { FeedbackAlert } from "@/components/ui/data-state";
 import { Textarea } from "@/components/ui/textarea";
+import { resolveTextDirection } from "@/lib/text-direction";
 import { cn } from "@/lib/utils";
 
 type ChatRole = "user" | "assistant";
@@ -28,6 +29,7 @@ export function HealTechAIChat({ className, userRole }: { className?: string; us
   const trimmedInput = input.trim();
   const remainingCharacters = 4000 - input.length;
   const canSend = trimmedInput.length > 0 && input.length <= 4000 && !loading;
+  const inputDirection = resolveTextDirection(input);
 
   const history = useMemo(
     () => messages.map(({ role, content }) => ({ role, content })),
@@ -109,10 +111,12 @@ export function HealTechAIChat({ className, userRole }: { className?: string; us
       <form className="space-y-3" onSubmit={handleSubmit}>
         <Textarea
           aria-label="Message"
-          className="min-h-24 resize-none bg-white"
+          className="min-h-24 resize-none bg-white text-start [unicode-bidi:plaintext]"
+          dir={inputDirection}
           maxLength={4000}
           onChange={(event) => setInput(event.target.value)}
           placeholder="Message HealTech"
+          style={{ unicodeBidi: "plaintext" }}
           value={input}
         />
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -132,6 +136,7 @@ export function HealTechAIChat({ className, userRole }: { className?: string; us
 function ChatBubble({ message }: { message: ChatMessage }) {
   const isUser = message.role === "user";
   const Icon = isUser ? UserRound : Bot;
+  const direction = resolveTextDirection(message.content);
 
   return (
     <div className={cn("flex gap-3", isUser && "justify-end")}>
@@ -142,9 +147,12 @@ function ChatBubble({ message }: { message: ChatMessage }) {
       ) : null}
       <div
         className={cn(
-          "max-w-[82%] whitespace-pre-wrap rounded-lg px-3 py-2 text-sm leading-6 shadow-sm",
+          "max-w-[82%] whitespace-pre-wrap rounded-lg px-3 py-2 text-start text-sm leading-6 shadow-sm [unicode-bidi:plaintext]",
           isUser ? "bg-[#00758d] text-white" : "border border-[#d4e0e8] bg-white text-[#17212f]",
         )}
+        dir={direction}
+        lang={direction === "rtl" ? "ar" : undefined}
+        style={{ unicodeBidi: "plaintext" }}
       >
         {message.content}
       </div>
