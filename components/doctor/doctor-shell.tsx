@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { Badge, badgeTone } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
+import { HealTechAIChat } from "@/components/healtech-ai-chat";
 import { Select } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableFrame, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { navigationByRole } from "@/lib/constants/navigation";
@@ -295,6 +296,14 @@ function DoctorDashboard({ profile }: { profile: AppProfile }) {
           </Link>
         </div>
       ) : null}
+
+      <DataPanel
+        className="mt-6"
+        title="AI Care Coordinator"
+        description="Doctor-scoped AI support for patient summaries, visit context, lab-order drafts, and prescription drafts."
+      >
+        <HealTechAIChat userRole="doctor" />
+      </DataPanel>
 
       <DataPanel
         className="mt-6"
