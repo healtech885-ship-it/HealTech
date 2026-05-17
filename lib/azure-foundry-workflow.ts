@@ -1,7 +1,12 @@
+import { getToolsForRole } from "@/lib/agents/tools";
+import { executeToolCall } from "@/lib/agents/tool-handlers";
+import { generateTraceId } from "@/lib/agents/types";
+
 // Direct HTTP token acquisition - no @azure/identity dependency needed
 
 const AZURE_AI_SCOPE = "https://ai.azure.com/.default";
 const DEFAULT_API_VERSION = "2025-11-15-preview";
+const MAX_TOOL_CALL_ROUNDS = 5;
 const AGENT_RUN_POLL_INTERVAL_MS = 1000;
 const AGENT_RUN_MAX_POLL_ATTEMPTS = 60;
 
@@ -205,6 +210,8 @@ export async function invokeHealTechWorkflow(
     fetchImpl?: FetchImpl;
     getAccessToken?: (config: FoundryWorkflowProviderConfig) => Promise<string>;
     userRole?: string;
+    userId?: string;
+    patientId?: string;
   } = {},
 ): Promise<HealTechWorkflowResult> {
   const configResult = options.config ? { ok: true as const, config: options.config } : resolveHealTechChatProviderConfig(options.env);
@@ -220,7 +227,7 @@ export async function invokeHealTechWorkflow(
     return invokeAzureOpenAIResponses(input, configResult.config, fetchImpl);
   }
   if (configResult.config.agentName) {
-    return invokeFoundryChatCompletions(input, configResult.config, fetchImpl, options.getAccessToken ?? getAccessToken, options.userRole);
+    return invokeFoundryChatCompletions(input, configResult.config, fetchImpl, options.getAccessToken ?? getAccessToken, options.userRole, options.userId, options.patientId);
   }
   return invokeFoundryWorkflowResponses(input, configResult.config, fetchImpl, options.getAccessToken ?? getAccessToken);
 }
@@ -295,7 +302,10 @@ async function invokeFoundryChatCompletions(
   fetchImpl: FetchImpl,
   getAccessTokenImpl: (config: FoundryWorkflowProviderConfig) => Promise<string>,
   userRole?: string,
+  userId?: string,
+  patientId?: string,
 ): Promise<HealTechWorkflowResult> {
+  const traceId = generateTraceId();
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
   };
@@ -307,37 +317,104 @@ async function invokeFoundryChatCompletions(
     headers.Authorization = `Bearer ${token}`;
   }
 
-  // Use the Chat Completions API directly with GPT-4o deployment
   const chatUrl = `https://healtech-ai-foundry.services.ai.azure.com/openai/deployments/gpt-4o/chat/completions?api-version=2024-06-01`;
-
   const systemPrompt = buildRoleScopedSystemPrompt(userRole);
+  const tools = userRole ? getToolsForRole(userRole) : [];
 
-  const raw = await fetchProviderJson(
-    chatUrl,
-    {
-      method: "POST",
-      headers,
-      body: JSON.stringify({
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: input },
-        ],
-        temperature: 0.7,
-        max_tokens: 1024,
-      }),
-    },
-    "azure_foundry_workflow",
-    fetchImpl,
-  ) as Record<string, unknown>;
+  // Build initial messages
+  type ChatMsg = { role: string; content?: string | null; tool_calls?: unknown[]; tool_call_id?: string; name?: string };
+  const messages: ChatMsg[] = [
+    { role: "system", content: systemPrompt },
+    { role: "user", content: input },
+  ];
 
-  // Extract text from Chat Completions response
-  const choices = raw.choices as Array<Record<string, unknown>> | undefined;
-  const text = (choices?.[0]?.message as Record<string, unknown>)?.content as string
-    ?? "I apologize, but I was unable to generate a response. Please try again.";
+  // Function calling loop
+  let lastRaw: Record<string, unknown> = {};
+  for (let round = 0; round < MAX_TOOL_CALL_ROUNDS; round++) {
+    const body: Record<string, unknown> = {
+      messages,
+      temperature: 0.7,
+      max_tokens: 2048,
+    };
+
+    if (tools.length > 0) {
+      body.tools = tools;
+      body.tool_choice = "auto";
+    }
+
+    const raw = await fetchProviderJson(
+      chatUrl,
+      { method: "POST", headers, body: JSON.stringify(body) },
+      "azure_foundry_workflow",
+      fetchImpl,
+    ) as Record<string, unknown>;
+
+    lastRaw = raw;
+    const choices = raw.choices as Array<Record<string, unknown>> | undefined;
+    const choice = choices?.[0];
+    const message = choice?.message as Record<string, unknown> | undefined;
+    const finishReason = choice?.finish_reason as string | undefined;
+
+    // If model wants to call tools
+    if (finishReason === "tool_calls" || (message?.tool_calls && Array.isArray(message.tool_calls) && message.tool_calls.length > 0)) {
+      const toolCalls = message?.tool_calls as Array<{
+        id: string;
+        type: string;
+        function: { name: string; arguments: string };
+      }>;
+
+      // Add assistant message with tool_calls
+      messages.push({ role: "assistant", content: null, tool_calls: toolCalls });
+
+      // Execute each tool call and add results
+      for (const tc of toolCalls) {
+        let args: Record<string, unknown> = {};
+        try {
+          args = JSON.parse(tc.function.arguments) as Record<string, unknown>;
+        } catch {
+          args = {};
+        }
+
+        console.log(`[Agent Tool] trace=${traceId} role=${userRole} tool=${tc.function.name} args=${JSON.stringify(args)}`);
+
+        const result = await executeToolCall(tc.function.name, args, {
+          userRole: userRole ?? "unknown",
+          userId,
+          patientId,
+        });
+
+        console.log(`[Agent Tool Result] trace=${traceId} tool=${tc.function.name} success=${result.success}`);
+
+        messages.push({
+          role: "tool",
+          tool_call_id: tc.id,
+          content: JSON.stringify(result),
+        });
+      }
+
+      // Continue loop — model will process tool results
+      continue;
+    }
+
+    // Model returned a final text response
+    const text = message?.content as string
+      ?? "I apologize, but I was unable to generate a response. Please try again.";
+
+    return {
+      text,
+      raw: lastRaw,
+      provider: "azure_foundry_workflow",
+    };
+  }
+
+  // If we exhausted all rounds, return whatever we have
+  const finalChoices = lastRaw.choices as Array<Record<string, unknown>> | undefined;
+  const finalText = (finalChoices?.[0]?.message as Record<string, unknown>)?.content as string
+    ?? "I reached the maximum number of data lookups. Please try a more specific question.";
 
   return {
-    text,
-    raw,
+    text: finalText,
+    raw: lastRaw,
     provider: "azure_foundry_workflow",
   };
 }
@@ -361,13 +438,19 @@ You must not provide final diagnosis or final treatment decisions.
 Diagnosis, prescription, and lab interpretation must always be framed as drafts for clinician review.
 When uncertain, recommend consulting a licensed clinician.
 
-For now, you are in Phase 1 mode:
-- read-only explanations
-- workflow summaries
-- draft proposals only
-- no live backend tools yet
 
-When the user asks for a system-changing action, return a proposal and say approval is required.`;
+You have access to LIVE backend tools that can read real data from the clinic database.
+When a user asks about patients, visits, lab results, prescriptions, stock, or operational data, USE the available tools to fetch real information before responding.
+Do NOT make up data. If a tool returns an error or empty result, tell the user honestly.
+
+Important tool usage rules:
+- Always use tools when the user asks about specific data (patients, visits, labs, prescriptions, stock)
+- Present tool results in a clear, organized format
+- If no data is found, say so clearly
+- Draft actions (creating visits, ordering labs, prescribing) should be described as proposals requiring human approval
+- Never claim to have created, updated, or deleted any record
+
+When the user asks for a system-changing action, describe what would need to happen and say approval is required.`;
 
 const ROLE_PROMPTS: Record<string, string> = {
   patient: `
@@ -391,9 +474,9 @@ Forbidden:
 - No staff-only workflow data
 
 Data rules:
-- No live backend data is connected yet. If asked for specific records, say: "No live backend data is connected, so I cannot show actual patient portal records."
-- Provide generic templates with placeholders like [Appointment Date], [Visit Status], [Approved Lab Result]
-- Never create fake lab values, appointments, prescriptions, or patient records
+- Use your available tools to fetch REAL data from the clinic database when the user asks for it
+- Present real data clearly; never fabricate records, IDs, dates, or clinical values
+- If a tool returns empty results, say so honestly
 
 If the patient asks about abnormal results, explain that a licensed clinician must review them.
 If symptoms appear urgent, advise contacting emergency services.`,
@@ -420,8 +503,9 @@ Forbidden:
 Required human approval for: creating a patient, creating a visit, editing demographic data, reviewing appointment requests.
 
 Data rules:
-- No live backend data is connected yet. Provide generic templates with placeholders.
-- Never create fake patient names, IDs, or dates.`,
+- Use your available tools to fetch REAL data from the clinic database when the user asks for it
+- Present real data clearly; never fabricate patient names, IDs, or dates
+- If a tool returns empty results, say so honestly`,
 
   doctor: `
 You are speaking to an authenticated DOCTOR.
@@ -446,8 +530,9 @@ Abnormal lab results should be flagged as "needs clinician review," not converte
 Required human approval for: saving diagnosis, ordering lab tests, creating prescriptions, completing a visit.
 
 Data rules:
-- No live backend data is connected yet. Provide generic templates with placeholders.
-- Never create fake patient names, IDs, lab values, or clinical data.`,
+- Use your available tools to fetch REAL data from the clinic database when the user asks for it
+- Present real data clearly; never fabricate patient names, IDs, lab values, or clinical data
+- If a tool returns empty results, say so honestly`,
 
   lab: `
 You are speaking to an authenticated LAB staff member.
@@ -472,8 +557,9 @@ Medical safety: Never provide final diagnosis. Abnormal results should be flagge
 Required human approval for: saving lab results, marking orders completed, sending abnormal alerts, releasing results for doctor review.
 
 Data rules:
-- No live backend data is connected yet. Provide generic templates with placeholders like [Order ID], [Patient Name], [Test Name].
-- Never create sample IDs, fake dates, or fake patient/order data.`,
+- Use your available tools to fetch REAL data from the clinic database when the user asks for it
+- Present real data clearly; never fabricate sample IDs, dates, or patient/order data
+- If a tool returns empty results, say so honestly`,
 
   pharmacy: `
 You are speaking to an authenticated PHARMACY staff member.
@@ -500,8 +586,9 @@ Inventory safety: Never decrement stock directly. Stock changes must go through 
 Required human approval for: dispensing medicine, substituting medicine, creating restock requests, updating inventory.
 
 Data rules:
-- No live backend data is connected yet. Provide generic templates with placeholders.
-- Never create fake medicine names, quantities, or prescription data.`,
+- Use your available tools to fetch REAL data from the clinic database when the user asks for it
+- Present real data clearly; never fabricate medicine names, quantities, or prescription data
+- If a tool returns empty results, say so honestly`,
 
   admin: `
 You are speaking to an authenticated ADMIN.
@@ -528,8 +615,9 @@ Forbidden:
 Required human approval for: creating employees, updating clinic settings, approving leave requests, reviewing store requests.
 
 Data rules:
-- No live backend data is connected yet. Provide generic admin summary templates with placeholders like [Total Visits], [Completed Visits], [Pending Prescriptions].
-- Never create fake counts, names, IDs, or operational data.`,
+- Use your available tools to fetch REAL data from the clinic database when the user asks for it
+- Present real data clearly; never fabricate counts, names, IDs, or operational data
+- If a tool returns empty results, say so honestly`,
 };
 
 function buildRoleScopedSystemPrompt(userRole?: string): string {

@@ -35,9 +35,14 @@ export async function POST(request: Request) {
   }
 
   try {
-    const userRole = await resolveUserRole();
-    const input = composeHealTechWorkflowInput(parsed.data.message, parsed.data.history ?? [], userRole ?? parsed.data.userRole);
-    const result = await invokeHealTechWorkflow(input, { config: configResult.config, userRole: userRole ?? parsed.data.userRole });
+    const { role: userRole, userId } = await resolveUserContext();
+    const effectiveRole = userRole ?? parsed.data.userRole;
+    const input = composeHealTechWorkflowInput(parsed.data.message, parsed.data.history ?? [], effectiveRole);
+    const result = await invokeHealTechWorkflow(input, {
+      config: configResult.config,
+      userRole: effectiveRole,
+      userId,
+    });
     return NextResponse.json({ message: result.text });
   } catch (error) {
     logChatError(error);
@@ -63,11 +68,13 @@ async function requireChatAccess() {
   return null;
 }
 
-async function resolveUserRole(): Promise<string | undefined> {
-  if (!hasSupabaseEnv()) return undefined;
+async function resolveUserContext(): Promise<{ role?: string; userId?: string }> {
+  if (!hasSupabaseEnv()) return {};
   const result = await resolveCurrentProfile();
-  if (result.status === "authenticated" || result.status === "inactive") return result.profile.role;
-  return undefined;
+  if (result.status === "authenticated" || result.status === "inactive") {
+    return { role: result.profile.role, userId: result.profile.id };
+  }
+  return {};
 }
 
 async function readJson(request: Request): Promise<{ ok: true; value: unknown } | { ok: false }> {
