@@ -5,6 +5,7 @@ import Link from "next/link";
 import {
   AlertTriangle,
   Bell,
+  Bot,
   BriefcaseMedical,
   CircleHelp,
   Clock3,
@@ -12,6 +13,7 @@ import {
   ChevronsRight,
   ClipboardList,
   Menu,
+  MessageCircle,
   Plus,
   Search,
   Settings,
@@ -20,6 +22,7 @@ import {
   X,
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { HealTechAIChat } from "@/components/healtech-ai-chat";
 import { SignOutButton } from "@/components/auth/sign-out-button";
 import { navigationByRole, roleLabels, type NavItem } from "@/lib/constants/navigation";
 import { cn } from "@/lib/utils";
@@ -118,6 +121,7 @@ export function AppShell({
         </header>
         <div className="mx-auto max-w-[1440px] px-4 py-6 lg:px-8">{children}</div>
       </main>
+      <FloatingAIChatPanel role={role} />
     </div>
   );
 }
@@ -318,6 +322,7 @@ function AdminShell({
         <div className="min-w-0 px-5 py-8 lg:px-8 lg:py-9">{children}</div>
       </main>
       <EmergencyWorkflowDialog open={emergencyOpen} onClose={() => setEmergencyOpen(false)} />
+      <FloatingAIChatPanel role="admin" />
     </div>
   );
 }
@@ -674,4 +679,45 @@ function initials(name: string) {
     .slice(0, 2)
     .map((part) => part[0]?.toUpperCase())
     .join("") || "AD";
+}
+
+function FloatingAIChatPanel({ role }: { role: UserRole }) {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <>
+      {/* Floating chat button */}
+      <button
+        type="button"
+        aria-label={open ? "Close AI assistant" : "Open AI assistant"}
+        onClick={() => setOpen((v) => !v)}
+        className={cn(
+          "fixed bottom-6 right-6 z-50 flex h-14 w-14 items-center justify-center rounded-full shadow-lg transition-all duration-300 hover:scale-105 focus:outline-none focus:ring-2 focus:ring-offset-2",
+          open
+            ? "bg-[#2d4058] text-white focus:ring-[#2d4058]"
+            : "bg-[#00758d] text-white focus:ring-[#00758d]",
+        )}
+      >
+        {open ? <X className="h-6 w-6" /> : <MessageCircle className="h-6 w-6" />}
+      </button>
+
+      {/* Chat panel */}
+      {open ? (
+        <div className="fixed bottom-24 right-6 z-50 flex w-[min(92vw,420px)] flex-col overflow-hidden rounded-2xl border border-[#d4e0e8] bg-white shadow-2xl">
+          <div className="flex items-center gap-3 border-b border-[#d4e0e8] bg-gradient-to-r from-[#00758d] to-[#009cb8] px-5 py-4">
+            <span className="flex h-9 w-9 items-center justify-center rounded-full bg-white/20">
+              <Bot className="h-5 w-5 text-white" />
+            </span>
+            <div>
+              <p className="text-sm font-bold text-white">AI Care Coordinator</p>
+              <p className="text-xs text-white/80">{roleLabels[role]} Assistant</p>
+            </div>
+          </div>
+          <div className="max-h-[60vh] overflow-y-auto p-4">
+            <HealTechAIChat userRole={role} />
+          </div>
+        </div>
+      ) : null}
+    </>
+  );
 }

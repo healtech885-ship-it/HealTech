@@ -17,10 +17,10 @@ type ChatMessage = {
 };
 
 type ChatApiResponse =
-  | { ok: true; reply: string }
-  | { ok: false; error: string };
+  | { message: string; reply?: string; ok?: true }
+  | { error: string; status?: number; missing?: string[]; ok?: false };
 
-export function HealTechAIChat({ className }: { className?: string }) {
+export function HealTechAIChat({ className, userRole }: { className?: string; userRole?: string }) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -58,18 +58,23 @@ export function HealTechAIChat({ className }: { className?: string }) {
         body: JSON.stringify({
           message: userMessage.content,
           history,
+          userRole,
         }),
       });
 
       const data = await parseChatResponse(response);
-      if (!response.ok || !data.ok) {
-        throw new Error(data.ok ? "The AI assistant could not process the request." : data.error);
+      if (!response.ok || "error" in data) {
+        throw new Error(formatChatApiError(data));
+      }
+      const assistantText = data.message ?? data.reply;
+      if (!assistantText) {
+        throw new Error("The AI assistant returned an empty response.");
       }
 
       const assistantMessage: ChatMessage = {
         id: crypto.randomUUID(),
         role: "assistant",
-        content: data.reply,
+        content: assistantText,
       };
       setMessages((current) => [...current, assistantMessage]);
     } catch (requestError) {
@@ -161,4 +166,11 @@ async function parseChatResponse(response: Response): Promise<ChatApiResponse> {
       error: "The AI assistant returned an invalid response.",
     };
   }
+}
+
+function formatChatApiError(data: ChatApiResponse) {
+  if (!("error" in data)) return "The AI assistant could not process the request.";
+  if (data.missing?.length) return `${data.error}: ${data.missing.join(", ")}`;
+  if (typeof data.status === "number") return `${data.error} (status ${data.status})`;
+  return data.error;
 }

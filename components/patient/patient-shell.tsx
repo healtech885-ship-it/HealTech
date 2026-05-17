@@ -502,7 +502,7 @@ function PatientDashboard({ supabase, profile, patient }: { supabase: PatientPor
         <StatCard title="Appointment Requests" value={counts.appointmentRequests} icon={CalendarClock} tone="warning" />
       </div>
       <DataCard title="AI Care Coordinator">
-        <HealTechAIChat />
+        <HealTechAIChat userRole="patient" />
       </DataCard>
       <div className="grid gap-6 xl:grid-cols-[1fr_360px]">
         <DataCard title="Latest Visits">
