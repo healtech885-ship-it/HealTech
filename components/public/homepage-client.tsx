@@ -174,35 +174,35 @@ const categories: Category[] = [
   {
     title: "Reception",
     description: "Register patients, schedule appointments, create visits, and manage the active queue.",
-    href: "#workflow",
+    href: "#how-it-works",
     icon: ClipboardCheck,
     keywords: ["front desk", "queue", "appointments", "registration", "visit"],
   },
   {
     title: "Doctor workspace",
     description: "Review visits, add diagnoses, request labs, prescribe medicines, and close encounters.",
-    href: "#workflow",
+    href: "#how-it-works",
     icon: Stethoscope,
     keywords: ["doctor", "diagnosis", "clinical", "prescription", "encounter"],
   },
   {
     title: "Lab orders",
     description: "Receive requests, submit results, and route approved findings back to care teams.",
-    href: "#workflow",
+    href: "#how-it-works",
     icon: FlaskConical,
     keywords: ["lab", "tests", "results", "approval", "orders"],
   },
   {
     title: "Pharmacy inventory",
     description: "Track stock, batches, low inventory, expiry risk, and prescription dispensing.",
-    href: "#pricing",
+    href: "#how-it-works",
     icon: PackagePlus,
     keywords: ["pharmacy", "inventory", "stock", "medicine", "dispense"],
   },
   {
     title: "Patient portal",
     description: "Let patients view visits, lab results, medicines, appointments, and profile details.",
-    href: "#workflow",
+    href: "#how-it-works",
     icon: UserRound,
     keywords: ["patient", "portal", "records", "appointments", "profile"],
   },
@@ -347,6 +347,36 @@ const footerColumns = [
   },
 ];
 
+const mobileNavItems = [
+  { label: "Solutions", href: "#explore" },
+  { label: "How it works", href: "#how-it-works" },
+  { label: "Pricing", href: "#pricing" },
+  { label: "Security", href: "#security" },
+  { label: "Resources", href: "#resources" },
+];
+
+function footerLinkHref(label: string) {
+  const normalized = label.toLowerCase();
+  if (normalized.includes("start") || normalized.includes("guide") || normalized.includes("success")) return "#how-it-works";
+  if (normalized.includes("security") || normalized.includes("secure") || normalized.includes("audit") || normalized.includes("protection") || normalized.includes("compliance")) return "#security";
+  if (normalized.includes("pricing") || normalized.includes("review")) return "#pricing";
+  if (normalized.includes("contact") || normalized.includes("partner")) return "#request-demo";
+  if (
+    normalized.includes("clinic")
+    || normalized.includes("patient")
+    || normalized.includes("appointment")
+    || normalized.includes("visit")
+    || normalized.includes("lab")
+    || normalized.includes("pharmacy")
+    || normalized.includes("admin")
+    || normalized.includes("role")
+    || normalized.includes("follow-up")
+  ) {
+    return "#explore";
+  }
+  return "#resources";
+}
+
 export function HomepageClient() {
   const [activeMode, setActiveMode] = useState<HeroMode["id"]>("teams");
   const [query, setQuery] = useState("");
@@ -409,10 +439,10 @@ export function HomepageClient() {
         Skip to content
       </a>
 
-      <header className="sticky top-0 z-50 border-b border-white/10 bg-[#181818] text-white">
-        <div className="mx-auto flex h-20 w-[min(1440px,calc(100%_-_48px))] items-center justify-between gap-5">
+      <header className="sticky top-0 z-50 border-b border-white/10 bg-[#181818]/96 text-white backdrop-blur-xl">
+        <div className="mx-auto flex h-20 w-[min(1440px,calc(100%_-_32px))] items-center justify-between gap-4 sm:w-[min(1440px,calc(100%_-_48px))]">
           <div className="flex items-center gap-7">
-            <Link href="/" className="text-[30px] font-bold leading-none tracking-normal text-white">
+            <Link href="/" className="shrink-0 text-[28px] font-bold leading-none tracking-normal text-white sm:text-[30px]">
               HealTech
             </Link>
             <nav aria-label="Primary navigation" className="hidden items-center gap-6 whitespace-nowrap text-[15px] font-semibold lg:flex">
@@ -481,7 +511,7 @@ export function HomepageClient() {
 
           <button
             type="button"
-            className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/25 text-white lg:hidden"
+            className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-white/25 text-white lg:hidden"
             aria-label="Open navigation menu"
             onClick={() => setMobileOpen(true)}
           >
@@ -491,7 +521,7 @@ export function HomepageClient() {
       </header>
 
       {mobileOpen ? (
-        <div className="fixed inset-0 z-[80] bg-[#181818] px-6 py-5 text-white lg:hidden" role="dialog" aria-modal="true" aria-label="Mobile navigation">
+        <div className="fixed inset-0 z-[80] overflow-y-auto bg-[#181818] px-6 py-5 text-white lg:hidden" role="dialog" aria-modal="true" aria-label="Mobile navigation">
           <div className="flex items-center justify-between">
             <Link href="/" className="text-[28px] font-bold text-white" onClick={() => setMobileOpen(false)}>
               HealTech
@@ -506,24 +536,33 @@ export function HomepageClient() {
             </button>
           </div>
           <nav className="mt-10 grid gap-3 text-2xl font-semibold">
-            {["Explore", "How it works", "Pricing", "Security", "Resources"].map((item) => (
+            {mobileNavItems.map((item) => (
               <a
-                key={item}
-                href={item === "Explore" ? "#explore" : `#${item.toLowerCase().replaceAll(" ", "-")}`}
+                key={item.href}
+                href={item.href}
                 className="rounded-xl border border-white/14 px-4 py-4 text-white"
                 onClick={() => setMobileOpen(false)}
               >
-                {item}
+                {item.label}
               </a>
             ))}
           </nav>
-          <Link
-            href="#request-demo"
-            className="mt-8 inline-flex h-12 w-full items-center justify-center rounded-full bg-[#14a800] text-base font-bold text-white"
-            onClick={() => setMobileOpen(false)}
-          >
-            Request a demo
-          </Link>
+          <div className="mt-8 grid gap-3">
+            <Link
+              href="#request-demo"
+              className="inline-flex h-12 w-full items-center justify-center rounded-full bg-[#14a800] text-base font-bold text-white"
+              onClick={() => setMobileOpen(false)}
+            >
+              Request a demo
+            </Link>
+            <Link
+              href="/login"
+              className="inline-flex h-12 w-full items-center justify-center rounded-full border border-white/22 text-base font-bold text-white"
+              onClick={() => setMobileOpen(false)}
+            >
+              Log in
+            </Link>
+          </div>
         </div>
       ) : null}
 
@@ -543,13 +582,13 @@ export function HomepageClient() {
 
         <div className="mx-auto flex w-[min(1200px,calc(100%_-_32px))] items-start pt-20 pb-12 md:pt-24 lg:pt-28">
           <div className="max-w-[760px] text-white">
-            <div className="inline-flex rounded-full bg-white/35 p-1.5 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.18)] backdrop-blur-md">
+            <div className="grid w-full max-w-[560px] grid-cols-2 rounded-full bg-white/35 p-1.5 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.18)] backdrop-blur-md sm:inline-grid">
               {heroModes.map((item) => (
                 <button
                   key={item.id}
                   type="button"
                   aria-pressed={activeMode === item.id}
-                  className={`min-h-11 rounded-full px-9 text-sm font-bold transition md:px-16 ${
+                  className={`min-h-11 rounded-full px-3 text-sm font-bold transition sm:px-8 md:px-16 ${
                     activeMode === item.id ? "bg-[#181818] text-white shadow-sm" : "text-white hover:bg-white/18"
                   }`}
                   onClick={() => {
@@ -645,11 +684,11 @@ export function HomepageClient() {
             </div>
           </div>
 
-          <div className="mt-20">
+          <div className="mt-20 overflow-hidden">
             <p className="text-sm font-bold uppercase tracking-[0.16em] text-white/42">Trusted across daily clinic operations</p>
-            <div className="mt-8 grid grid-cols-2 gap-x-8 gap-y-6 text-2xl font-bold text-white/92 sm:grid-cols-3 lg:grid-cols-7">
+            <div className="mt-8 grid grid-cols-2 gap-x-5 gap-y-6 text-xl font-bold text-white/92 sm:grid-cols-3 sm:text-2xl lg:grid-cols-7">
               {trustLogos.map((logo) => (
-                <span key={logo} className="whitespace-nowrap tracking-[-0.02em]">
+                <span key={logo} className="min-w-0 break-words tracking-normal">
                   {logo}
                 </span>
               ))}
@@ -793,14 +832,14 @@ export function HomepageClient() {
 
       <section id="explore" className="-mt-px bg-[#181818] py-16 text-white lg:py-24">
         <div className="mx-auto w-[min(1200px,calc(100%_-_32px))]">
-        <div className="flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
-          <div>
-            <h2 className="text-[32px] font-bold leading-tight text-white md:text-[42px]">Explore clinic workflow families</h2>
-            <p className="mt-3 max-w-[660px] text-base font-semibold leading-7 text-white/58">
-              Browse the operational areas HealTech connects from first patient contact to follow-up.
-            </p>
+          <div className="flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
+            <div>
+              <h2 className="text-[32px] font-bold leading-tight text-white md:text-[42px]">Explore clinic workflow families</h2>
+              <p className="mt-3 max-w-[660px] text-base font-semibold leading-7 text-white/58">
+                Browse the operational areas HealTech connects from first patient contact to follow-up.
+              </p>
+            </div>
           </div>
-        </div>
 
         <div className="mt-9 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           {categories.map((category) => {
@@ -828,34 +867,34 @@ export function HomepageClient() {
 
       <section id="how-it-works" className="bg-[#181818] py-16 text-white lg:py-24">
         <div className="mx-auto grid w-[min(1200px,calc(100%_-_32px))] gap-10 lg:grid-cols-[0.9fr_1.1fr] lg:items-center">
-        <div>
-          <h2 className="text-[32px] font-bold leading-tight text-white md:text-[42px]">How HealTech keeps clinic work moving</h2>
-          <p className="mt-4 text-base font-semibold leading-7 text-white/58">
-            The system follows the real care path: intake, clinical decisions, lab and pharmacy actions, then patient follow-up.
-          </p>
-          <div className="mt-8 grid gap-4">
-            {steps.map((step, index) => (
-              <article key={step.title} className="grid grid-cols-[48px_1fr] gap-4 rounded-2xl border border-white/12 bg-white/[0.055] p-5 shadow-[0_18px_50px_rgba(0,0,0,0.18)]">
-                <span className="flex h-12 w-12 items-center justify-center rounded-full bg-[#14a800] text-lg font-bold text-white">
-                  {index + 1}
-                </span>
-                <div>
-                  <h3 className="text-lg font-bold text-white">{step.title}</h3>
-                  <p className="mt-1 text-sm leading-6 text-white/58">{step.description}</p>
-                </div>
-              </article>
-            ))}
+          <div>
+            <h2 className="text-[32px] font-bold leading-tight text-white md:text-[42px]">How HealTech keeps clinic work moving</h2>
+            <p className="mt-4 text-base font-semibold leading-7 text-white/58">
+              The system follows the real care path: intake, clinical decisions, lab and pharmacy actions, then patient follow-up.
+            </p>
+            <div className="mt-8 grid gap-4">
+              {steps.map((step, index) => (
+                <article key={step.title} className="grid grid-cols-[48px_1fr] gap-4 rounded-2xl border border-white/12 bg-white/[0.055] p-5 shadow-[0_18px_50px_rgba(0,0,0,0.18)]">
+                  <span className="flex h-12 w-12 items-center justify-center rounded-full bg-[#14a800] text-lg font-bold text-white">
+                    {index + 1}
+                  </span>
+                  <div>
+                    <h3 className="text-lg font-bold text-white">{step.title}</h3>
+                    <p className="mt-1 text-sm leading-6 text-white/58">{step.description}</p>
+                  </div>
+                </article>
+              ))}
+            </div>
           </div>
-        </div>
-        <Image
-          src="/homepage/workflow-clinic-ops.webp"
-          alt="Illustrated workflow board showing connected clinic operations from intake to follow-up."
-          width={1400}
-          height={900}
-          loading="lazy"
-          sizes="(min-width: 1024px) 50vw, 100vw"
-          className="h-auto w-full rounded-[32px] border border-white/12 bg-white/[0.055] shadow-[0_30px_100px_rgba(0,0,0,0.32)]"
-        />
+          <Image
+            src="/homepage/workflow-clinic-ops.webp"
+            alt="Illustrated workflow board showing connected clinic operations from intake to follow-up."
+            width={1400}
+            height={900}
+            loading="lazy"
+            sizes="(min-width: 1024px) 50vw, 100vw"
+            className="h-auto w-full rounded-[32px] border border-white/12 bg-white/[0.055] shadow-[0_30px_100px_rgba(0,0,0,0.32)]"
+          />
         </div>
       </section>
 
@@ -976,7 +1015,7 @@ export function HomepageClient() {
                 <ul className="mt-5 grid gap-4">
                   {column.links.map((link) => (
                     <li key={link}>
-                      <a href="#main-content" className="text-sm font-semibold leading-none text-white transition hover:text-[#14a800]">
+                      <a href={footerLinkHref(link)} className="text-sm font-semibold leading-none text-white transition hover:text-[#14a800]">
                         {link}
                       </a>
                     </li>
