@@ -569,10 +569,10 @@ export function HomepageClient() {
               ))}
             </div>
 
-            <h1 className="mt-6 max-w-[720px] text-[42px] font-bold leading-[1.02] tracking-normal text-white sm:text-[58px] lg:text-[68px]">
-            Connect clinic workflows in one secure workspace
-          </h1>
-            <p className="mt-5 max-w-[580px] text-lg font-semibold leading-7 text-white md:text-[22px] md:leading-[1.28]">
+            <h1 className="mt-7 max-w-[780px] text-balance font-[var(--font-hero)] text-[42px] font-semibold leading-[1.04] tracking-normal text-white [text-shadow:0_8px_30px_rgba(0,0,0,0.34)] sm:text-[58px] lg:text-[72px]">
+              Connect clinic workflows in one secure workspace
+            </h1>
+            <p className="mt-6 max-w-[620px] font-[var(--font-hero)] text-lg font-medium leading-7 text-white/92 [text-shadow:0_4px_18px_rgba(0,0,0,0.30)] md:text-[23px] md:leading-[1.34]">
               {mode.headlineSupport}
             </p>
 
