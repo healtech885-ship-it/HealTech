@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import { HomepageClient } from "@/components/public/homepage-client";
 
 export const metadata: Metadata = {
-  title: "HealTech | Clinic workflow management for healthcare teams",
+  title: "HealTech | Clinic operations solutions for healthcare teams",
   description:
-    "Find, compare, and activate clinic workflows faster. Explore reception, doctor, lab, pharmacy, patient portal, and admin operations with HealTech.",
+    "Find public HealTech solutions for reception, doctor workspaces, lab orders, pharmacy, patient experience, security, pricing, and demo planning.",
 };
 
 const jsonLd = [
@@ -22,7 +22,7 @@ const jsonLd = [
     url: "https://healtech.example",
     potentialAction: {
       "@type": "SearchAction",
-      target: "https://healtech.example/?workflow={search_term_string}",
+      target: "https://healtech.example/?solution={search_term_string}",
       "query-input": "required name=search_term_string",
     },
   },

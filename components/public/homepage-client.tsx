@@ -15,7 +15,6 @@ import {
   Menu,
   MonitorCog,
   PackagePlus,
-  Search,
   ShieldCheck,
   Stethoscope,
   TrendingDown,
@@ -30,13 +29,19 @@ import {
   Youtube,
   X,
 } from "lucide-react";
+import {
+  NavbarPublicSearch,
+  PublicSearchResults,
+  PublicSolutionSearch,
+} from "@/components/public/public-solution-search";
+import { searchPublicSolutions, trackPublicSearchEvent } from "@/lib/public-solution-search";
+import type { PublicSolutionAudience } from "@/lib/public-search-data";
 
 type HeroMode = {
   id: "teams" | "patients";
   label: string;
   headlineSupport: string;
-  searchPlaceholder: string;
-  primaryCta: string;
+  helperText: string;
   chips: string[];
 };
 
@@ -53,17 +58,15 @@ const heroModes: HeroMode[] = [
     id: "teams",
     label: "For clinic teams",
     headlineSupport: "Manage reception, care, labs, pharmacy, and admin handoffs in one place.",
-    searchPlaceholder: "Search clinic workflows or roles",
-    primaryCta: "Request a demo",
-    chips: ["Reception queue", "Doctor workspace", "Lab orders", "Pharmacy stock", "Admin reports"],
+    helperText: "For reception, doctors, labs, pharmacy, admin, and care teams.",
+    chips: ["Reception", "Doctors", "Lab results", "Pharmacy", "Appointments", "AI assistant", "Billing"],
   },
   {
     id: "patients",
     label: "For patients",
     headlineSupport: "Give patients one clear path to visits, results, medicines, and follow-up.",
-    searchPlaceholder: "Search patient services or records",
-    primaryCta: "View patient portal",
-    chips: ["Appointments", "Visit history", "Lab results", "Medicines", "Secure profile"],
+    helperText: "For booking, reports, prescriptions, follow-ups, and care access.",
+    chips: ["Book appointment", "Upload reports", "Prescriptions", "Lab updates", "Follow-up", "Care plan"],
   },
 ];
 
@@ -226,8 +229,6 @@ const categories: Category[] = [
   },
 ];
 
-const discoverySuggestions = ["appointment flow", "lab results", "medicine stock", "patient records", "admin reports"];
-
 const steps = [
   {
     title: "Register or find a patient",
@@ -349,26 +350,19 @@ const footerColumns = [
 export function HomepageClient() {
   const [activeMode, setActiveMode] = useState<HeroMode["id"]>("teams");
   const [query, setQuery] = useState("");
-  const [activeSearch, setActiveSearch] = useState("");
+  const [submittedQuery, setSubmittedQuery] = useState("");
+  const [selectedChip, setSelectedChip] = useState("");
+  const [visibleSolutionCount, setVisibleSolutionCount] = useState(6);
   const [exploreOpen, setExploreOpen] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const exploreRef = useRef<HTMLDivElement>(null);
 
   const mode = heroModes.find((item) => item.id === activeMode) ?? heroModes[0];
-  const normalizedSearch = activeSearch.trim().toLowerCase();
-
-  const categoryMatches = useMemo(() => {
-    if (!normalizedSearch) return new Set<string>();
-    return new Set(
-      categories
-        .filter((category) =>
-          [category.title, category.description, ...category.keywords].some((value) =>
-            value.toLowerCase().includes(normalizedSearch),
-          ),
-        )
-        .map((category) => category.title),
-    );
-  }, [normalizedSearch]);
+  const audience: PublicSolutionAudience = activeMode === "teams" ? "clinic-teams" : "patients";
+  const solutionSearchResponse = useMemo(
+    () => searchPublicSolutions(submittedQuery, audience, { includeAllMatches: true }),
+    [audience, submittedQuery],
+  );
 
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
@@ -392,16 +386,18 @@ export function HomepageClient() {
     };
   }, []);
 
-  function submitSearch(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setActiveSearch(query);
-    document.getElementById("explore")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  function runPublicSearch(value: string) {
+    setQuery(value);
+    setSubmittedQuery(value);
+    setVisibleSolutionCount(6);
+    window.requestAnimationFrame(() => {
+      document.getElementById("recommended-solutions")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
   }
 
   function applySuggestion(value: string) {
-    setQuery(value);
-    setActiveSearch(value);
-    document.getElementById("explore")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    setSelectedChip(value);
+    runPublicSearch(value);
   }
 
   return (
@@ -471,18 +467,12 @@ export function HomepageClient() {
           </div>
 
           <div className="hidden items-center gap-5 md:flex">
-            <a
-              href="#explore"
-              className="hidden h-12 min-w-[250px] items-center gap-3 rounded-full border border-white/36 px-5 text-base text-white/82 xl:flex"
-            >
-              <Search className="h-5 w-5" />
-              Search clinic workflows
-            </a>
+            <NavbarPublicSearch audience={audience} onSubmit={runPublicSearch} />
             <Link href="/login" className="whitespace-nowrap text-[15px] font-semibold text-white hover:text-[#b7f4ad]">
               Log in
             </Link>
             <Link
-              href="/login"
+              href="#request-demo"
               className="inline-flex h-12 items-center justify-center whitespace-nowrap rounded-full bg-[#14a800] px-6 text-[15px] font-bold text-white shadow-[0_0_24px_rgba(20,168,0,0.28)] transition hover:bg-[#108a00]"
             >
               Request a demo
@@ -528,7 +518,7 @@ export function HomepageClient() {
             ))}
           </nav>
           <Link
-            href="/login"
+            href="#request-demo"
             className="mt-8 inline-flex h-12 w-full items-center justify-center rounded-full bg-[#14a800] text-base font-bold text-white"
             onClick={() => setMobileOpen(false)}
           >
@@ -562,7 +552,14 @@ export function HomepageClient() {
                   className={`min-h-11 rounded-full px-9 text-sm font-bold transition md:px-16 ${
                     activeMode === item.id ? "bg-[#181818] text-white shadow-sm" : "text-white hover:bg-white/18"
                   }`}
-                  onClick={() => setActiveMode(item.id)}
+                  onClick={() => {
+                    setActiveMode(item.id);
+                    setSelectedChip("");
+                    setVisibleSolutionCount(6);
+                    trackPublicSearchEvent("public_search_tab_changed", {
+                      audience: item.id === "teams" ? "clinic-teams" : "patients",
+                    });
+                  }}
                 >
                   {item.id === "teams" ? "Clinic teams" : "Patients"}
                 </button>
@@ -576,45 +573,33 @@ export function HomepageClient() {
               {mode.headlineSupport}
             </p>
 
-          <form onSubmit={submitSearch} className="mt-6 max-w-[720px]">
-            <label htmlFor="hero-search" className="sr-only">
-              Search HealTech workflows
-            </label>
-            <div className="flex flex-col overflow-hidden rounded-[26px] bg-white p-1.5 shadow-[0_18px_60px_rgba(0,0,0,0.28)] sm:flex-row">
-              <div className="flex min-h-14 flex-1 items-center gap-3 px-5">
-                <Search className="h-5 w-5 text-[#7b8476]" aria-hidden="true" />
-                <input
-                  id="hero-search"
-                  value={query}
-                  onChange={(event) => setQuery(event.target.value)}
-                  placeholder={mode.searchPlaceholder}
-                  className="min-w-0 flex-1 bg-transparent text-base text-[#181818] outline-none placeholder:text-[#8a9287]"
-                />
-              </div>
-              <button
-                type="submit"
-                className="inline-flex min-h-14 items-center justify-center rounded-full bg-[#14a800] px-9 text-lg font-bold text-white transition hover:bg-[#108a00]"
-              >
-                {activeMode === "teams" ? "Find workflows" : "Find services"}
-              </button>
-            </div>
-          </form>
-
-          <div className="mt-5 flex max-w-[640px] flex-wrap gap-2" aria-label="Popular searches">
-            {mode.chips.map((chip) => (
-              <button
-                key={chip}
-                type="button"
-                className="rounded-full border border-white/24 bg-black/18 px-4 py-2 text-sm font-semibold text-white backdrop-blur-sm transition hover:border-[#b7f4ad] hover:bg-white/12"
-                onClick={() => applySuggestion(chip)}
-              >
-                {chip}
-              </button>
-            ))}
-          </div>
+            <PublicSolutionSearch
+              audience={audience}
+              query={query}
+              selectedChip={selectedChip}
+              helperText={mode.helperText}
+              chips={mode.chips}
+              onQueryChange={(value) => {
+                setQuery(value);
+                if (selectedChip && selectedChip.toLowerCase() !== value.toLowerCase()) {
+                  setSelectedChip("");
+                }
+              }}
+              onSubmit={(value) => {
+                setSelectedChip("");
+                runPublicSearch(value);
+              }}
+              onChipSelect={applySuggestion}
+            />
           </div>
         </div>
       </section>
+
+      <PublicSearchResults
+        response={solutionSearchResponse}
+        visibleCount={visibleSolutionCount}
+        onShowMore={() => setVisibleSolutionCount((count) => count + 6)}
+      />
 
       <section aria-label="Trending clinic workflows" className="-mt-px overflow-hidden bg-[#181818] text-white">
         <style>{`
@@ -677,7 +662,7 @@ export function HomepageClient() {
               From front desk queues to pharmacy stock, see the key workflows that keep every clinic role aligned.
             </p>
             <Link
-              href="/login"
+              href="#request-demo"
               className="mt-8 inline-flex h-11 items-center justify-center rounded-full bg-[#14a800] px-7 text-sm font-bold text-white shadow-[0_0_22px_rgba(20,168,0,0.24)] transition hover:bg-[#108a00]"
             >
               Start clinic demo
@@ -815,26 +800,16 @@ export function HomepageClient() {
               Browse the operational areas HealTech connects from first patient contact to follow-up.
             </p>
           </div>
-          {activeSearch ? (
-            <p className="rounded-full border border-white/12 bg-white/8 px-4 py-2 text-sm font-semibold text-[#b7f4ad]">
-              Highlighting: {activeSearch}
-            </p>
-          ) : null}
         </div>
 
         <div className="mt-9 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           {categories.map((category) => {
             const Icon = category.icon;
-            const isMatched = !normalizedSearch || categoryMatches.has(category.title);
             return (
               <a
                 key={category.title}
                 href={category.href}
-                className={`group flex min-h-[228px] flex-col rounded-[22px] border bg-white/[0.055] p-6 shadow-[0_18px_50px_rgba(0,0,0,0.18)] transition ${
-                  isMatched
-                    ? "border-white/12 hover:-translate-y-1 hover:border-[#14a800] hover:bg-white/[0.075] hover:shadow-[0_28px_70px_rgba(0,0,0,0.26)]"
-                    : "border-white/8 opacity-45"
-                }`}
+                className="group flex min-h-[228px] flex-col rounded-[22px] border border-white/12 bg-white/[0.055] p-6 shadow-[0_18px_50px_rgba(0,0,0,0.18)] transition hover:-translate-y-1 hover:border-[#14a800] hover:bg-white/[0.075] hover:shadow-[0_28px_70px_rgba(0,0,0,0.26)]"
               >
                 <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/10 text-[#b7f4ad] transition group-hover:bg-[#14a800] group-hover:text-white">
                   <Icon className="h-6 w-6" />
@@ -848,48 +823,6 @@ export function HomepageClient() {
             );
           })}
         </div>
-        </div>
-      </section>
-
-      <section className="bg-[#181818] py-10 text-white">
-        <div className="mx-auto grid w-[min(1200px,calc(100%_-_32px))] gap-6 rounded-[28px] border border-white/12 bg-[linear-gradient(135deg,rgba(255,255,255,0.07),rgba(20,168,0,0.10))] p-6 shadow-[0_28px_90px_rgba(0,0,0,0.24)] md:grid-cols-[0.85fr_1.15fr] md:p-8">
-          <div>
-            <h2 className="text-[28px] font-bold text-white">Find workflows by need, category, or goal</h2>
-            <p className="mt-3 text-base font-semibold leading-7 text-white/58">
-              Search for a workflow and HealTech will highlight the matching areas on this page.
-            </p>
-          </div>
-          <div>
-            <form onSubmit={submitSearch}>
-              <label htmlFor="discovery-search" className="sr-only">
-                Search workflow categories
-              </label>
-              <div className="flex flex-col gap-3 rounded-full border border-white/14 bg-black/20 p-2 sm:flex-row">
-                <input
-                  id="discovery-search"
-                  value={query}
-                  onChange={(event) => setQuery(event.target.value)}
-                  placeholder="Search workflows, roles, services, or reports"
-                  className="min-h-12 flex-1 rounded-full bg-transparent px-5 text-base text-white outline-none placeholder:text-white/42"
-                />
-                <button type="submit" className="min-h-12 rounded-full bg-[#14a800] px-6 text-sm font-bold text-white hover:bg-[#108a00]">
-                  Find matches
-                </button>
-              </div>
-            </form>
-            <div className="mt-4 flex flex-wrap gap-2">
-              {discoverySuggestions.map((suggestion) => (
-                <button
-                  key={suggestion}
-                  type="button"
-                  className="rounded-full bg-white/10 px-4 py-2 text-sm font-semibold text-white/68 transition hover:bg-white/16 hover:text-white"
-                  onClick={() => applySuggestion(suggestion)}
-                >
-                  {suggestion}
-                </button>
-              ))}
-            </div>
-          </div>
         </div>
       </section>
 
@@ -958,8 +891,8 @@ export function HomepageClient() {
                     </li>
                   ))}
                 </ul>
-                <Link
-                  href="/login"
+                <a
+                  href="#request-demo"
                   className={`mt-7 inline-flex h-11 w-full items-center justify-center rounded-full text-sm font-bold transition ${
                     plan.featured
                       ? "bg-[#14a800] text-white hover:bg-[#108a00]"
@@ -967,7 +900,7 @@ export function HomepageClient() {
                   }`}
                 >
                   {plan.cta}
-                </Link>
+                </a>
               </article>
             ))}
           </div>
@@ -1015,7 +948,7 @@ export function HomepageClient() {
         </div>
       </section>
 
-      <section className="bg-[#f2f7f2] py-14">
+      <section id="request-demo" className="bg-[#f2f7f2] py-14">
         <div className="mx-auto flex w-[min(1200px,calc(100%_-_32px))] flex-col gap-6 rounded-[32px] bg-[#13544e] p-8 text-white md:flex-row md:items-center md:justify-between md:p-10">
           <div>
             <h2 className="text-[30px] font-bold leading-tight md:text-[40px]">Ready to connect your clinic workflows?</h2>
@@ -1024,9 +957,9 @@ export function HomepageClient() {
             </p>
           </div>
           <div className="flex flex-col gap-3 sm:flex-row">
-            <Link href="/login" className="inline-flex h-12 items-center justify-center rounded-full bg-[#14a800] px-7 text-base font-bold text-white hover:bg-[#108a00]">
+            <a href="#request-demo" className="inline-flex h-12 items-center justify-center rounded-full bg-[#14a800] px-7 text-base font-bold text-white hover:bg-[#108a00]">
               Request a demo
-            </Link>
+            </a>
             <a href="#explore" className="inline-flex h-12 items-center justify-center rounded-full border border-white/70 px-7 text-base font-bold text-white hover:bg-white/10">
               Browse workflows
             </a>
