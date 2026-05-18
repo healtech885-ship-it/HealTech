@@ -279,7 +279,7 @@ export function getWorkspaceConfig(role: UserRole, segments?: string[]): Workspa
 }
 
 function employeeSelect() {
-  return "id,profile_id,department_id,job_title,employee_code,hire_date,status,created_at,profiles(full_name,email,phone,role,status),departments(name)";
+  return "id,profile_id,department_id,assigned_doctor_id,job_title,employee_code,hire_date,status,created_at,profiles(full_name,email,phone,role,status),departments(name),assigned_doctor:profiles!employees_assigned_doctor_id_fkey(full_name,email)";
 }
 
 function employeeColumnLabels() {
@@ -290,6 +290,7 @@ function employeeColumnLabels() {
     role: "Role",
     account_status: "Account status",
     department: "Department",
+    assigned_doctor: "Assigned doctor",
     job_title: "Job title",
     employee_code: "Employee code",
     hire_date: "Hire date",
@@ -362,6 +363,7 @@ function employeeFields(): WorkspaceField[] {
     { name: "password", label: "Temporary password", type: "password", placeholder: "Leave blank to auto-generate" },
     { name: "phone", label: "Phone" },
     { name: "role", label: "Role", type: "select", required: true, options: ["admin", "reception", "doctor", "lab", "pharmacy"] },
+    { name: "assigned_doctor_id", label: "Assigned doctor (required for reception)", reference: "doctors" },
     { name: "department_id", label: "Department", reference: "departments" },
     { name: "job_title", label: "Job title" },
     { name: "employee_code", label: "Employee code" },
@@ -374,6 +376,7 @@ function employeeEditFields(): WorkspaceField[] {
     { name: "phone", label: "Phone" },
     { name: "role", label: "Role", type: "select", required: true, options: ["admin", "reception", "doctor", "lab", "pharmacy"] },
     { name: "profile_status", label: "Account status", type: "select", required: true, options: ["active", "inactive", "suspended"] },
+    { name: "assigned_doctor_id", label: "Assigned doctor (required for reception)", reference: "doctors" },
     { name: "department_id", label: "Department", reference: "departments" },
     { name: "job_title", label: "Job title" },
     { name: "employee_code", label: "Employee code" },

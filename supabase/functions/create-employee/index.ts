@@ -16,6 +16,27 @@ function optionalString(body: Record<string, unknown>, field: string) {
   return typeof value === "string" && value.trim() !== "" ? value.trim() : null;
 }
 
+async function resolveAssignedDoctorId(
+  supabase: Parameters<Parameters<typeof createRoleHandler>[1]>[0]["supabase"],
+  role: StaffRole,
+  rawDoctorId: unknown,
+) {
+  const assignedDoctorId = typeof rawDoctorId === "string" && rawDoctorId.trim() !== "" ? rawDoctorId.trim() : null;
+  if (role !== "reception") return null;
+  if (!assignedDoctorId) throw new Error("Assigned doctor is required for reception accounts");
+
+  const { data: doctor, error } = await supabase
+    .from("profiles")
+    .select("id")
+    .eq("id", assignedDoctorId)
+    .eq("role", "doctor")
+    .eq("status", "active")
+    .single();
+
+  if (error || !doctor) throw new Error("Assigned doctor must be an active doctor account");
+  return assignedDoctorId;
+}
+
 function resolveStaffRole(value: unknown): StaffRole {
   if (typeof value !== "string" || !STAFF_ROLES.includes(value as StaffRole)) {
     throw new Error(`Role must be one of: ${STAFF_ROLES.join(", ")}`);
@@ -29,6 +50,7 @@ Deno.serve(createRoleHandler(["admin"], async ({ body, userId, supabase }) => {
   const fullName = requiredString(body, "full_name");
   const email = requiredString(body, "email").toLowerCase();
   const role = resolveStaffRole(body.role);
+  const assignedDoctorId = await resolveAssignedDoctorId(supabase, role, body.assigned_doctor_id);
   const password = optionalString(body, "password") ?? crypto.randomUUID();
   let createdAuthUserId: string | null = null;
 
@@ -58,6 +80,7 @@ Deno.serve(createRoleHandler(["admin"], async ({ body, userId, supabase }) => {
     const { data: employee, error: employeeError } = await supabase.from("employees").insert({
       profile_id: createdAuthUserId,
       department_id: optionalString(body, "department_id"),
+      assigned_doctor_id: assignedDoctorId,
       job_title: optionalString(body, "job_title"),
       employee_code: optionalString(body, "employee_code"),
       hire_date: optionalString(body, "hire_date"),
@@ -69,6 +92,7 @@ Deno.serve(createRoleHandler(["admin"], async ({ body, userId, supabase }) => {
       profile_id: createdAuthUserId,
       role,
       department_id: optionalString(body, "department_id"),
+      assigned_doctor_id: assignedDoctorId,
     });
 
     return { employee_id: employee.id, profile_id: createdAuthUserId, temporary_password: password };

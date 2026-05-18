@@ -1092,6 +1092,7 @@ function EmployeeDetailsView({
     ["Role", employee.role],
     ["Account status", employee.profileStatus],
     ["Department", employee.departmentName],
+    ["Assigned doctor", employee.assignedDoctorName],
     ["Job title", employee.jobTitle],
     ["Employee code", employee.employeeCode],
     ["Hire date", employee.hireDate],
@@ -2237,6 +2238,7 @@ function flatten(row: Record<string, unknown>) {
 function flattenEmployee(row: Record<string, unknown>) {
   const profile = relationObject(row.profiles);
   const department = relationObject(row.departments);
+  const assignedDoctor = relationObject(row.assigned_doctor);
 
   return {
     full_name: profile.full_name ?? "Not set",
@@ -2245,6 +2247,7 @@ function flattenEmployee(row: Record<string, unknown>) {
     role: profile.role ?? "Not set",
     account_status: profile.status ?? "Not set",
     department: department.name ?? "Not set",
+    assigned_doctor: assignedDoctor.full_name ?? "Not set",
     job_title: row.job_title ?? "Not set",
     employee_code: row.employee_code ?? "Not set",
     hire_date: row.hire_date ?? "Not set",
@@ -2489,6 +2492,7 @@ function appointmentRequestSummary(row: Record<string, unknown>) {
 function employeeSummary(row: Record<string, unknown>) {
   const profile = relationObject(row.profiles);
   const department = relationObject(row.departments);
+  const assignedDoctor = relationObject(row.assigned_doctor);
 
   return {
     id: String(row.id ?? ""),
@@ -2499,6 +2503,7 @@ function employeeSummary(row: Record<string, unknown>) {
     role: String(profile.role ?? "Not set"),
     profileStatus: String(profile.status ?? "Not set"),
     departmentName: String(department.name ?? "Not set"),
+    assignedDoctorName: String(assignedDoctor.full_name ?? "Not set"),
     jobTitle: String(row.job_title ?? "Not set"),
     employeeCode: String(row.employee_code ?? "Not set"),
     hireDate: String(row.hire_date ?? "Not set"),
@@ -2515,6 +2520,7 @@ function employeeFormDefaults(row: Record<string, unknown>): FormValues {
     phone: profile.phone ?? "",
     role: profile.role ?? "",
     profile_status: profile.status ?? "active",
+    assigned_doctor_id: row.assigned_doctor_id ?? "",
     department_id: row.department_id ?? "",
     job_title: row.job_title ?? "",
     employee_code: row.employee_code ?? "",

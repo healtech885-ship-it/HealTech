@@ -26,7 +26,7 @@ function priorityValue(value: unknown): Priority {
   return value as Priority;
 }
 
-Deno.serve(createRoleHandler(["admin", "reception"], async ({ body, userId, supabase }) => {
+Deno.serve(createRoleHandler(["admin", "reception"], async ({ body, userId, role, supabase }) => {
   requireFields(body, ["appointment_request_id", "decision"]);
 
   const appointmentRequestId = String(body.appointment_request_id);
@@ -40,6 +40,15 @@ Deno.serve(createRoleHandler(["admin", "reception"], async ({ body, userId, supa
     .single();
 
   if (requestError || !request) throw new Error("Appointment request not found");
+
+  if (role === "reception") {
+    const { data: canAccess, error: accessError } = await supabase.rpc("reception_can_access_appointment_request", {
+      target_request_id: appointmentRequestId,
+      actor: userId,
+    });
+    if (accessError) throw new Error(accessError.message);
+    if (!canAccess) throw new Error("Reception account is not assigned to this appointment request");
+  }
 
   const metadata = {
     appointment_request_id: request.id,

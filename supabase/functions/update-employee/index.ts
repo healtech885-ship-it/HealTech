@@ -30,6 +30,27 @@ function optionalDateString(body: Record<string, unknown>, field: string) {
   return value;
 }
 
+async function resolveAssignedDoctorId(
+  supabase: Parameters<Parameters<typeof createRoleHandler>[1]>[0]["supabase"],
+  role: StaffRole,
+  rawDoctorId: unknown,
+) {
+  const assignedDoctorId = typeof rawDoctorId === "string" && rawDoctorId.trim() !== "" ? rawDoctorId.trim() : null;
+  if (role !== "reception") return null;
+  if (!assignedDoctorId) throw new Error("Assigned doctor is required for reception accounts");
+
+  const { data: doctor, error } = await supabase
+    .from("profiles")
+    .select("id")
+    .eq("id", assignedDoctorId)
+    .eq("role", "doctor")
+    .eq("status", "active")
+    .single();
+
+  if (error || !doctor) throw new Error("Assigned doctor must be an active doctor account");
+  return assignedDoctorId;
+}
+
 function resolveStaffRole(value: unknown): StaffRole {
   if (typeof value !== "string" || !STAFF_ROLES.includes(value as StaffRole)) {
     throw new Error(`Role must be one of: ${STAFF_ROLES.join(", ")}`);
@@ -59,10 +80,11 @@ Deno.serve(createRoleHandler(["admin"], async ({ body, userId, supabase }) => {
   const role = resolveStaffRole(body.role);
   const profileStatus = resolveProfileStatus(body.profile_status);
   const employeeStatus = resolveEmployeeStatus(body.employee_status);
+  const assignedDoctorId = await resolveAssignedDoctorId(supabase, role, body.assigned_doctor_id);
 
   const { data: employee, error: employeeError } = await supabase
     .from("employees")
-    .select("id,profile_id,department_id,job_title,employee_code,hire_date,status")
+    .select("id,profile_id,department_id,assigned_doctor_id,job_title,employee_code,hire_date,status")
     .eq("id", employeeId)
     .single();
 
@@ -79,6 +101,7 @@ Deno.serve(createRoleHandler(["admin"], async ({ body, userId, supabase }) => {
 
   const employeeUpdate = {
     department_id: optionalString(body, "department_id"),
+    assigned_doctor_id: assignedDoctorId,
     job_title: optionalString(body, "job_title"),
     employee_code: optionalString(body, "employee_code"),
     hire_date: optionalDateString(body, "hire_date"),
@@ -89,7 +112,7 @@ Deno.serve(createRoleHandler(["admin"], async ({ body, userId, supabase }) => {
     .from("employees")
     .update(employeeUpdate)
     .eq("id", employeeId)
-    .select("id,profile_id,department_id,job_title,employee_code,hire_date,status,created_at")
+    .select("id,profile_id,department_id,assigned_doctor_id,job_title,employee_code,hire_date,status,created_at")
     .single();
 
   if (updateError || !updatedEmployee) {
@@ -106,6 +129,7 @@ Deno.serve(createRoleHandler(["admin"], async ({ body, userId, supabase }) => {
   if (profileError || !profile) {
     await supabase.from("employees").update({
       department_id: employee.department_id,
+      assigned_doctor_id: employee.assigned_doctor_id,
       job_title: employee.job_title,
       employee_code: employee.employee_code,
       hire_date: employee.hire_date,
