@@ -516,9 +516,59 @@ begin
 end;
 $$;
 
+create or replace function public.complete_visit(target_visit_id uuid, actor uuid)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  visit_row visits;
+begin
+  select * into visit_row
+  from visits
+  where id = target_visit_id
+  for update;
+
+  if not found then
+    raise exception 'Visit not found';
+  end if;
+
+  if visit_row.doctor_id is distinct from actor
+    and not exists (select 1 from profiles where id = actor and role = 'admin') then
+    raise exception 'Visit is not assigned to current doctor';
+  end if;
+
+  if visit_row.status in ('completed', 'cancelled') then
+    raise exception 'Visit is already closed';
+  end if;
+
+  if visit_row.diagnosis is null or length(trim(visit_row.diagnosis)) = 0 then
+    raise exception 'Diagnosis is required before completing visit';
+  end if;
+
+  if visit_row.doctor_instructions is null or length(trim(visit_row.doctor_instructions)) = 0 then
+    raise exception 'Doctor instructions are required before completing visit';
+  end if;
+
+  update visits
+  set status = 'completed',
+      completed_at = now(),
+      updated_at = now()
+  where id = target_visit_id;
+
+  insert into audit_logs(actor_id, action, entity_type, entity_id, metadata)
+  values(actor, 'visit.completed', 'visit', target_visit_id, jsonb_build_object('patient_id', visit_row.patient_id));
+
+  return jsonb_build_object('ok', true, 'visit_id', target_visit_id);
+end;
+$$;
+
 revoke execute on function public.request_lab_tests_tx(uuid, uuid, uuid[], uuid, text) from public, anon, authenticated;
 revoke execute on function public.create_prescription_tx(uuid, uuid, jsonb, uuid, text) from public, anon, authenticated;
+revoke execute on function public.complete_visit(uuid, uuid) from public, anon, authenticated;
 grant execute on function public.request_lab_tests_tx(uuid, uuid, uuid[], uuid, text) to service_role;
 grant execute on function public.submit_lab_result_tx(uuid, uuid, text, text) to service_role;
 grant execute on function public.create_prescription_tx(uuid, uuid, jsonb, uuid, text) to service_role;
 grant execute on function public.dispense_prescription_item_tx(uuid, integer, uuid) to service_role;
+grant execute on function public.complete_visit(uuid, uuid) to service_role;
