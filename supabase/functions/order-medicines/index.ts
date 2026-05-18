@@ -1,7 +1,7 @@
 import { createRoleHandler, requireFields } from "../_shared/handler.ts";
 
 Deno.serve(createRoleHandler(["admin", "doctor"], async ({ body, userId, role, supabase }) => {
-  requireFields(body, ["visit_id", "items"]);
+  requireFields(body, ["visit_id", "items", "target_pharmacy_id"]);
   const items = Array.isArray(body.items) ? body.items : [];
   if (items.length === 0) throw new Error("At least one medicine is required");
 
@@ -19,6 +19,7 @@ Deno.serve(createRoleHandler(["admin", "doctor"], async ({ body, userId, role, s
     actor: userId,
     target_visit_id: visit.id,
     target_items: canonicalItems,
+    target_pharmacy_id: body.target_pharmacy_id,
     target_doctor_notes: body.doctor_notes ?? null,
   });
   if (error) throw new Error(error.message);

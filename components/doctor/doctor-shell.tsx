@@ -48,6 +48,11 @@ type MedicineRow = {
   description: string | null;
   status: string;
 };
+type CareDestination = {
+  id: string;
+  full_name: string;
+  email: string | null;
+};
 type VisitAction = "starting" | "saving" | "completing";
 
 type DoctorVisit = VisitRow & {
@@ -628,6 +633,8 @@ function LabOrderPanel({
 }) {
   const supabase = useMemo(() => createClient(), []);
   const [tests, setTests] = useState<LabTestRow[]>([]);
+  const [labs, setLabs] = useState<CareDestination[]>([]);
+  const [selectedLabId, setSelectedLabId] = useState("");
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
@@ -640,26 +647,37 @@ function LabOrderPanel({
   useEffect(() => {
     let active = true;
 
-    async function loadLabTests() {
+    async function loadLabOrderOptions() {
       setLoading(true);
       setLoadError(null);
-      const { data, error } = await supabase
-        .from("lab_tests")
-        .select("id,name,code,description,normal_range,unit,status")
-        .eq("status", "active")
-        .order("name", { ascending: true });
+      const [testsResult, labsResult] = await Promise.all([
+        supabase
+          .from("lab_tests")
+          .select("id,name,code,description,normal_range,unit,status")
+          .eq("status", "active")
+          .order("name", { ascending: true }),
+        supabase
+          .from("profiles")
+          .select("id,full_name,email,role,status")
+          .eq("role", "lab")
+          .eq("status", "active")
+          .order("full_name", { ascending: true }),
+      ]);
 
       if (!active) return;
+      const error = testsResult.error ?? labsResult.error;
       if (error) {
         setLoadError(error.message);
         setTests([]);
+        setLabs([]);
       } else {
-        setTests((data ?? []) as LabTestRow[]);
+        setTests((testsResult.data ?? []) as LabTestRow[]);
+        setLabs(((labsResult.data ?? []) as unknown) as CareDestination[]);
       }
       setLoading(false);
     }
 
-    void loadLabTests();
+    void loadLabOrderOptions();
     return () => {
       active = false;
     };
@@ -687,6 +705,10 @@ function LabOrderPanel({
       setSubmitError("No visit is loaded.");
       return;
     }
+    if (!selectedLabId) {
+      setSubmitError("Select the laboratory before choosing tests.");
+      return;
+    }
     if (selectedIds.length === 0) {
       setSubmitError("Select at least one lab test before submitting.");
       return;
@@ -696,6 +718,7 @@ function LabOrderPanel({
     const { error } = await supabase.functions.invoke("order-lab-tests", {
       body: {
         visit_id: visit.id,
+        target_lab_id: selectedLabId,
         lab_test_ids: selectedIds,
         doctor_notes: doctorNotes.trim() || undefined,
       },
@@ -708,6 +731,7 @@ function LabOrderPanel({
     }
 
     setSelectedIds([]);
+    setSelectedLabId("");
     setDoctorNotes("");
     setQuery("");
     setSuccess("Lab tests ordered successfully.");
@@ -719,7 +743,7 @@ function LabOrderPanel({
   return (
     <DataPanel
       title="Order Lab Tests"
-      description="Request one or more active lab tests for this visit."
+      description="Select the receiving laboratory first, then choose the required tests."
       action={success ? <Link href="/doctor/lab-results" className="text-sm font-semibold text-[#006d86]">View lab results</Link> : null}
     >
       {closed ? <InlineNotice tone="danger" message="Lab tests cannot be ordered for a closed visit." /> : null}
@@ -729,6 +753,25 @@ function LabOrderPanel({
 
       {!closed ? (
         <div className="space-y-5">
+          <div>
+            <label className="text-sm font-semibold text-[#41546b]" htmlFor="target-lab">Receiving Laboratory *</label>
+            <div className="mt-2">
+              <Select
+                id="target-lab"
+                value={selectedLabId}
+                onValueChange={(value) => {
+                  setSelectedLabId(value);
+                  setSubmitError(null);
+                }}
+                disabled={loading || submitting}
+                placeholder="Select lab before ordering tests"
+                options={labs.map((lab) => ({ value: lab.id, label: `${lab.full_name}${lab.email ? ` / ${lab.email}` : ""}` }))}
+                triggerClassName="h-11 border-[#cbd8e2] bg-white text-[#17212f]"
+              />
+            </div>
+            {!loading && labs.length === 0 ? <p className="mt-2 text-sm text-[#b42318]">No active lab accounts are available.</p> : null}
+          </div>
+
           <div>
             <label className="text-sm font-semibold text-[#41546b]" htmlFor="lab-test-search">Search Lab Tests</label>
             <div className="relative mt-2">
@@ -788,11 +831,11 @@ function LabOrderPanel({
           </label>
 
           <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[#e1e9ef] pt-5">
-            <p className="text-sm text-[#607084]">{selectedIds.length} selected</p>
+            <p className="text-sm text-[#607084]">{selectedIds.length} selected{selectedLabId ? " / lab selected" : " / select lab first"}</p>
             <button
               type="button"
               onClick={handleSubmit}
-              disabled={submitting || loading}
+              disabled={submitting || loading || !selectedLabId}
               className="inline-flex h-10 items-center justify-center rounded-lg bg-[#006d86] px-4 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
             >
               {submitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Beaker className="mr-2 h-4 w-4" />}
@@ -818,6 +861,8 @@ function PrescriptionCreationPanel({
 }) {
   const supabase = useMemo(() => createClient(), []);
   const [medicines, setMedicines] = useState<MedicineRow[]>([]);
+  const [pharmacies, setPharmacies] = useState<CareDestination[]>([]);
+  const [selectedPharmacyId, setSelectedPharmacyId] = useState("");
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [items, setItems] = useState<PrescriptionDraftItem[]>([]);
@@ -830,26 +875,37 @@ function PrescriptionCreationPanel({
   useEffect(() => {
     let active = true;
 
-    async function loadMedicines() {
+    async function loadPrescriptionOptions() {
       setLoading(true);
       setLoadError(null);
-      const { data, error } = await (supabase as unknown as CanonicalMedicinesClient)
-        .from("medicines")
-        .select("id,name,category,description,status")
-        .eq("status", "active")
-        .order("name", { ascending: true });
+      const [medicinesResult, pharmaciesResult] = await Promise.all([
+        (supabase as unknown as CanonicalMedicinesClient)
+          .from("medicines")
+          .select("id,name,category,description,status")
+          .eq("status", "active")
+          .order("name", { ascending: true }),
+        supabase
+          .from("profiles")
+          .select("id,full_name,email,role,status")
+          .eq("role", "pharmacy")
+          .eq("status", "active")
+          .order("full_name", { ascending: true }),
+      ]);
 
       if (!active) return;
+      const error = medicinesResult.error ?? pharmaciesResult.error;
       if (error) {
         setLoadError(error.message);
         setMedicines([]);
+        setPharmacies([]);
       } else {
-        setMedicines(((data ?? []) as unknown) as MedicineRow[]);
+        setMedicines(((medicinesResult.data ?? []) as unknown) as MedicineRow[]);
+        setPharmacies(((pharmaciesResult.data ?? []) as unknown) as CareDestination[]);
       }
       setLoading(false);
     }
 
-    void loadMedicines();
+    void loadPrescriptionOptions();
     return () => {
       active = false;
     };
@@ -890,6 +946,7 @@ function PrescriptionCreationPanel({
   function validatePrescription() {
     if (closed) return "Prescriptions cannot be created for a closed visit.";
     if (!visit.id) return "No visit is loaded.";
+    if (!selectedPharmacyId) return "Select the pharmacy before adding medicines.";
     if (items.length === 0) return "Add at least one medicine before creating a prescription.";
 
     const missingMedicine = items.find((item) => !item.medicine_id);
@@ -918,6 +975,7 @@ function PrescriptionCreationPanel({
     const { error } = await supabase.functions.invoke("order-medicines", {
       body: {
         visit_id: visit.id,
+        target_pharmacy_id: selectedPharmacyId,
         items: items.map((item) => ({
           medicine_id: item.medicine_id,
           requested_quantity: item.requested_quantity,
@@ -934,6 +992,7 @@ function PrescriptionCreationPanel({
     }
 
     setItems([]);
+    setSelectedPharmacyId("");
     setDoctorNotes("");
     setQuery("");
     setSuccess("Prescription created successfully.");
@@ -945,7 +1004,7 @@ function PrescriptionCreationPanel({
   return (
     <DataPanel
       title="Create Prescription"
-      description="Create a canonical prescription for this visit."
+      description="Select the receiving pharmacy first, then add medicines and dosage instructions."
       action={success ? <Link href="/doctor/medicine-orders" className="text-sm font-semibold text-[#006d86]">View prescriptions</Link> : null}
     >
       {closed ? <InlineNotice tone="danger" message="Prescriptions cannot be created for a closed visit." /> : null}
@@ -955,6 +1014,25 @@ function PrescriptionCreationPanel({
 
       {!closed ? (
         <div className="space-y-6">
+          <div>
+            <label className="text-sm font-semibold text-[#41546b]" htmlFor="target-pharmacy">Receiving Pharmacy *</label>
+            <div className="mt-2">
+              <Select
+                id="target-pharmacy"
+                value={selectedPharmacyId}
+                onValueChange={(value) => {
+                  setSelectedPharmacyId(value);
+                  setSubmitError(null);
+                }}
+                disabled={loading || submitting}
+                placeholder="Select pharmacy before prescribing"
+                options={pharmacies.map((pharmacy) => ({ value: pharmacy.id, label: `${pharmacy.full_name}${pharmacy.email ? ` / ${pharmacy.email}` : ""}` }))}
+                triggerClassName="h-11 border-[#cbd8e2] bg-white text-[#17212f]"
+              />
+            </div>
+            {!loading && pharmacies.length === 0 ? <p className="mt-2 text-sm text-[#b42318]">No active pharmacy accounts are available.</p> : null}
+          </div>
+
           <div>
             <label className="text-sm font-semibold text-[#41546b]" htmlFor="medicine-search">Search Medicines</label>
             <div className="relative mt-2">
@@ -1062,11 +1140,11 @@ function PrescriptionCreationPanel({
           </label>
 
           <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[#e1e9ef] pt-5">
-            <p className="text-sm text-[#607084]">{items.length} medicine item{items.length === 1 ? "" : "s"}</p>
+            <p className="text-sm text-[#607084]">{items.length} medicine item{items.length === 1 ? "" : "s"}{selectedPharmacyId ? " / pharmacy selected" : " / select pharmacy first"}</p>
             <button
               type="button"
               onClick={handleSubmit}
-              disabled={submitting || loading}
+              disabled={submitting || loading || !selectedPharmacyId}
               className="inline-flex h-10 items-center justify-center rounded-lg bg-[#006d86] px-4 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
             >
               {submitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Pill className="mr-2 h-4 w-4" />}
