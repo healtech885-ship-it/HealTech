@@ -30,3 +30,19 @@ test("complete_visit database function enforces actor and clinical completion gu
   assert.match(migration, /status = 'completed'/);
   assert.match(migration, /grant execute on function public\.complete_visit\(uuid, uuid\) to service_role/);
 });
+
+test("doctor order entry points require explicit lab and pharmacy routing", () => {
+  const workspaceConfig = readProjectFile("lib/workspaces.ts");
+  const workspaceClient = readProjectFile("components/workspace-client.tsx");
+  const requestLabTests = readProjectFile("supabase/functions/request-lab-tests/index.ts");
+  const createPrescription = readProjectFile("supabase/functions/create-prescription/index.ts");
+
+  assert.match(workspaceConfig, /name: "target_lab_id", label: "Receiving laboratory", required: true, reference: "labs"/);
+  assert.match(workspaceConfig, /name: "target_pharmacy_id", label: "Receiving pharmacy", required: true, reference: "pharmacies"/);
+  assert.match(workspaceClient, /target_pharmacy_id: payload\.target_pharmacy_id/);
+  assert.match(workspaceClient, /medicine_id: payload\.medicine_id \?\? payload\.medicine_name_id/);
+  assert.match(requestLabTests, /requireFields\(body, \["visit_id", "lab_test_ids", "target_lab_id"\]\)/);
+  assert.match(requestLabTests, /target_lab_id: body\.target_lab_id/);
+  assert.match(createPrescription, /requireFields\(body, \["visit_id", "items", "target_pharmacy_id"\]\)/);
+  assert.match(createPrescription, /target_pharmacy_id: body\.target_pharmacy_id/);
+});

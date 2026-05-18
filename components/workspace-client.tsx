@@ -2058,9 +2058,10 @@ function prepareActionPayload(config: WorkspaceConfig, payload: Record<string, u
   if (config.action.kind === "function" && config.action.name === "order-medicines") {
     return {
       visit_id: payload.visit_id,
+      target_pharmacy_id: payload.target_pharmacy_id,
       doctor_notes: payload.doctor_notes,
       items: [{
-        medicine_name_id: payload.medicine_name_id,
+        medicine_id: payload.medicine_id ?? payload.medicine_name_id,
         requested_quantity: payload.requested_quantity,
         dosage_instructions: payload.dosage_instructions,
       }],
@@ -2278,6 +2279,8 @@ type ReferenceOption = {
 const referenceDefinitions: Record<ReferenceKey, { table: string; select: string; orderBy?: string }> = {
   patients: { table: "patients", select: "id,full_name,mrn,student_id,created_at", orderBy: "created_at" },
   doctors: { table: "profiles", select: "id,full_name,email,role,status,created_at", orderBy: "created_at" },
+  labs: { table: "profiles", select: "id,full_name,email,role,status,created_at", orderBy: "created_at" },
+  pharmacies: { table: "profiles", select: "id,full_name,email,role,status,created_at", orderBy: "created_at" },
   profiles: { table: "profiles", select: "id,full_name,email,role,status,created_at", orderBy: "created_at" },
   employees: { table: "employees", select: "id,profile_id,job_title,employee_code,status" },
   departments: { table: "departments", select: "id,name,status" },
@@ -2285,6 +2288,7 @@ const referenceDefinitions: Record<ReferenceKey, { table: string; select: string
   labOrders: { table: "lab_orders", select: "id,visit_id,status,doctor_notes,created_at", orderBy: "created_at" },
   labTests: { table: "lab_tests", select: "id,name,code,status" },
   labOrderItems: { table: "lab_order_items", select: "id,lab_order_id,lab_test_id,result_value,status,visible_to_patient,created_at", orderBy: "created_at" },
+  medicines: { table: "medicines", select: "id,name,category,status" },
   medicineNames: { table: "medicine_names", select: "id,name,category,status" },
   medicineOrderItems: { table: "medicine_order_items", select: "id,medicine_order_id,medicine_name_id,requested_quantity,dispensed_quantity,status,created_at", orderBy: "created_at" },
   storeItems: { table: "store_items", select: "id,name,category,status" },
@@ -2297,7 +2301,13 @@ function uniqueReferenceKeys(fields: WorkspaceField[]) {
 function normalizeReferenceOptions(key: ReferenceKey, rows: unknown[]) {
   return rows
     .filter((row) => row && typeof row === "object")
-    .filter((row) => key !== "doctors" || (row as Record<string, unknown>).role === "doctor")
+    .filter((row) => {
+      const record = row as Record<string, unknown>;
+      if (key === "doctors") return record.role === "doctor";
+      if (key === "labs") return record.role === "lab" && record.status === "active";
+      if (key === "pharmacies") return record.role === "pharmacy" && record.status === "active";
+      return true;
+    })
     .filter((row) => key !== "departments" || (row as Record<string, unknown>).status === "active")
     .filter((row) => key !== "medicineOrderItems" || isDispensableMedicineItem(row as Record<string, unknown>))
     .map((row) => {
@@ -2311,10 +2321,10 @@ function normalizeReferenceOptions(key: ReferenceKey, rows: unknown[]) {
 
 function referenceLabel(key: ReferenceKey, record: Record<string, unknown>) {
   if (key === "patients") return `${record.full_name ?? "Patient"}${record.mrn ? ` / ${record.mrn}` : ""}${record.student_id ? ` / ${record.student_id}` : ""}`;
-  if (key === "profiles" || key === "doctors") return `${record.full_name ?? "Profile"}${record.role ? ` / ${record.role}` : ""}`;
+  if (key === "profiles" || key === "doctors" || key === "labs" || key === "pharmacies") return `${record.full_name ?? "Profile"}${record.email ? ` / ${record.email}` : ""}`;
   if (key === "visits") return `${record.visit_code ?? "Visit"} / ${record.status ?? "open"}${record.chief_complaint ? ` / ${record.chief_complaint}` : ""}`;
   if (key === "labOrders") return `${record.id} / ${record.status ?? "ordered"}${record.doctor_notes ? ` / ${record.doctor_notes}` : ""}`;
-  if (key === "departments" || key === "labTests" || key === "medicineNames" || key === "storeItems") return String(record.name ?? record.id);
+  if (key === "departments" || key === "labTests" || key === "medicines" || key === "medicineNames" || key === "storeItems") return String(record.name ?? record.id);
   if (key === "labOrderItems") return `${record.id} / ${record.status ?? "pending"}${record.visible_to_patient ? " / visible" : ""}${record.result_value ? ` / ${record.result_value}` : ""}`;
   if (key === "medicineOrderItems") return `${record.id} / ${record.status ?? "pending"} / ${record.dispensed_quantity ?? 0}/${record.requested_quantity ?? 0}`;
   return String(record.id);

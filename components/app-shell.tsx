@@ -203,7 +203,13 @@ function AdminShell({
           <span className={cn("whitespace-nowrap transition-opacity duration-200", collapsed && "lg:hidden")}>New Consultation</span>
         </Link>
 
-        <nav className={cn("mt-5 space-y-1.5", collapsed && "lg:flex lg:flex-col lg:items-center")}>
+        <nav
+          aria-label="Admin navigation"
+          className={cn(
+            "mt-5 min-h-0 flex-1 space-y-1.5 overflow-y-auto overscroll-contain pr-1 pb-3 [scrollbar-width:thin] [scrollbar-color:rgba(235,203,139,0.55)_transparent]",
+            collapsed && "lg:flex lg:flex-col lg:items-center lg:pr-0",
+          )}
+        >
           {adminPrimaryItems.map((item) => {
             const selected = item.href === activeHref;
             return (
@@ -227,7 +233,7 @@ function AdminShell({
           })}
         </nav>
 
-        <div className={cn("mt-auto border-t border-white/10 pt-5", collapsed && "lg:flex lg:flex-col lg:items-center")}>
+        <div className={cn("mt-4 shrink-0 border-t border-white/10 pt-5", collapsed && "lg:flex lg:flex-col lg:items-center")}>
           {settingsItem ? (
             <Link
               href={settingsItem.href}

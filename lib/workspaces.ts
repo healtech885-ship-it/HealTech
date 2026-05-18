@@ -1,7 +1,7 @@
 import type { UserRole } from "@/types/app.types";
 
 export type FieldType = "text" | "email" | "password" | "number" | "date" | "time" | "textarea" | "select" | "checkbox";
-export type ReferenceKey = "patients" | "doctors" | "profiles" | "employees" | "departments" | "visits" | "labOrders" | "labTests" | "labOrderItems" | "medicineNames" | "medicineOrderItems" | "storeItems";
+export type ReferenceKey = "patients" | "doctors" | "labs" | "pharmacies" | "profiles" | "employees" | "departments" | "visits" | "labOrders" | "labTests" | "labOrderItems" | "medicines" | "medicineNames" | "medicineOrderItems" | "storeItems";
 export type WorkspaceFilterOperator = "eq" | "lte" | "lt";
 
 export type WorkspaceFilter = {
@@ -438,7 +438,7 @@ function labResultFields(): WorkspaceField[] {
 }
 
 function labOrderFields(): WorkspaceField[] {
-  return [{ name: "visit_id", label: "Visit", required: true, reference: "visits" }, { name: "lab_test_ids", label: "Lab test", required: true, reference: "labTests" }, { name: "doctor_notes", label: "Doctor notes", type: "textarea" }];
+  return [{ name: "visit_id", label: "Visit", required: true, reference: "visits" }, { name: "target_lab_id", label: "Receiving laboratory", required: true, reference: "labs" }, { name: "lab_test_ids", label: "Lab test", required: true, reference: "labTests" }, { name: "doctor_notes", label: "Doctor notes", type: "textarea" }];
 }
 
 function approveLabFields(): WorkspaceField[] {
@@ -454,7 +454,7 @@ function medicineBatchFields(): WorkspaceField[] {
 }
 
 function medicineOrderFields(): WorkspaceField[] {
-  return [{ name: "visit_id", label: "Visit", required: true, reference: "visits" }, { name: "medicine_name_id", label: "Medicine", required: true, reference: "medicineNames" }, { name: "requested_quantity", label: "Requested quantity", type: "number", required: true }, { name: "dosage_instructions", label: "Dosage instructions", type: "textarea" }, { name: "doctor_notes", label: "Doctor notes", type: "textarea" }];
+  return [{ name: "visit_id", label: "Visit", required: true, reference: "visits" }, { name: "target_pharmacy_id", label: "Receiving pharmacy", required: true, reference: "pharmacies" }, { name: "medicine_id", label: "Medicine", required: true, reference: "medicines" }, { name: "requested_quantity", label: "Requested quantity", type: "number", required: true }, { name: "dosage_instructions", label: "Dosage instructions", type: "textarea" }, { name: "doctor_notes", label: "Doctor notes", type: "textarea" }];
 }
 
 function dispenseFields(): WorkspaceField[] {
