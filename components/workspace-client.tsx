@@ -58,6 +58,11 @@ type CreateEmployeeSuccess = {
   profileId: string;
   temporaryPassword: string;
 };
+type CreatePatientAccountSuccess = {
+  patientId: string;
+  profileId: string;
+  temporaryPassword: string;
+};
 type ClinicalReportFile = {
   path: string;
   name: string;
@@ -347,7 +352,7 @@ export function WorkspaceClient({ config }: { config: WorkspaceConfig }) {
   }
 
   if (config.mode === "patient-details") {
-    return <PatientDetailsView loading={loading} record={record} error={error} visits={patientVisitRows} />;
+    return <PatientDetailsView loading={loading} record={record} error={error} visits={patientVisitRows} onReload={loadData} />;
   }
 
   if (config.mode === "appointment-request-details") {
@@ -800,19 +805,68 @@ function PatientDetailsView({
   record,
   error,
   visits,
+  onReload,
 }: {
   loading: boolean;
   record: Record<string, unknown> | null;
   error: string | null;
   visits: ModuleRecord[];
+  onReload: () => Promise<void>;
 }) {
+  const supabase = useMemo(() => createClient(), []);
+  const [portalEmail, setPortalEmail] = useState("");
+  const [portalPassword, setPortalPassword] = useState("");
+  const [portalLoading, setPortalLoading] = useState(false);
+  const [portalError, setPortalError] = useState<string | null>(null);
+  const [portalResult, setPortalResult] = useState<CreatePatientAccountSuccess | null>(null);
+  const [portalPasswordCopied, setPortalPasswordCopied] = useState(false);
+
   if (loading) return <LoadingState />;
   if (error && !record) return <Notice tone="danger" text={error} />;
   if (!record) return <Notice tone="warning" text="Patient not found." />;
 
   const patient = patientSummary(record);
+  const hasPortalAccount = patient.profileId !== "Not set";
+
+  async function createPortalAccount() {
+    if (!portalEmail.trim()) {
+      setPortalError("Patient email is required");
+      return;
+    }
+
+    setPortalLoading(true);
+    setPortalError(null);
+    setPortalResult(null);
+    setPortalPasswordCopied(false);
+
+    const { data, error: accountError } = await supabase.functions.invoke("create-patient-account", {
+      body: {
+        patient_id: patient.id,
+        email: portalEmail.trim().toLowerCase(),
+        password: portalPassword.trim() || undefined,
+      },
+    });
+
+    setPortalLoading(false);
+    if (accountError) {
+      setPortalError(await getSupabaseErrorMessage(accountError));
+      return;
+    }
+
+    const accountResult = extractCreatePatientAccountSuccess(data);
+    if (!accountResult) {
+      setPortalError("Patient portal account was created, but the response was incomplete");
+      return;
+    }
+
+    setPortalResult(accountResult);
+    setPortalPassword("");
+    await onReload();
+  }
+
   const details = [
     ["Patient ID", patient.id],
+    ["Portal profile ID", patient.profileId],
     ["Full name", patient.fullName],
     ["MRN", patient.mrn],
     ["Student ID", patient.studentId],
@@ -851,6 +905,79 @@ function PatientDetailsView({
       >
           {error ? <Notice tone="danger" text={error} /> : null}
           <DetailsGrid columns={3} items={details.map(([label, value]) => ({ label, value: formatDetailValue(value) }))} />
+      </SectionCard>
+
+      <SectionCard
+        title="Patient Portal Access"
+        description="Create login credentials so this patient can open their dashboard after leaving the clinic."
+        className="min-w-0 overflow-hidden"
+        contentClassName="space-y-4"
+      >
+        {hasPortalAccount ? (
+          <Notice tone="success" text="This patient already has a portal account." />
+        ) : (
+          <>
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="patient_portal_email">Patient email *</Label>
+                <Input
+                  id="patient_portal_email"
+                  type="email"
+                  value={portalEmail}
+                  onChange={(event) => setPortalEmail(event.target.value)}
+                  placeholder="patient@example.com"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="patient_portal_password">Temporary password</Label>
+                <Input
+                  id="patient_portal_password"
+                  type="password"
+                  value={portalPassword}
+                  onChange={(event) => setPortalPassword(event.target.value)}
+                  placeholder="Leave blank to auto-generate"
+                />
+              </div>
+            </div>
+            <div className="flex flex-wrap items-center gap-3">
+              <Button type="button" onClick={() => void createPortalAccount()} disabled={portalLoading}>
+                {portalLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <UserPlus className="h-4 w-4" />}
+                Create portal account
+              </Button>
+              <p className="text-sm text-[var(--on-surface-variant)]">The patient will use these credentials on the login page.</p>
+            </div>
+          </>
+        )}
+
+        {portalError ? <Notice tone="danger" text={portalError} /> : null}
+        {portalResult ? (
+          <div className="rounded-2xl border border-[var(--success)] bg-[var(--success-container)] p-4 text-[var(--on-surface)]">
+            <p className="text-sm font-bold">Patient portal account created</p>
+            <div className="mt-3 grid gap-3 md:grid-cols-3">
+              <ReadOnlyLine label="Email" value={portalEmail.trim().toLowerCase()} />
+              <ReadOnlyLine label="Profile ID" value={portalResult.profileId} />
+              <div className="rounded-xl border border-[var(--border)] bg-[var(--surface-elevated)] p-3">
+                <p className="text-xs font-bold uppercase tracking-[0.08em] text-[var(--muted)]">Temporary password</p>
+                <div className="mt-2 flex items-center justify-between gap-2">
+                  <code className="break-all text-sm font-bold text-[var(--on-surface)]">{portalResult.temporaryPassword}</code>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    className="h-8 shrink-0 px-2"
+                    onClick={async () => {
+                      await navigator.clipboard.writeText(portalResult.temporaryPassword);
+                      setPortalPasswordCopied(true);
+                    }}
+                  >
+                    <Copy className="h-4 w-4" />
+                  </Button>
+                </div>
+                {portalPasswordCopied ? <p className="mt-2 text-xs font-semibold text-[var(--success)]">Copied</p> : null}
+              </div>
+            </div>
+            <p className="mt-3 text-sm">Share this temporary password securely. The patient should change it after first sign-in.</p>
+          </div>
+        ) : null}
       </SectionCard>
 
       <SectionCard
@@ -2004,6 +2131,19 @@ function extractCreateEmployeeSuccess(value: unknown): CreateEmployeeSuccess | n
   return { employeeId, profileId, temporaryPassword };
 }
 
+function extractCreatePatientAccountSuccess(value: unknown): CreatePatientAccountSuccess | null {
+  const payload = unwrapFunctionData(value);
+  if (!payload) return null;
+
+  const patientId = typeof payload.patient_id === "string" ? payload.patient_id : "";
+  const profileId = typeof payload.profile_id === "string" ? payload.profile_id : "";
+  const temporaryPassword = typeof payload.temporary_password === "string" ? payload.temporary_password : "";
+
+  if (!patientId || !profileId || !temporaryPassword) return null;
+
+  return { patientId, profileId, temporaryPassword };
+}
+
 async function getSupabaseErrorMessage(error: unknown) {
   if (!error || typeof error !== "object") return String(error);
 
@@ -2053,7 +2193,7 @@ function unwrapFunctionData(value: unknown): Record<string, unknown> | null {
   if (!value || typeof value !== "object") return null;
 
   const record = value as Record<string, unknown>;
-  if ("employee_id" in record || "profile_id" in record || "temporary_password" in record) return record;
+  if ("employee_id" in record || "patient_id" in record || "profile_id" in record || "temporary_password" in record) return record;
 
   const nested = record.data;
   if (nested && typeof nested === "object" && !Array.isArray(nested)) return nested as Record<string, unknown>;
@@ -2448,6 +2588,7 @@ function patientSummary(row: Record<string, unknown>) {
 
   return {
     id: String(row.id ?? ""),
+    profileId: String(row.profile_id ?? "Not set"),
     fullName: String(row.full_name ?? "Not set"),
     mrn: String(row.mrn ?? "Not set"),
     studentId: String(row.student_id ?? "Not set"),
